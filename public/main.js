@@ -160,7 +160,7 @@ async function connectWallet() {
     initializeCheckpointMining();
     
     // Check land status after wallet connection - show popup after 2 seconds if no land
-    setTimeout(async () => {
+    window.landCheckTimeout = setTimeout(async () => {
       await checkLandStatusAndShowPopup();
     }, 2000);
     
@@ -811,11 +811,18 @@ async function checkLandStatusAndShowPopup() {
       showMandatoryLandPurchaseModal();
     } else {
       console.log('✅ User has land, can proceed with game');
+      // Make sure no popup is showing for users with land
+      const existingModal = document.getElementById('mandatoryLandModal');
+      if (existingModal) {
+        existingModal.remove();
+      }
     }
   } catch (e) {
     console.error('Failed to check land status:', e);
-    // If can't check, show popup to be safe
-    showMandatoryLandPurchaseModal();
+    // Only show popup if we can't verify land status AND user doesn't have existing data
+    if (!state.status || !state.status.hasLand) {
+      showMandatoryLandPurchaseModal();
+    }
   }
 }
 
@@ -1269,8 +1276,14 @@ async function purchaseMandatoryLand() {
     // Close modal after 3 seconds and refresh everything
     setTimeout(async () => {
       closeMandatoryLandModal();
+      // Force refresh user status to get updated land ownership
       await refreshStatus();
       await updateWalletBalance();
+      // Clear any existing land check timers
+      if (window.landCheckTimeout) {
+        clearTimeout(window.landCheckTimeout);
+        window.landCheckTimeout = null;
+      }
     }, 3000);
     
   } catch (e) {
@@ -1388,10 +1401,7 @@ async function tryAutoConnect() {
   } else {
     console.log('🔴 No wallet connection found');
     updateConnectButtonDisplay(); // Ensure button shows default state
-    // Show land popup after 2 seconds for new users
-    setTimeout(() => {
-      showMandatoryLandPurchaseModal();
-    }, 2000);
+    // Don't auto-show popup for disconnected users - let them connect first
   }
 }
 
