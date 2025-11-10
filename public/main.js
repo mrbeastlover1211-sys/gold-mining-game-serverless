@@ -842,324 +842,169 @@ function showLandPurchaseModal() {
 
 // Create mandatory land purchase modal (cannot be dismissed)
 function createMandatoryLandPurchaseModal() {
-  const modalHTML = `
-    <div id="mandatoryLandModal" class="modal-overlay" style="
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: linear-gradient(135deg, rgba(0,0,0,0.9), rgba(20,20,40,0.95));
-      z-index: 999999;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      backdrop-filter: blur(15px);
-      animation: fadeIn 0.6s ease-out;">
+  // Create modal elements using DOM instead of template literals
+  const modal = document.createElement('div');
+  modal.id = 'mandatoryLandModal';
+  modal.className = 'modal-overlay';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, rgba(0,0,0,0.9), rgba(20,20,40,0.95));
+    z-index: 999999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(15px);
+  `;
+
+  modal.innerHTML = `
+    <div class="modal-content" style="
+      width: 95%;
+      max-width: 480px;
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+      position: relative;
+      overflow: hidden;">
       
-      <div class="modal-content" style="
-        width: 95%;
-        max-width: 480px;
-        background: white;
-        border-radius: 24px;
-        box-shadow: 0 25px 50px rgba(0,0,0,0.25);
-        position: relative;
-        animation: slideUpIn 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-        overflow: hidden;">`
+      <div style="
+        background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+        padding: 40px 32px 32px 32px;
+        text-align: center;
+        position: relative;">
         
-        <!-- Header Section -->
         <div style="
-          background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
-          padding: 40px 32px 32px 32px;
-          text-align: center;
-          position: relative;">
-          
-          <div style="
-            width: 80px;
-            height: 80px;
-            background: rgba(255,255,255,0.15);
-            border-radius: 50%;
-            margin: 0 auto 24px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 36px;">
-            🏠
-          </div>
-          
-          <h1 style="
-            color: white;
-            font-size: 24px;
-            font-weight: 700;
-            margin: 0 0 12px 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
-            Get Your Mining Land
-          </h1>
-          
-          <p style="
-            color: rgba(255,255,255,0.8);
-            font-size: 15px;
-            margin: 0;
-            line-height: 1.5;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
-            Start mining gold and earning SOL cryptocurrency
-          </p>
+          width: 80px;
+          height: 80px;
+          background: rgba(255,255,255,0.15);
+          border-radius: 50%;
+          margin: 0 auto 24px auto;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 36px;">
+          🏠
         </div>
         
-        <!-- Main Content -->
-        <div style="padding: 32px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
-          
-          <!-- Price Display -->
-          <div style="
-            background: #F8FAFC;
-            border: 1px solid #E2E8F0;
-            border-radius: 16px;
-            padding: 24px;
-            text-align: center;
-            margin-bottom: 24px;">
-            
-            <div style="
-              color: #64748B;
-              font-size: 14px;
-              font-weight: 500;
-              margin-bottom: 8px;">
-              One-time purchase
-            </div>
-            
-            <div style="
-              color: #1E293B;
-              font-size: 32px;
-              font-weight: 700;
-              margin-bottom: 4px;">
-              0.01 SOL
-            </div>
-            
-            <div style="
-              color: #64748B;
-              font-size: 14px;">
-              ≈ $2 USD
-            </div>
-          </div>
-          
-          <!-- Benefits Section -->
-          <div style="margin-bottom: 32px;">
-            <h3 style="
-              color: #1E293B;
-              font-size: 18px;
-              font-weight: 600;
-              margin-bottom: 16px;
-              text-align: center;">
-              What's included
-            </h3>
-            
-            <div style="space-y: 12px;">
-              <div style="
-                display: flex;
-                align-items: center;
-                padding: 16px;
-                background: #FEFEFE;
-                border: 1px solid #F1F5F9;
-                border-radius: 12px;
-                margin-bottom: 8px;">
-                <div style="
-                  width: 40px;
-                  height: 40px;
-                  background: #EEF2FF;
-                  border-radius: 8px;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  margin-right: 16px;
-                  font-size: 18px;">
-                  ⛏️
-                </div>
-                <div>
-                  <div style="color: #1E293B; font-weight: 600; font-size: 15px; margin-bottom: 2px;">
-                    Buy Mining Equipment
-                  </div>
-                  <div style="color: #64748B; font-size: 13px;">
-                    Purchase pickaxes to increase mining speed
-                  </div>
-                </div>
-              </div>
-              
-              <div style="
-                display: flex;
-                align-items: center;
-                padding: 16px;
-                background: #FEFEFE;
-                border: 1px solid #F1F5F9;
-                border-radius: 12px;
-                margin-bottom: 8px;">
-                <div style="
-                  width: 40px;
-                  height: 40px;
-                  background: #FEF3C7;
-                  border-radius: 8px;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  margin-right: 16px;
-                  font-size: 18px;">
-                  💰
-                </div>
-                <div>
-                  <div style="color: #1E293B; font-weight: 600; font-size: 15px; margin-bottom: 2px;">
-                    Mine Gold Automatically
-                  </div>
-                  <div style="color: #64748B; font-size: 13px;">
-                    Earn gold 24/7, even when offline
-                  </div>
-                </div>
-              </div>
-              
-              <div style="
-                display: flex;
-                align-items: center;
-                padding: 16px;
-                background: #FEFEFE;
-                border: 1px solid #F1F5F9;
-                border-radius: 12px;">
-                <div style="
-                  width: 40px;
-                  height: 40px;
-                  background: #DCFCE7;
-                  border-radius: 8px;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  margin-right: 16px;
-                  font-size: 18px;">
-                  💸
-                </div>
-                <div>
-                  <div style="color: #1E293B; font-weight: 600; font-size: 15px; margin-bottom: 2px;">
-                    Sell Gold for SOL
-                  </div>
-                  <div style="color: #64748B; font-size: 13px;">
-                    Convert your gold to real cryptocurrency
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Purchase Button -->
-          <button id="mandatoryLandPurchaseBtn" onclick="purchaseMandatoryLand()" style="
-            width: 100%;
-            padding: 16px 24px;
-            font-size: 16px;
-            font-weight: 600;
-            border: none;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #4F46E5, #7C3AED);
-            color: white;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-bottom: 16px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
-            Purchase Land (0.01 SOL)
-          </button>
+        <h1 style="
+          color: white;
+          font-size: 24px;
+          font-weight: 700;
+          margin: 0 0 12px 0;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+          Get Your Mining Land
+        </h1>
+        
+        <p style="
+          color: rgba(255,255,255,0.8);
+          font-size: 15px;
+          margin: 0;
+          line-height: 1.5;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+          Start mining gold and earning SOL cryptocurrency
+        </p>
+      </div>
+      
+      <div style="padding: 32px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+        
+        <div style="
+          background: #F8FAFC;
+          border: 1px solid #E2E8F0;
+          border-radius: 16px;
+          padding: 24px;
+          text-align: center;
+          margin-bottom: 24px;">
           
           <div style="
-            text-align: center;
             color: #64748B;
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: 500;
             margin-bottom: 8px;">
-            Secure payment via Phantom Wallet
+            One-time purchase
           </div>
           
           <div style="
-            background: #FEF3C7;
-            border: 1px solid #FDE68A;
-            border-radius: 8px;
-            padding: 12px;
-            text-align: center;">
-            <div style="color: #92400E; font-size: 13px; font-weight: 500;">
-              ⚠️ Required to access the game
-            </div>
+            color: #1E293B;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 4px;">
+            0.01 SOL
           </div>
           
-          <!-- Message Area -->
-          <div id="mandatoryLandMsg" class="msg" style="
-            display: none;
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            font-weight: bold;">
+          <div style="
+            color: #64748B;
+            font-size: 14px;">
+            ≈ $2 USD
           </div>
-          
         </div>
+        
+        <button id="mandatoryLandPurchaseBtn" onclick="purchaseMandatoryLand()" style="
+          width: 100%;
+          padding: 16px 24px;
+          font-size: 16px;
+          font-weight: 600;
+          border: none;
+          border-radius: 12px;
+          background: linear-gradient(135deg, #4F46E5, #7C3AED);
+          color: white;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          margin-bottom: 16px;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+          Purchase Land (0.01 SOL)
+        </button>
+        
+        <div style="
+          text-align: center;
+          color: #64748B;
+          font-size: 13px;
+          margin-bottom: 8px;">
+          Secure payment via Phantom Wallet
+        </div>
+        
+        <div style="
+          background: #FEF3C7;
+          border: 1px solid #FDE68A;
+          border-radius: 8px;
+          padding: 12px;
+          text-align: center;">
+          <div style="color: #92400E; font-size: 13px; font-weight: 500;">
+            ⚠️ Required to access the game
+          </div>
+        </div>
+        
+        <div id="mandatoryLandMsg" class="msg" style="
+          display: none;
+          margin-top: 20px;
+          padding: 15px;
+          border-radius: 10px;
+          text-align: center;
+          font-weight: bold;">
+        </div>
+        
       </div>
     </div>
-    
-    <style>
-      @keyframes fadeIn {
-        from { 
-          opacity: 0; 
-        }
-        to { 
-          opacity: 1; 
-        }
-      }
-      
-      @keyframes slideUpIn {
-        from {
-          opacity: 0;
-          transform: translateY(40px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      
-      @keyframes fadeOut {
-        from {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        to {
-          opacity: 0;
-          transform: translateY(-20px);
-        }
-      }
-      
-      #mandatoryLandPurchaseBtn:hover {
-        background: linear-gradient(135deg, #3730A3, #6B21A8);
-        transform: translateY(-1px);
-        box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
-      }
-      
-      #mandatoryLandPurchaseBtn:active {
-        transform: translateY(0);
-      }
-    </style>
   `;
   
-  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  document.body.appendChild(modal);
   
   // Prevent any way to close the modal
-  const modal = document.getElementById('mandatoryLandModal');
-  if (modal) {
-    // Block right-click
-    modal.addEventListener('contextmenu', (e) => e.preventDefault());
-    
-    // Block clicking outside
-    modal.addEventListener('click', (e) => {
-      e.stopPropagation();
+  modal.addEventListener('contextmenu', (e) => e.preventDefault());
+  modal.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+  });
+  
+  // Block escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.getElementById('mandatoryLandModal')) {
       e.preventDefault();
-    });
-    
-    // Block escape key
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && document.getElementById('mandatoryLandModal')) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    });
-  }
+      e.stopPropagation();
+    }
+  });
 }
 
 // Create land purchase modal dynamically (legacy)
