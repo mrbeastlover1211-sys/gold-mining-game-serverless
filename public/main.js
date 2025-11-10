@@ -1299,6 +1299,12 @@ async function purchaseMandatoryLand() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ address: state.address }),
     });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Server error: ${response.status} - ${errorText}`);
+    }
+    
     const data = await response.json();
     if (data.error) throw new Error(data.error);
 
@@ -1307,7 +1313,16 @@ async function purchaseMandatoryLand() {
 
     // Sign and send
     showMandatoryLandMessage('Please sign the transaction in Phantom...', 'info');
+    
+    if (!state.wallet || !state.wallet.signAndSendTransaction) {
+      throw new Error('Wallet not properly connected. Please reconnect your wallet.');
+    }
+    
     const sig = await state.wallet.signAndSendTransaction(tx);
+    if (!sig || !sig.signature) {
+      throw new Error('Transaction was not signed properly.');
+    }
+    
     showMandatoryLandMessage(`Transaction submitted: ${sig.signature.slice(0, 8)}...`, 'info');
 
     // Confirm
@@ -1316,6 +1331,12 @@ async function purchaseMandatoryLand() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ address: state.address, signature: sig.signature }),
     });
+    
+    if (!confirmResponse.ok) {
+      const errorText = await confirmResponse.text();
+      throw new Error(`Confirmation failed: ${confirmResponse.status} - ${errorText}`);
+    }
+    
     const confirmData = await confirmResponse.json();
     if (confirmData.error) throw new Error(confirmData.error);
 
@@ -1330,7 +1351,25 @@ async function purchaseMandatoryLand() {
     
   } catch (e) {
     console.error('Mandatory land purchase failed:', e);
-    showMandatoryLandMessage('❌ Land purchase failed: ' + e.message, 'error');
+    let errorMessage = 'Land purchase failed';
+    
+    if (e.message.includes('User rejected')) {
+      errorMessage = 'Transaction was rejected in wallet';
+    } else if (e.message.includes('insufficient funds')) {
+      errorMessage = 'Insufficient SOL balance. You need at least 0.01 SOL.';
+    } else if (e.message.includes('Network Error') || e.message.includes('fetch')) {
+      errorMessage = 'Network error. Please check your connection and try again.';
+    } else if (e.message.includes('already owns land')) {
+      errorMessage = 'You already own land! Refreshing...';
+      setTimeout(() => {
+        closeMandatoryLandModal();
+        refreshStatus();
+      }, 2000);
+    } else if (e.message) {
+      errorMessage = e.message;
+    }
+    
+    showMandatoryLandMessage(`❌ ${errorMessage}`, 'error');
   }
 }
 
