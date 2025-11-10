@@ -890,40 +890,57 @@ function createMandatoryLandPurchaseModal() {
           animation: headerShimmer 3s infinite;">
         </div>
         
+        <h2 style="
+          margin: 0 0 20px 0; 
+          font-size: 24px; 
+          font-weight: 700;
+          text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+          position: relative;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;">
+          ⛏️ Welcome to the Gold Mining
+        </h2>
+        
         <div style="
-          width: 70px;
-          height: 70px;
-          background: rgba(255,255,255,0.2);
-          border-radius: 50%;
+          width: 100px;
+          height: 80px;
+          background: linear-gradient(135deg, #8B4513, #CD853F, #DEB887);
+          border-radius: 15px;
           margin: 0 auto 20px auto;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 32px;
-          border: 2px solid rgba(255,255,255,0.3);
-          box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
-          🌟
-        </div>
-        
-        <h2 style="
-          margin: 0 0 8px 0; 
-          font-size: 26px; 
-          font-weight: 700;
-          text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+          font-size: 40px;
+          border: 3px solid rgba(255,255,255,0.3);
+          box-shadow: 0 8px 20px rgba(0,0,0,0.3);
           position: relative;
-          z-index: 1;">
-          🏠 Start Your Mining Empire
-        </h2>
+          overflow: hidden;">
+          
+          <div style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            animation: landShimmer 3s infinite;">
+          </div>
+          
+          <div style="position: relative; z-index: 1;">🏞️</div>
+        </div>
         
         <p style="
           margin: 0; 
           opacity: 0.95; 
-          font-size: 15px;
-          font-weight: 400;
+          font-size: 16px;
+          font-weight: 500;
           position: relative;
           z-index: 1;
           text-shadow: 0 1px 3px rgba(0,0,0,0.3);">
-          Purchase your land and begin earning SOL cryptocurrency!
+          Land purchase required to start
         </p>
       </div>
       
@@ -1020,6 +1037,15 @@ function createMandatoryLandPurchaseModal() {
         }
         100% { 
           transform: translateX(100%) translateY(100%) rotate(30deg); 
+        }
+      }
+      
+      @keyframes landShimmer {
+        0% { 
+          transform: translateX(-100%) skewX(-15deg); 
+        }
+        100% { 
+          transform: translateX(200%) skewX(-15deg); 
         }
       }
       
