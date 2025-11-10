@@ -1415,9 +1415,64 @@ function openV2Modal() {
   if (modal) {
     modal.classList.add('show');
     console.log('✅ Added show class to V2 modal');
+    
+    // Start the countdown timer
+    startV2Countdown();
   } else {
     console.error('❌ v2ComingSoonModal element not found!');
   }
+}
+
+// Start V2.0 countdown timer
+function startV2Countdown() {
+  // Set target date for V2.0 release (30 days from now)
+  const targetDate = new Date();
+  targetDate.setDate(targetDate.getDate() + 30);
+  
+  // Clear any existing countdown
+  if (window.v2CountdownInterval) {
+    clearInterval(window.v2CountdownInterval);
+  }
+  
+  // Update countdown every second
+  window.v2CountdownInterval = setInterval(() => {
+    const now = new Date().getTime();
+    const distance = targetDate.getTime() - now;
+    
+    // Calculate time units
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+    
+    // Update countdown elements if they exist
+    const daysEl = document.getElementById('countdown-days');
+    const hoursEl = document.getElementById('countdown-hours');
+    const minutesEl = document.getElementById('countdown-minutes');
+    const secondsEl = document.getElementById('countdown-seconds');
+    
+    if (daysEl) daysEl.textContent = days.toString().padStart(2, '0');
+    if (hoursEl) hoursEl.textContent = hours.toString().padStart(2, '0');
+    if (minutesEl) minutesEl.textContent = minutes.toString().padStart(2, '0');
+    if (secondsEl) secondsEl.textContent = seconds.toString().padStart(2, '0');
+    
+    // If countdown is over
+    if (distance < 0) {
+      clearInterval(window.v2CountdownInterval);
+      if (daysEl) daysEl.textContent = "00";
+      if (hoursEl) hoursEl.textContent = "00";
+      if (minutesEl) minutesEl.textContent = "00";
+      if (secondsEl) secondsEl.textContent = "00";
+      
+      // Update message
+      const messageEl = document.querySelector('#v2ComingSoonModal .v2-message');
+      if (messageEl) {
+        messageEl.textContent = '🎉 V2.0 is now available!';
+      }
+    }
+  }, 1000);
+  
+  console.log('⏰ V2.0 countdown started');
 }
 
 function showHowItWorksModal() {
