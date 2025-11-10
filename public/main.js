@@ -840,9 +840,8 @@ function showLandPurchaseModal() {
   showMandatoryLandPurchaseModal();
 }
 
-// Create mandatory land purchase modal (cannot be dismissed)
+// Create absolutely stunning land purchase modal
 function createMandatoryLandPurchaseModal() {
-  // Create modal with the beautiful original design
   const modal = document.createElement('div');
   modal.id = 'mandatoryLandModal';
   modal.className = 'modal-overlay';
@@ -852,30 +851,47 @@ function createMandatoryLandPurchaseModal() {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0,0,0,0.95);
+    background: radial-gradient(circle at center, rgba(0,0,0,0.8), rgba(0,0,0,0.95));
     z-index: 999999;
     display: flex;
     justify-content: center;
     align-items: center;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(20px);
   `;
 
   modal.innerHTML = `
     <div class="modal-content" style="
-      max-width: 500px;
-      width: 90%;
-      background: var(--bg-secondary, #2a2a3e);
-      border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-      border: 2px solid var(--primary, #00ff88);
-      animation: modalSlideIn 0.3s ease-out;
-      color: white;">
+      max-width: 520px;
+      width: 92%;
+      background: linear-gradient(145deg, #1a1a2e, #16213e, #0f3460);
+      border-radius: 25px;
+      box-shadow: 
+        0 40px 100px rgba(0,0,0,0.7),
+        0 0 0 1px rgba(255,255,255,0.1),
+        inset 0 1px 0 rgba(255,255,255,0.1);
+      animation: modalEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+      color: white;
+      overflow: hidden;
+      position: relative;">
       
-      <div class="modal-header" style="
-        background: linear-gradient(45deg, #00ff88, #00cc6a, #00ff88);
-        color: white;
-        padding: 30px 25px;
-        border-radius: 18px 18px 0 0;
+      <!-- Magical Background Particles -->
+      <div style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: radial-gradient(circle at 20% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+                          radial-gradient(circle at 80% 20%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
+                          radial-gradient(circle at 40% 80%, rgba(138, 43, 226, 0.1) 0%, transparent 50%);
+        animation: particleFloat 6s ease-in-out infinite;">
+      </div>
+      
+      <!-- Header with cosmic effect -->
+      <div style="
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #8B5CF6 100%);
+        padding: 35px 30px;
+        border-radius: 25px 25px 0 0;
         text-align: center;
         position: relative;
         overflow: hidden;">
@@ -886,36 +902,69 @@ function createMandatoryLandPurchaseModal() {
           left: -50%;
           width: 200%;
           height: 200%;
-          background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-          animation: headerShimmer 3s infinite;">
+          background: conic-gradient(from 0deg at 50% 50%, transparent, rgba(255,255,255,0.1), transparent);
+          animation: cosmicRotation 8s linear infinite;">
         </div>
         
-        <h2 style="
-          margin: 0 0 20px 0; 
-          font-size: 24px; 
-          font-weight: 700;
-          text-shadow: 0 2px 8px rgba(0,0,0,0.4);
-          position: relative;
-          z-index: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;">
-          ⛏️ Welcome to the Gold Mining
-        </h2>
-        
+        <!-- Crown icon -->
         <div style="
-          width: 100px;
-          height: 80px;
-          background: linear-gradient(135deg, #8B4513, #CD853F, #DEB887);
-          border-radius: 15px;
-          margin: 0 auto 20px auto;
+          width: 90px;
+          height: 90px;
+          background: linear-gradient(145deg, #FFD700, #FFA500, #FF8C00);
+          border-radius: 50%;
+          margin: 0 auto 25px auto;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 40px;
-          border: 3px solid rgba(255,255,255,0.3);
-          box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+          font-size: 45px;
+          box-shadow: 
+            0 15px 40px rgba(255, 215, 0, 0.4),
+            inset 0 2px 0 rgba(255,255,255,0.3);
+          position: relative;
+          z-index: 2;
+          animation: crownFloat 3s ease-in-out infinite;">
+          👑
+        </div>
+        
+        <h1 style="
+          margin: 0 0 12px 0; 
+          font-size: 28px; 
+          font-weight: 800;
+          background: linear-gradient(45deg, #FFD700, #FFF, #FFD700);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+          position: relative;
+          z-index: 2;
+          letter-spacing: 0.5px;">
+          Gold Mining Empire
+        </h1>
+        
+        <p style="
+          margin: 0; 
+          opacity: 0.9; 
+          font-size: 16px;
+          font-weight: 400;
+          position: relative;
+          z-index: 2;
+          color: rgba(255,255,255,0.9);">
+          Claim your territory and start earning
+        </p>
+      </div>
+      
+      <!-- Content area with glass morphism -->
+      <div style="padding: 35px 30px;">
+        
+        <!-- Land visualization -->
+        <div style="
+          background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 20px;
+          padding: 30px;
+          margin-bottom: 30px;
+          backdrop-filter: blur(10px);
+          text-align: center;
           position: relative;
           overflow: hidden;">
           
@@ -925,180 +974,223 @@ function createMandatoryLandPurchaseModal() {
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-            animation: landShimmer 3s infinite;">
-          </div>
-          
-          <div style="position: relative; z-index: 1;">🏞️</div>
-        </div>
-        
-        <p style="
-          margin: 0; 
-          opacity: 0.95; 
-          font-size: 16px;
-          font-weight: 500;
-          position: relative;
-          z-index: 1;
-          text-shadow: 0 1px 3px rgba(0,0,0,0.3);">
-          Land purchase required to start
-        </p>
-      </div>
-      
-      <div class="modal-body" style="padding: 30px; color: white;">
-        <div class="land-info">
-          <div style="text-align: center; margin-bottom: 25px;">
-            <div style="
-              background: linear-gradient(45deg, #00ff88, #00cc6a);
-              color: white;
-              padding: 15px 25px;
-              border-radius: 15px;
-              display: inline-block;
-              font-size: 18px;
-              font-weight: bold;
-              box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
-              🎯 STEP 1: Purchase Land
-            </div>
-          </div>
-          
-          <div class="land-cost" style="
-            background: var(--bg-primary, #1a1a2e);
-            padding: 20px;
-            border-radius: 15px;
-            border: 2px solid var(--primary, #00ff88);
-            margin-bottom: 20px;
-            text-align: center;">
-            <div style="font-size: 16px; color: var(--text-secondary, #ccc); margin-bottom: 10px;">Land Cost</div>
-            <div style="font-size: 32px; font-weight: bold; color: var(--primary, #00ff88);">0.01 SOL</div>
-            <div style="font-size: 14px; color: var(--text-secondary, #ccc); margin-top: 5px;">≈ $2 USD (one-time purchase)</div>
-          </div>
-          
-          <div class="land-benefits">
-            <div style="font-size: 18px; font-weight: bold; margin-bottom: 15px; color: var(--primary, #00ff88);">🎁 What you get:</div>
-            <ul style="list-style: none; padding: 0; margin: 0; color: white;">
-              <li style="padding: 8px 0; font-size: 16px;">⛏️ Access to buy pickaxes</li>
-              <li style="padding: 8px 0; font-size: 16px;">💰 Start mining gold immediately</li>
-              <li style="padding: 8px 0; font-size: 16px;">🏆 Permanent land ownership</li>
-              <li style="padding: 8px 0; font-size: 16px;">🎮 Full game access forever</li>
-            </ul>
+            background: linear-gradient(45deg, transparent 48%, rgba(255,255,255,0.03) 49%, rgba(255,255,255,0.03) 51%, transparent 52%);
+            animation: scanLine 3s ease-in-out infinite;">
           </div>
           
           <div style="
-            background: linear-gradient(45deg, #ff6b6b, #ffa500);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            text-align: center;
-            font-weight: bold;
-            animation: pulse 2s infinite;">
-            🚨 Required to play the game!
+            font-size: 50px;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 5px 15px rgba(0,255,136,0.3));
+            animation: landPulse 2s ease-in-out infinite;">
+            🏞️
           </div>
           
-          <div id="mandatoryLandMsg" class="msg" style="display: none; margin-top: 15px; color: white;"></div>
+          <h3 style="
+            margin: 0 0 15px 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: #00ff88;">
+            Premium Mining Land
+          </h3>
+          
+          <div style="
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;">
+            
+            <div style="text-align: center;">
+              <div style="font-size: 24px; color: #00ff88; font-weight: bold;">0.01</div>
+              <div style="font-size: 12px; color: rgba(255,255,255,0.7);">SOL PRICE</div>
+            </div>
+            
+            <div style="text-align: center;">
+              <div style="font-size: 24px; color: #FFD700; font-weight: bold;">∞</div>
+              <div style="font-size: 12px; color: rgba(255,255,255,0.7);">LIFETIME ACCESS</div>
+            </div>
+          </div>
+          
+          <div style="
+            background: linear-gradient(90deg, #00ff88, #00cc6a, #00ff88);
+            height: 3px;
+            border-radius: 2px;
+            animation: progressGlow 2s ease-in-out infinite;">
+          </div>
         </div>
-      </div>
-      
-      <div class="modal-footer" style="padding: 0 30px 30px 30px;">
+        
+        <!-- Benefits with icons -->
+        <div style="
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 15px;
+          margin-bottom: 30px;">
+          
+          <div style="
+            background: linear-gradient(145deg, rgba(0,255,136,0.1), rgba(0,255,136,0.05));
+            border: 1px solid rgba(0,255,136,0.2);
+            border-radius: 15px;
+            padding: 20px 15px;
+            text-align: center;
+            transition: transform 0.3s ease;">
+            <div style="font-size: 24px; margin-bottom: 10px;">⛏️</div>
+            <div style="font-size: 13px; font-weight: 600;">Mining Equipment</div>
+          </div>
+          
+          <div style="
+            background: linear-gradient(145deg, rgba(255,215,0,0.1), rgba(255,215,0,0.05));
+            border: 1px solid rgba(255,215,0,0.2);
+            border-radius: 15px;
+            padding: 20px 15px;
+            text-align: center;">
+            <div style="font-size: 24px; margin-bottom: 10px;">💰</div>
+            <div style="font-size: 13px; font-weight: 600;">24/7 Mining</div>
+          </div>
+          
+          <div style="
+            background: linear-gradient(145deg, rgba(138,43,226,0.1), rgba(138,43,226,0.05));
+            border: 1px solid rgba(138,43,226,0.2);
+            border-radius: 15px;
+            padding: 20px 15px;
+            text-align: center;">
+            <div style="font-size: 24px; margin-bottom: 10px;">💎</div>
+            <div style="font-size: 13px; font-weight: 600;">Sell for SOL</div>
+          </div>
+          
+          <div style="
+            background: linear-gradient(145deg, rgba(255,107,107,0.1), rgba(255,107,107,0.05));
+            border: 1px solid rgba(255,107,107,0.2);
+            border-radius: 15px;
+            padding: 20px 15px;
+            text-align: center;">
+            <div style="font-size: 24px; margin-bottom: 10px;">🎮</div>
+            <div style="font-size: 13px; font-weight: 600;">Full Access</div>
+          </div>
+        </div>
+        
+        <!-- Purchase button with cosmic effect -->
         <button id="mandatoryLandPurchaseBtn" onclick="purchaseMandatoryLand()" style="
           width: 100%;
-          padding: 15px;
+          padding: 18px;
           font-size: 18px;
-          font-weight: bold;
-          border-radius: 12px;
-          background: linear-gradient(45deg, #00ff88, #00cc6a);
+          font-weight: 700;
           border: none;
+          border-radius: 15px;
+          background: linear-gradient(145deg, #00ff88, #00cc6a, #00b366);
           color: white;
           cursor: pointer;
-          transition: all 0.3s ease;
-          box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
-          🏠 Purchase Land (0.01 SOL)
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 10px 30px rgba(0,255,136,0.3);
+          transition: all 0.3s ease;">
+          
+          <span style="position: relative; z-index: 2;">
+            🚀 Claim Your Mining Land (0.01 SOL)
+          </span>
+          
+          <div style="
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: buttonShimmer 2s linear infinite;
+            z-index: 1;">
+          </div>
         </button>
-        <div style="text-align: center; margin-top: 15px; font-size: 12px; color: var(--text-secondary, #ccc);">
-          Secure payment via Phantom wallet
+        
+        <div style="
+          text-align: center;
+          margin-top: 20px;
+          padding: 15px;
+          background: linear-gradient(145deg, rgba(255,193,7,0.1), rgba(255,193,7,0.05));
+          border-left: 4px solid #FFC107;
+          border-radius: 0 10px 10px 0;
+          font-size: 13px;
+          color: rgba(255,255,255,0.8);">
+          🔐 Secure blockchain transaction via Phantom Wallet
+        </div>
+        
+        <div id="mandatoryLandMsg" style="
+          display: none;
+          margin-top: 20px;
+          padding: 15px;
+          border-radius: 10px;
+          text-align: center;
+          font-weight: 600;">
         </div>
       </div>
     </div>
     
     <style>
-      @keyframes modalSlideIn {
-        from {
+      @keyframes modalEntrance {
+        0% {
           opacity: 0;
-          transform: translateY(-50px) scale(0.9);
+          transform: translateY(-100px) scale(0.8) rotateX(15deg);
         }
-        to {
+        100% {
           opacity: 1;
-          transform: translateY(0) scale(1);
+          transform: translateY(0) scale(1) rotateX(0deg);
         }
       }
       
-      @keyframes headerShimmer {
-        0% { 
-          transform: translateX(-100%) translateY(-100%) rotate(30deg); 
-        }
-        100% { 
-          transform: translateX(100%) translateY(100%) rotate(30deg); 
-        }
+      @keyframes cosmicRotation {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
       }
       
-      @keyframes landShimmer {
-        0% { 
-          transform: translateX(-100%) skewX(-15deg); 
-        }
-        100% { 
-          transform: translateX(200%) skewX(-15deg); 
-        }
+      @keyframes particleFloat {
+        0%, 100% { opacity: 0.3; transform: translateY(0px); }
+        50% { opacity: 0.8; transform: translateY(-10px); }
       }
       
-      @keyframes pulse {
-        0%, 100% {
-          transform: scale(1);
-          box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
-        }
-        50% {
-          transform: scale(1.02);
-          box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
-        }
+      @keyframes crownFloat {
+        0%, 100% { transform: translateY(0px) scale(1); }
+        50% { transform: translateY(-5px) scale(1.05); }
       }
       
-      @keyframes buttonGlow {
-        0%, 100% {
-          box-shadow: 0 5px 15px rgba(0,255,136,0.3);
-        }
-        50% {
-          box-shadow: 0 5px 15px rgba(0,255,136,0.6);
-        }
+      @keyframes landPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
       }
       
-      #mandatoryLandPurchaseBtn {
-        animation: buttonGlow 2s infinite;
+      @keyframes scanLine {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+      
+      @keyframes progressGlow {
+        0%, 100% { box-shadow: 0 0 10px rgba(0,255,136,0.5); }
+        50% { box-shadow: 0 0 20px rgba(0,255,136,0.8); }
+      }
+      
+      @keyframes buttonShimmer {
+        0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+        100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
       }
       
       #mandatoryLandPurchaseBtn:hover {
         transform: translateY(-3px);
-        box-shadow: 0 12px 35px rgba(0,255,136,0.5) !important;
-        animation: none;
+        box-shadow: 0 15px 40px rgba(0,255,136,0.5);
       }
       
       .modal-content {
-        animation: modalSlideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        perspective: 1000px;
       }
     </style>
   `;
   
   document.body.appendChild(modal);
   
-  // Prevent any way to close the modal
+  // Prevent modal closing
   modal.addEventListener('contextmenu', (e) => e.preventDefault());
-  modal.addEventListener('click', (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-  });
+  modal.addEventListener('click', (e) => e.stopPropagation());
   
   // Block escape key
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && document.getElementById('mandatoryLandModal')) {
       e.preventDefault();
-      e.stopPropagation();
     }
   });
 }
