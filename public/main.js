@@ -863,6 +863,7 @@ function createMandatoryLandPurchaseModal() {
     <div class="modal-content" style="
       max-width: 520px;
       width: 92%;
+      max-height: 90vh;
       background: linear-gradient(145deg, #1a1a2e, #16213e, #0f3460);
       border-radius: 25px;
       box-shadow: 
@@ -872,7 +873,9 @@ function createMandatoryLandPurchaseModal() {
       animation: modalEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
       color: white;
       overflow: hidden;
-      position: relative;">
+      position: relative;
+      display: flex;
+      flex-direction: column;">`
       
       <!-- Magical Background Particles -->
       <div style="
@@ -954,7 +957,11 @@ function createMandatoryLandPurchaseModal() {
       </div>
       
       <!-- Content area with glass morphism -->
-      <div style="padding: 35px 30px;">
+      <div style="
+        padding: 35px 30px;
+        overflow-y: auto;
+        flex: 1;
+        max-height: calc(90vh - 200px);">`
         
         <!-- Step 1 indicator -->
         <div style="text-align: center; margin-bottom: 25px;">
@@ -1200,6 +1207,25 @@ function createMandatoryLandPurchaseModal() {
       
       .modal-content {
         perspective: 1000px;
+      }
+      
+      /* Custom scrollbar styling */
+      .modal-content div::-webkit-scrollbar {
+        width: 8px;
+      }
+      
+      .modal-content div::-webkit-scrollbar-track {
+        background: rgba(255,255,255,0.05);
+        border-radius: 4px;
+      }
+      
+      .modal-content div::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #00ff88, #00cc6a);
+        border-radius: 4px;
+      }
+      
+      .modal-content div::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #00cc6a, #00b366);
       }
     </style>
   `;
