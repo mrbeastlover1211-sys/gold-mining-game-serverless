@@ -831,229 +831,235 @@ function createMandatoryLandPurchaseModal() {
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(0,0,0,0.95);
+      background: linear-gradient(135deg, rgba(0,0,0,0.9), rgba(20,20,40,0.95));
       z-index: 999999;
       display: flex;
       justify-content: center;
       align-items: center;
-      backdrop-filter: blur(10px);
-      animation: fadeIn 0.5s ease-out;">
+      backdrop-filter: blur(15px);
+      animation: fadeIn 0.6s ease-out;">`
       
       <div class="modal-content" style="
-        width: 90%;
-        max-width: 600px;
-        max-height: 90vh;
-        overflow-y: auto;
-        background: linear-gradient(145deg, #1e1e2e 0%, #2d1b69 100%);
-        border-radius: 25px;
-        box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 50px rgba(138, 43, 226, 0.3);
-        border: 3px solid #8a2be2;
+        width: 95%;
+        max-width: 480px;
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 25px 50px rgba(0,0,0,0.25);
         position: relative;
-        animation: modalBounceIn 0.6s ease-out;">
+        animation: slideUpIn 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        overflow: hidden;">`
         
         <!-- Header Section -->
         <div style="
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #8a2be2 100%);
-          padding: 30px;
-          border-radius: 22px 22px 0 0;
+          background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+          padding: 40px 32px 32px 32px;
           text-align: center;
-          position: relative;
-          overflow: hidden;">
+          position: relative;">
           
           <div style="
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: shimmer 3s infinite;">
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 50%;
+            margin: 0 auto 24px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;">
+            🏠
           </div>
           
           <h1 style="
             color: white;
-            font-size: 28px;
-            font-weight: bold;
-            margin: 0 0 10px 0;
-            text-shadow: 0 4px 8px rgba(0,0,0,0.5);
-            position: relative;
-            z-index: 1;">
-            🌟 Welcome to Gold Mining Game!
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+            Get Your Mining Land
           </h1>
           
           <p style="
-            color: rgba(255,255,255,0.9);
-            font-size: 16px;
+            color: rgba(255,255,255,0.8);
+            font-size: 15px;
             margin: 0;
-            position: relative;
-            z-index: 1;">
-            Start your mining empire today
+            line-height: 1.5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+            Start mining gold and earning SOL cryptocurrency
           </p>
         </div>
         
         <!-- Main Content -->
-        <div style="padding: 40px 35px;">
+        <div style="padding: 32px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
           
-          <!-- Step Indicator -->
+          <!-- Price Display -->
           <div style="
-            background: linear-gradient(135deg, #ff6b6b, #ffa500);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 15px;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 16px;
+            padding: 24px;
             text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
-            animation: pulse 2s infinite;">
-            🎯 STEP 1: Purchase Your Mining Land
-          </div>
-          
-          <!-- Land Cost Box -->
-          <div style="
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            padding: 25px;
-            border-radius: 20px;
-            text-align: center;
-            margin-bottom: 25px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-            border: 2px solid rgba(255,255,255,0.2);">
+            margin-bottom: 24px;">
             
-            <div style="color: rgba(255,255,255,0.8); font-size: 14px; margin-bottom: 8px;">
-              🏠 Land Purchase Price
+            <div style="
+              color: #64748B;
+              font-size: 14px;
+              font-weight: 500;
+              margin-bottom: 8px;">
+              One-time purchase
             </div>
             
             <div style="
-              color: white;
-              font-size: 36px;
-              font-weight: bold;
-              margin-bottom: 8px;
-              text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+              color: #1E293B;
+              font-size: 32px;
+              font-weight: 700;
+              margin-bottom: 4px;">
               0.01 SOL
             </div>
             
-            <div style="color: rgba(255,255,255,0.7); font-size: 14px;">
-              ≈ $2 USD (One-time payment)
+            <div style="
+              color: #64748B;
+              font-size: 14px;">
+              ≈ $2 USD
             </div>
           </div>
           
           <!-- Benefits Section -->
-          <div style="margin-bottom: 25px;">
+          <div style="margin-bottom: 32px;">
             <h3 style="
-              color: #8a2be2;
-              font-size: 20px;
-              margin-bottom: 20px;
+              color: #1E293B;
+              font-size: 18px;
+              font-weight: 600;
+              margin-bottom: 16px;
               text-align: center;">
-              🎁 What You Get Forever:
+              What's included
             </h3>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-              
+            <div style="space-y: 12px;">
               <div style="
-                background: rgba(138, 43, 226, 0.1);
-                padding: 15px;
+                display: flex;
+                align-items: center;
+                padding: 16px;
+                background: #FEFEFE;
+                border: 1px solid #F1F5F9;
                 border-radius: 12px;
-                border: 1px solid rgba(138, 43, 226, 0.3);
-                text-align: center;">
-                <div style="font-size: 24px; margin-bottom: 8px;">⛏️</div>
-                <div style="color: #333; font-size: 14px; font-weight: bold;">
-                  Buy Pickaxes
+                margin-bottom: 8px;">
+                <div style="
+                  width: 40px;
+                  height: 40px;
+                  background: #EEF2FF;
+                  border-radius: 8px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  margin-right: 16px;
+                  font-size: 18px;">
+                  ⛏️
+                </div>
+                <div>
+                  <div style="color: #1E293B; font-weight: 600; font-size: 15px; margin-bottom: 2px;">
+                    Buy Mining Equipment
+                  </div>
+                  <div style="color: #64748B; font-size: 13px;">
+                    Purchase pickaxes to increase mining speed
+                  </div>
                 </div>
               </div>
               
               <div style="
-                background: rgba(138, 43, 226, 0.1);
-                padding: 15px;
+                display: flex;
+                align-items: center;
+                padding: 16px;
+                background: #FEFEFE;
+                border: 1px solid #F1F5F9;
                 border-radius: 12px;
-                border: 1px solid rgba(138, 43, 226, 0.3);
-                text-align: center;">
-                <div style="font-size: 24px; margin-bottom: 8px;">💰</div>
-                <div style="color: #333; font-size: 14px; font-weight: bold;">
-                  Mine Gold 24/7
+                margin-bottom: 8px;">
+                <div style="
+                  width: 40px;
+                  height: 40px;
+                  background: #FEF3C7;
+                  border-radius: 8px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  margin-right: 16px;
+                  font-size: 18px;">
+                  💰
+                </div>
+                <div>
+                  <div style="color: #1E293B; font-weight: 600; font-size: 15px; margin-bottom: 2px;">
+                    Mine Gold Automatically
+                  </div>
+                  <div style="color: #64748B; font-size: 13px;">
+                    Earn gold 24/7, even when offline
+                  </div>
                 </div>
               </div>
               
               <div style="
-                background: rgba(138, 43, 226, 0.1);
-                padding: 15px;
-                border-radius: 12px;
-                border: 1px solid rgba(138, 43, 226, 0.3);
-                text-align: center;">
-                <div style="font-size: 24px; margin-bottom: 8px;">💸</div>
-                <div style="color: #333; font-size: 14px; font-weight: bold;">
-                  Sell for SOL
+                display: flex;
+                align-items: center;
+                padding: 16px;
+                background: #FEFEFE;
+                border: 1px solid #F1F5F9;
+                border-radius: 12px;">
+                <div style="
+                  width: 40px;
+                  height: 40px;
+                  background: #DCFCE7;
+                  border-radius: 8px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  margin-right: 16px;
+                  font-size: 18px;">
+                  💸
                 </div>
-              </div>
-              
-              <div style="
-                background: rgba(138, 43, 226, 0.1);
-                padding: 15px;
-                border-radius: 12px;
-                border: 1px solid rgba(138, 43, 226, 0.3);
-                text-align: center;">
-                <div style="font-size: 24px; margin-bottom: 8px;">🎮</div>
-                <div style="color: #333; font-size: 14px; font-weight: bold;">
-                  Full Game Access
+                <div>
+                  <div style="color: #1E293B; font-weight: 600; font-size: 15px; margin-bottom: 2px;">
+                    Sell Gold for SOL
+                  </div>
+                  <div style="color: #64748B; font-size: 13px;">
+                    Convert your gold to real cryptocurrency
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          
-          <!-- Important Notice -->
-          <div style="
-            background: linear-gradient(135deg, #ff4757, #ff6b6b);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 25px;
-            animation: urgentPulse 1.5s infinite;
-            box-shadow: 0 10px 30px rgba(255, 71, 87, 0.4);">
-            🚨 REQUIRED TO PLAY THE GAME 🚨<br>
-            <span style="font-size: 14px; opacity: 0.9; font-weight: normal;">
-              This popup will remain until land is purchased
-            </span>
           </div>
           
           <!-- Purchase Button -->
           <button id="mandatoryLandPurchaseBtn" onclick="purchaseMandatoryLand()" style="
             width: 100%;
-            padding: 20px;
-            font-size: 20px;
-            font-weight: bold;
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
             border: none;
-            border-radius: 15px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            background: linear-gradient(135deg, #4F46E5, #7C3AED);
             color: white;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
-            position: relative;
-            overflow: hidden;">
-            
-            <span style="position: relative; z-index: 1;">
-              🏠 Purchase My Mining Land (0.01 SOL)
-            </span>
-            
-            <div style="
-              position: absolute;
-              top: 0;
-              left: -100%;
-              width: 100%;
-              height: 100%;
-              background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-              transition: left 0.5s ease;
-              z-index: 0;">
-            </div>
+            transition: all 0.2s ease;
+            margin-bottom: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+            Purchase Land (0.01 SOL)
           </button>
           
           <div style="
             text-align: center;
-            margin-top: 15px;
-            color: #666;
-            font-size: 12px;">
-            🔒 Secure payment via Phantom Wallet
+            color: #64748B;
+            font-size: 13px;
+            margin-bottom: 8px;">
+            Secure payment via Phantom Wallet
+          </div>
+          
+          <div style="
+            background: #FEF3C7;
+            border: 1px solid #FDE68A;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;">
+            <div style="color: #92400E; font-size: 13px; font-weight: 500;">
+              ⚠️ Required to access the game
+            </div>
           </div>
           
           <!-- Message Area -->
@@ -1072,53 +1078,44 @@ function createMandatoryLandPurchaseModal() {
     
     <style>
       @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+        from { 
+          opacity: 0; 
+        }
+        to { 
+          opacity: 1; 
+        }
       }
       
-      @keyframes modalBounceIn {
-        0% {
+      @keyframes slideUpIn {
+        from {
           opacity: 0;
-          transform: scale(0.3) translateY(-50px);
+          transform: translateY(40px);
         }
-        50% {
+        to {
           opacity: 1;
-          transform: scale(1.05);
+          transform: translateY(0);
         }
-        100% {
+      }
+      
+      @keyframes fadeOut {
+        from {
           opacity: 1;
-          transform: scale(1) translateY(0);
+          transform: translateY(0);
         }
-      }
-      
-      @keyframes shimmer {
-        0% { transform: translateX(-100%) translateY(-100%) rotate(30deg); }
-        100% { transform: translateX(100%) translateY(100%) rotate(30deg); }
-      }
-      
-      @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-      }
-      
-      @keyframes urgentPulse {
-        0%, 100% { 
-          transform: scale(1);
-          box-shadow: 0 10px 30px rgba(255, 71, 87, 0.4);
-        }
-        50% { 
-          transform: scale(1.02);
-          box-shadow: 0 15px 40px rgba(255, 71, 87, 0.6);
+        to {
+          opacity: 0;
+          transform: translateY(-20px);
         }
       }
       
       #mandatoryLandPurchaseBtn:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 20px 45px rgba(102, 126, 234, 0.6);
+        background: linear-gradient(135deg, #3730A3, #6B21A8);
+        transform: translateY(-1px);
+        box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
       }
       
-      #mandatoryLandPurchaseBtn:hover div {
-        left: 0;
+      #mandatoryLandPurchaseBtn:active {
+        transform: translateY(0);
       }
     </style>
   `;
