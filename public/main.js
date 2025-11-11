@@ -622,7 +622,7 @@ async function buyPickaxe(pickaxeType) {
     if (!landData.hasLand) {
       $('#shopMsg').textContent = '🏠 You need to purchase land first before buying pickaxes!';
       $('#shopMsg').className = 'msg error';
-      showLandPurchaseModal();
+      showMandatoryLandPurchaseModal();
       return;
     }
   } catch (e) {
