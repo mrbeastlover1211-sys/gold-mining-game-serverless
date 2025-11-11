@@ -12,7 +12,9 @@ export default async function handler(req, res) {
       const { getDatabase } = await import('../database.js');
       const db = await getDatabase();
       
-      const result = await db.query('SELECT has_land, land_purchase_date FROM users WHERE wallet = $1', [address]);
+      const result = await db.query('SELECT wallet, has_land, land_purchase_date, inventory FROM users WHERE wallet = $1', [address]);
+      
+      console.log(`🔍 Database query result for ${address}:`, result.rows);
       
       if (result.rows.length > 0) {
         const user = result.rows[0];
