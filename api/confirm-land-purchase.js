@@ -55,9 +55,37 @@ export default async function handler(req, res) {
       status = 'confirmed';
     }
 
-    // Grant land
-    global.users[address].hasLand = true;
-    global.users[address].landPurchaseDate = nowSec();
+    // Grant land - try database first, fallback to in-memory
+    try {
+      const { getDatabase } = await import('../database.js');
+      const db = await getDatabase();
+      
+      // Insert or update user with land ownership
+      await db.query(`
+        INSERT INTO users (wallet, has_land, land_purchase_date, inventory, total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ON CONFLICT (wallet) DO UPDATE SET
+        has_land = $2, land_purchase_date = $3, last_activity = $8
+      `, [
+        address, 
+        true, 
+        nowSec(),
+        { silver: 0, gold: 0, diamond: 0, netherite: 0 },
+        0,
+        nowSec(),
+        0,
+        nowSec()
+      ]);
+      
+      console.log(`🏡 Land granted to ${address} in database`);
+      
+    } catch (dbError) {
+      console.warn('Database error, using in-memory fallback:', dbError.message);
+      
+      // Fallback to in-memory storage
+      global.users[address].hasLand = true;
+      global.users[address].landPurchaseDate = nowSec();
+    }
 
     console.log(`🏡 Land granted to ${address} at ${new Date().toISOString()}`);
 
