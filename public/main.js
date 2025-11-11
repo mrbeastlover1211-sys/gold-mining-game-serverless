@@ -802,7 +802,7 @@ async function checkLandStatusAndShowPopup() {
   if (!state.address) return;
   
   try {
-    const response = await fetch(`/land-status?address=${encodeURIComponent(state.address)}`);
+    const response = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
     const data = await response.json();
     
     if (!data.hasLand) {
@@ -1225,7 +1225,7 @@ async function purchaseMandatoryLand() {
     showMandatoryLandMessage('Creating land purchase transaction...', 'info');
     
     // Create transaction
-    const response = await fetch('/purchase-land', {
+    const response = await fetch('/api/purchase-land', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ address: state.address }),
@@ -1257,7 +1257,7 @@ async function purchaseMandatoryLand() {
     showMandatoryLandMessage(`Transaction submitted: ${sig.signature.slice(0, 8)}...`, 'info');
 
     // Confirm
-    const confirmResponse = await fetch('/confirm-land-purchase', {
+    const confirmResponse = await fetch('/api/confirm-land-purchase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ address: state.address, signature: sig.signature }),
