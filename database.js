@@ -318,5 +318,13 @@ class UserDatabase {
   }
 }
 
-// Export singleton instance
-export default new UserDatabase();
+// Create singleton instance
+const userDatabase = new UserDatabase();
+
+// Export both the instance and a getDatabase function for compatibility
+export default userDatabase;
+
+// Add getDatabase function for API compatibility
+export function getDatabase() {
+  return userDatabase.pool;
+}

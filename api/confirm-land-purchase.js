@@ -62,20 +62,23 @@ export default async function handler(req, res) {
       
       // Insert or update user with land ownership
       const insertResult = await db.query(`
-        INSERT INTO users (wallet, has_land, land_purchase_date, inventory, total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        ON CONFLICT (wallet) DO UPDATE SET
-        has_land = $2, land_purchase_date = $3, last_activity = $8
-        RETURNING wallet, has_land
+        INSERT INTO users (address, has_land, land_purchase_date, silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes, total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        ON CONFLICT (address) DO UPDATE SET
+        has_land = $2, land_purchase_date = $3, last_activity = $11
+        RETURNING address as wallet, has_land
       `, [
         address, 
         true, 
         nowSec(),
-        JSON.stringify({ silver: 0, gold: 0, diamond: 0, netherite: 0 }),
-        0,
-        nowSec(),
-        0,
-        nowSec()
+        0, // silver_pickaxes
+        0, // gold_pickaxes  
+        0, // diamond_pickaxes
+        0, // netherite_pickaxes
+        0, // total_mining_power
+        nowSec(), // checkpoint_timestamp
+        0, // last_checkpoint_gold
+        nowSec() // last_activity
       ]);
       
       console.log(`💾 Database insert result:`, insertResult.rows[0]);
