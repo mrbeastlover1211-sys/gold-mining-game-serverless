@@ -159,10 +159,10 @@ async function connectWallet() {
     // Initialize checkpoint-based mining
     initializeCheckpointMining();
     
-    // Check land status after wallet connection - show popup after 2 seconds if no land
+    // Check land status after wallet connection - show popup after 3 seconds if no land
     window.landCheckTimeout = setTimeout(async () => {
       await checkLandStatusAndShowPopup();
-    }, 2000);
+    }, 3000);
     
   } catch (e) {
     console.error('❌ Wallet connection failed:', e);
@@ -801,9 +801,29 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
 async function checkLandStatusAndShowPopup() {
   if (!state.address) return;
   
+  // Check if land was purchased in this session
+  if (sessionStorage.getItem('landPurchased') === 'true') {
+    console.log('✅ Land purchased in this session, skipping popup');
+    return;
+  }
+  
+  // Check if popup is already showing
+  if (document.getElementById('mandatoryLandModal')) {
+    console.log('⚠️ Land modal already showing, skipping');
+    return;
+  }
+  
   try {
+    console.log('🔍 Checking land status for:', state.address.slice(0, 8) + '...');
+    
     const response = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
     const data = await response.json();
+    console.log('🏠 Land status response:', data);
     
     if (!data.hasLand) {
       console.log('🏠 User has no land, showing mandatory purchase popup');
@@ -816,11 +836,14 @@ async function checkLandStatusAndShowPopup() {
       if (existingModal) {
         existingModal.remove();
       }
+      // Set session flag to prevent future checks
+      sessionStorage.setItem('landPurchased', 'true');
     }
   } catch (e) {
     console.error('Failed to check land status:', e);
-    // Only show popup if we can't verify land status AND user doesn't have existing data
-    if (!state.status || !state.status.hasLand) {
+    // Only show popup if we can't verify land status AND no session flag
+    if (!sessionStorage.getItem('landPurchased')) {
+      console.log('⚠️ Could not verify land status, showing popup as fallback');
       showMandatoryLandPurchaseModal();
     }
   }
@@ -1273,18 +1296,24 @@ async function purchaseMandatoryLand() {
 
     showMandatoryLandMessage('🎉 Land purchased successfully! Welcome to the game!', 'success');
     
-    // Close modal after 3 seconds and refresh everything
+    // Close modal immediately and refresh everything
     setTimeout(async () => {
       closeMandatoryLandModal();
-      // Force refresh user status to get updated land ownership
-      await refreshStatus();
-      await updateWalletBalance();
-      // Clear any existing land check timers
+      
+      // Clear any existing land check timers immediately
       if (window.landCheckTimeout) {
         clearTimeout(window.landCheckTimeout);
         window.landCheckTimeout = null;
       }
-    }, 3000);
+      
+      // Force refresh user status to get updated land ownership
+      await refreshStatus();
+      await updateWalletBalance();
+      
+      // Set a flag to prevent future popups for this session
+      sessionStorage.setItem('landPurchased', 'true');
+      
+    }, 2000);
     
   } catch (e) {
     console.error('Mandatory land purchase failed:', e);
@@ -1339,6 +1368,21 @@ function showMandatoryLandMessage(message, type = 'info') {
 
 // Close mandatory land modal
 function closeMandatoryLandModal() {
+  const modal = document.getElementById('mandatoryLandModal');
+  if (modal) {
+    modal.remove();
+    console.log('✅ Mandatory land modal closed');
+  }
+}
+
+// Clear session storage when page loads (for testing)
+function resetLandSession() {
+  sessionStorage.removeItem('landPurchased');
+  console.log('🔄 Land session reset');
+}
+
+// Legacy close function
+function closeLandModal() {
   const modal = document.getElementById('mandatoryLandModal');
   if (modal) {
     modal.style.animation = 'fadeOut 0.3s ease-out';
