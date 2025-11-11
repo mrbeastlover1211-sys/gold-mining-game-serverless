@@ -15,7 +15,7 @@ const $ = (sel) => document.querySelector(sel);
 async function loadConfig() {
   try {
     console.log('📡 Loading config...');
-    const res = await fetch('/config');
+    const res = await fetch('/api/config');
     state.config = await res.json();
     console.log('✅ Config loaded:', state.config);
     
@@ -251,7 +251,7 @@ async function refreshStatus() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
     
-    const r = await fetch(`/status?address=${encodeURIComponent(state.address)}`, {
+    const r = await fetch(`/api/status?address=${encodeURIComponent(state.address)}`, {
       signal: controller.signal
     });
     clearTimeout(timeoutId);
@@ -639,7 +639,7 @@ async function buyPickaxe(pickaxeType) {
     $('#shopMsg').className = 'msg';
     
     // Build transaction
-    const r1 = await fetch('/purchase-tx', {
+    const r1 = await fetch('/api/purchase-tx', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ address: state.address, pickaxeType, quantity }),
@@ -655,7 +655,7 @@ async function buyPickaxe(pickaxeType) {
     $('#shopMsg').textContent = `Transaction submitted: ${sig.signature.slice(0, 8)}...`;
 
     // Confirm
-    const r2 = await fetch('/purchase-confirm', {
+    const r2 = await fetch('/api/purchase-confirm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ address: state.address, pickaxeType, quantity, signature: sig.signature }),
