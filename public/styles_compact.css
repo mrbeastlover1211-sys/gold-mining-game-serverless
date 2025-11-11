@@ -1,0 +1,532 @@
+/* Compact Single-Screen Minecraft Gaming Interface */
+* { 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0; 
+}
+
+:root {
+  /* Minecraft Color Palette */
+  --mc-grass: #4CAF50;
+  --mc-dirt: #8D6E63;
+  --mc-stone: #607D8B;
+  --mc-gold: #FFD700;
+  --mc-diamond: #00BFFF;
+  --mc-emerald: #50C878;
+  --mc-redstone: #FF4444;
+  --mc-dark: #1a1a1a;
+  --mc-light: #FFFFFF;
+  --mc-panel: rgba(26, 26, 26, 0.9);
+  --mc-border: #333;
+}
+
+body {
+  font-family: 'Press Start 2P', monospace;
+  background: linear-gradient(45deg, 
+    #87CEEB 0%, 
+    #98FB98 25%, 
+    var(--mc-grass) 50%, 
+    var(--mc-dirt) 75%, 
+    var(--mc-stone) 100%);
+  height: 100vh;
+  overflow: hidden;
+  color: var(--mc-light);
+  position: relative;
+}
+
+/* Animated Background Grid */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+  background-size: 32px 32px;
+  animation: gridMove 20s linear infinite;
+  z-index: -1;
+}
+
+@keyframes gridMove {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(32px, 32px); }
+}
+
+/* Main Container */
+.game-container {
+  display: grid;
+  grid-template-areas: 
+    "header header header"
+    "hud hud hud"
+    "shop mine character"
+    "trade mine character";
+  grid-template-rows: auto auto 1fr auto;
+  grid-template-columns: 1fr 1fr 300px;
+  height: 100vh;
+  gap: 8px;
+  padding: 8px;
+}
+
+/* Header */
+.header {
+  grid-area: header;
+  background: var(--mc-panel);
+  backdrop-filter: blur(10px);
+  border: 2px solid var(--mc-gold);
+  border-radius: 8px;
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(45deg, var(--mc-gold), #FFE55C);
+  border: 2px solid var(--mc-dark);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  animation: logoSpin 4s ease-in-out infinite;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+@keyframes logoSpin {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-5deg) scale(1.05); }
+  75% { transform: rotate(5deg) scale(1.05); }
+}
+
+.logo h1 {
+  font-size: 16px;
+  background: linear-gradient(45deg, var(--mc-gold), var(--mc-diamond));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nav {
+  display: flex;
+  gap: 12px;
+}
+
+.nav-btn {
+  background: linear-gradient(45deg, var(--mc-emerald), #66BB6A);
+  border: 2px solid var(--mc-dark);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.nav-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+}
+
+.connect-btn {
+  background: linear-gradient(45deg, var(--mc-diamond), #42A5F5);
+  border: 2px solid var(--mc-dark);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.connect-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+/* HUD */
+.hud {
+  grid-area: hud;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.hud-item {
+  background: var(--mc-panel);
+  backdrop-filter: blur(10px);
+  border: 2px solid var(--mc-border);
+  border-radius: 6px;
+  padding: 8px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.hud-label {
+  font-size: 8px;
+  color: var(--mc-gold);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.hud-value {
+  font-size: 10px;
+  color: white;
+  font-weight: bold;
+  word-break: break-all;
+}
+
+/* Shop Panel */
+.shop-panel {
+  grid-area: shop;
+  background: var(--mc-panel);
+  backdrop-filter: blur(10px);
+  border: 2px solid var(--mc-emerald);
+  border-radius: 8px;
+  padding: 12px;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.panel-title {
+  font-size: 12px;
+  color: var(--mc-gold);
+  margin-bottom: 12px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.shop-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.pickaxe-card {
+  background: linear-gradient(135deg, var(--mc-dark), #2a2a2a);
+  border: 2px solid var(--mc-gold);
+  border-radius: 6px;
+  padding: 8px;
+  text-align: center;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.pickaxe-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.pickaxe-icon {
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  border: 1px solid var(--mc-dark);
+}
+
+.pickaxe-icon.silver { background: linear-gradient(45deg, #C0C0C0, #E8E8E8); }
+.pickaxe-icon.gold { background: linear-gradient(45deg, var(--mc-gold), #FFFF99); }
+.pickaxe-icon.diamond { background: linear-gradient(45deg, var(--mc-diamond), #87CEEB); }
+.pickaxe-icon.netherite { background: linear-gradient(45deg, #4B0082, #8A2BE2); }
+
+.pickaxe-name {
+  font-size: 9px;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.pickaxe-price {
+  font-size: 8px;
+  color: var(--mc-emerald);
+  margin-bottom: 4px;
+}
+
+.pickaxe-rate {
+  font-size: 7px;
+  color: #ccc;
+  margin-bottom: 6px;
+}
+
+.qty-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 6px 0;
+}
+
+.qty-btn {
+  width: 20px;
+  height: 20px;
+  background: var(--mc-stone);
+  border: 1px solid var(--mc-dark);
+  border-radius: 2px;
+  color: white;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qty-input {
+  width: 30px;
+  padding: 2px;
+  text-align: center;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--mc-gold);
+  border-radius: 2px;
+  color: white;
+  font-size: 8px;
+  font-family: inherit;
+}
+
+.buy-btn {
+  width: 100%;
+  background: linear-gradient(45deg, var(--mc-emerald), #66BB6A);
+  border: 2px solid var(--mc-dark);
+  color: white;
+  padding: 6px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.buy-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+}
+
+/* Mining World */
+.mine-panel {
+  grid-area: mine;
+  background: var(--mc-panel);
+  backdrop-filter: blur(10px);
+  border: 2px solid var(--mc-stone);
+  border-radius: 8px;
+  padding: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.mining-world {
+  background: linear-gradient(180deg, 
+    #87CEEB 0%, 
+    var(--mc-grass) 30%, 
+    var(--mc-dirt) 60%, 
+    var(--mc-stone) 100%);
+  border: 2px solid var(--mc-dark);
+  border-radius: 6px;
+  height: 200px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.mining-world::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    repeating-linear-gradient(0deg, transparent 0px, transparent 15px, rgba(0,0,0,0.1) 15px, rgba(0,0,0,0.1) 16px),
+    repeating-linear-gradient(90deg, transparent 0px, transparent 15px, rgba(0,0,0,0.1) 15px, rgba(0,0,0,0.1) 16px);
+  pointer-events: none;
+}
+
+.miner {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(45deg, var(--mc-emerald), #66BB6A);
+  border: 2px solid var(--mc-dark);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  animation: minerBob 2s ease-in-out infinite;
+}
+
+@keyframes minerBob {
+  0%, 100% { transform: translateX(-50%) translateY(0px); }
+  50% { transform: translateX(-50%) translateY(-4px); }
+}
+
+.pickaxe-display {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  background: url('/assets/pickaxes/pickaxe-silver.svg') center/contain no-repeat;
+  animation: pickaxeSwing 1s ease-in-out infinite;
+}
+
+@keyframes pickaxeSwing {
+  0%, 100% { transform: rotate(-15deg); }
+  50% { transform: rotate(15deg); }
+}
+
+/* Trade Panel */
+.trade-panel {
+  grid-area: trade;
+  background: var(--mc-panel);
+  backdrop-filter: blur(10px);
+  border: 2px solid var(--mc-gold);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.trade-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.trade-input {
+  flex: 1;
+  padding: 8px;
+  background: rgba(0,0,0,0.3);
+  border: 2px solid var(--mc-gold);
+  border-radius: 4px;
+  color: white;
+  font-family: inherit;
+  font-size: 10px;
+}
+
+.trade-btn {
+  background: linear-gradient(45deg, var(--mc-gold), #FFE55C);
+  border: 2px solid var(--mc-dark);
+  color: var(--mc-dark);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: bold;
+}
+
+.trade-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+}
+
+/* Character Widget */
+.character-panel {
+  grid-area: character;
+  background: var(--mc-panel);
+  backdrop-filter: blur(10px);
+  border: 2px solid var(--mc-diamond);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+}
+
+.character-avatar {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(45deg, var(--mc-emerald), #66BB6A);
+  border: 2px solid var(--mc-dark);
+  border-radius: 8px;
+  margin: 0 auto 12px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  animation: avatarFloat 3s ease-in-out infinite;
+}
+
+@keyframes avatarFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+.character-avatar::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  background: var(--mc-gold);
+  border: 1px solid var(--mc-dark);
+  border-radius: 50%;
+  animation: coinSpin 2s linear infinite;
+}
+
+@keyframes coinSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.wallet-info {
+  font-size: 8px;
+}
+
+.wallet-label {
+  color: var(--mc-gold);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.wallet-value {
+  color: white;
+  margin-bottom: 8px;
+  font-weight: bold;
+  word-break: break-all;
+}
+
+.msg {
+  font-size: 8px;
+  margin-top: 8px;
+  text-align: center;
+  color: var(--mc-gold);
+  min-height: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .game-container {
+    grid-template-columns: 1fr 1fr 250px;
+  }
+}
+
+@media (max-width: 900px) {
+  .game-container {
+    grid-template-areas: 
+      "header header"
+      "hud hud"
+      "shop mine"
+      "trade character";
+    grid-template-columns: 1fr 1fr;
+  }
+}

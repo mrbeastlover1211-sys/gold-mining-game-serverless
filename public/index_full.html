@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⛏️ Minecraft Gold Mining - Play & Earn SOL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">
+        <div class="logo-cube"></div>
+        <h1>GOLD MINING</h1>
+      </div>
+      <nav class="nav">
+        <a href="#shop">🛒 Craft Shop</a>
+        <a href="#mine">⛏️ Mining World</a>
+        <a href="#guide">📖 Guide</a>
+      </nav>
+      <button id="connectBtn" class="connect-btn">🔗 Connect Wallet</button>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <h1>⛏️ Mine Gold in the Minecraft World 💎</h1>
+        <p>🎮 Embark on an epic mining adventure! Craft powerful pickaxes, mine precious gold, and trade with villagers for SOL. Your mining operation continues even when you're offline! 🌟</p>
+        <a href="#shop" class="hero-btn">🚀 Start Mining Adventure</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Status HUD -->
+  <section class="hud">
+    <div class="hud-item">
+      <div class="hud-label">👤 Wallet Address</div>
+      <div id="address" class="hud-value">Not Connected</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-label">⛏️ Active Pickaxes</div>
+      <div id="pickaxe" class="hud-value">None</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-label">🥇 Gold Mined</div>
+      <div id="gold" class="hud-value">0</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-label">💰 Gold Price</div>
+      <div id="goldPrice" class="hud-value">-</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-label">📊 Min Trade</div>
+      <div id="minSell" class="hud-value">-</div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="container">
+      <!-- Pickaxe Crafting Shop -->
+      <section class="panel" id="shop">
+        <div class="panel-header">
+          <h2 class="panel-title">🛠️ Pickaxe Crafting Table</h2>
+          <p class="panel-subtitle">⚒️ Craft legendary pickaxes to boost your mining power! Each tier mines faster and earns more gold per second.</p>
+        </div>
+        <div id="shopGrid" class="shop"></div>
+        <div id="shopMsg" class="msg" style="text-align: center; margin-top: 20px; font-size: 14px; color: #FFC107;"></div>
+      </section>
+
+      <!-- Mining World -->
+      <section class="panel" id="mine">
+        <div class="panel-header">
+          <h2 class="panel-title">⛏️ Deep Mining Operation</h2>
+          <p class="panel-subtitle">🏭 Watch your miner work in the depths below! Mining continues automatically even when you're offline.</p>
+        </div>
+        
+        <div class="mining-world">
+          <div class="miner-container">
+            <div class="miner-character"></div>
+            <div class="miner-pickaxe"></div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 15px; margin-top: 30px; align-items: center; justify-content: center;">
+          <input type="number" id="sellAmount" placeholder="💰 Enter gold amount to trade" 
+                 style="flex: 1; max-width: 300px; padding: 15px; background: rgba(0,0,0,0.3); border: 2px solid #FFC107; border-radius: 10px; color: white; font-family: inherit; font-size: 14px;" />
+          <button id="sellBtn" class="buy-btn" style="flex: none; min-width: 200px;">🏪 Trade with Villager</button>
+        </div>
+        <div id="sellMsg" class="msg" style="text-align: center; margin-top: 15px; font-size: 14px; color: #4CAF50;"></div>
+      </section>
+
+      <!-- Mining Guide -->
+      <section class="panel" id="guide">
+        <div class="panel-header">
+          <h2 class="panel-title">📖 Mining Guide & Tutorial</h2>
+          <p class="panel-subtitle">Learn how to become a legendary miner in our Minecraft-inspired world!</p>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; margin-top: 30px;">
+          <div style="background: linear-gradient(135deg, #212121, #424242); border: 2px solid #4CAF50; border-radius: 15px; padding: 25px; text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 15px;">🔗</div>
+            <h3 style="color: #FFC107; margin-bottom: 15px; font-size: 16px;">1. Connect Wallet</h3>
+            <p style="color: rgba(255,255,255,0.8); font-size: 12px; line-height: 1.5;">Connect your Phantom wallet to the Solana devnet to start your mining adventure.</p>
+          </div>
+          
+          <div style="background: linear-gradient(135deg, #212121, #424242); border: 2px solid #FFC107; border-radius: 15px; padding: 25px; text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 15px;">⚒️</div>
+            <h3 style="color: #FFC107; margin-bottom: 15px; font-size: 16px;">2. Craft Pickaxes</h3>
+            <p style="color: rgba(255,255,255,0.8); font-size: 12px; line-height: 1.5;">Visit the crafting table to forge powerful pickaxes. Higher tiers mine much faster!</p>
+          </div>
+          
+          <div style="background: linear-gradient(135deg, #212121, #424242); border: 2px solid #03DAC6; border-radius: 15px; padding: 25px; text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 15px;">🏭</div>
+            <h3 style="color: #FFC107; margin-bottom: 15px; font-size: 16px;">3. Auto Mining</h3>
+            <p style="color: rgba(255,255,255,0.8); font-size: 12px; line-height: 1.5;">Your miner works 24/7 in the background, accumulating gold even when you're offline!</p>
+          </div>
+          
+          <div style="background: linear-gradient(135deg, #212121, #424242); border: 2px solid #FF9800; border-radius: 15px; padding: 25px; text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 15px;">🏪</div>
+            <h3 style="color: #FFC107; margin-bottom: 15px; font-size: 16px;">4. Trade Gold</h3>
+            <p style="color: rgba(255,255,255,0.8); font-size: 12px; line-height: 1.5;">Trade your mined gold with the villager to receive SOL directly to your wallet!</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Character Widget -->
+  <div class="character-widget">
+    <div class="character-avatar"></div>
+    <div class="wallet-info">
+      <div class="wallet-label">Wallet Status</div>
+      <div id="walletAddress" class="wallet-value">Not Connected</div>
+      <div class="wallet-label">Balance</div>
+      <div id="walletBalance" class="wallet-value">0 SOL</div>
+    </div>
+  </div>
+
+  <script src="/main.js"></script>
+</body>
+</html>

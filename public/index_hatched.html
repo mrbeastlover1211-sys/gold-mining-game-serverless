@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⛏️ GOLD MINING - Minecraft Style</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">⛏️</div>
+      <h1>GOLD MINING</h1>
+    </div>
+    <div class="header-buttons">
+      <a href="#" class="header-btn btn-shatch">⛏️ MINE</a>
+      <a href="https://twitter.com" class="header-btn btn-twitter">𝕏 Twitter</a>
+      <button id="connectBtn" class="header-btn btn-wallet">🔗 Connect Wallet</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="container">
+    <!-- Left Sidebar - Your Stats -->
+    <div class="stats-panel">
+      <div class="stats-title">YOUR STATS</div>
+      
+      <div class="stat-item">
+        <div>
+          <div class="stat-label">Pickaxes</div>
+          <div class="stat-subtitle">Mining automatically</div>
+        </div>
+        <div id="pickaxeCount" class="stat-value large">0</div>
+      </div>
+      
+      <div class="stat-item">
+        <div>
+          <div class="stat-label">Gold Mined</div>
+          <div class="stat-subtitle" id="miningRate">+0 gold/sec</div>
+        </div>
+        <div id="gold" class="stat-value large">0</div>
+      </div>
+      
+      <div class="stat-item">
+        <div>
+          <div class="stat-label">Wallet</div>
+          <div class="stat-subtitle" id="walletStatus">Not connected</div>
+        </div>
+        <div id="address" class="stat-value" style="font-size: 12px; word-break: break-all;">-</div>
+      </div>
+    </div>
+
+    <!-- Global Stats Panel -->
+    <div class="global-panel">
+      <div class="stats-title">GLOBAL</div>
+      
+      <div class="stat-item">
+        <div class="stat-label">Gold Price</div>
+        <div id="goldPrice" class="stat-value green">- SOL</div>
+      </div>
+      
+      <div class="stat-item">
+        <div class="stat-label">Min Trade</div>
+        <div id="minSell" class="stat-value blue">-</div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <!-- Buy Pickaxes Panel -->
+      <div class="buy-panel">
+        <div class="panel-title">BUY PICKAXES</div>
+        
+        <div class="amount-section">
+          <div class="amount-label">Pickaxe Type</div>
+          <select id="pickaxeSelect" class="amount-input">
+            <option value="silver">Silver Pickaxe - 0.01 SOL (1 gold/sec)</option>
+            <option value="gold">Gold Pickaxe - 0.1 SOL (10 gold/sec)</option>
+            <option value="diamond">Diamond Pickaxe - 1 SOL (100 gold/sec)</option>
+            <option value="netherite">Netherite Pickaxe - 10 SOL (10000 gold/sec)</option>
+          </select>
+        </div>
+
+        <div class="amount-section">
+          <div class="amount-label">Quantity</div>
+          <input type="number" id="buyQuantity" class="amount-input" placeholder="1" min="1" max="1000" value="1" />
+        </div>
+        
+        <button id="buyBtn" class="buy-button">BUY</button>
+        <div id="shopMsg" class="msg"></div>
+      </div>
+
+      <!-- Action Panels -->
+      <div class="action-panels">
+        <!-- Mining Status -->
+        <div class="action-panel">
+          <div class="panel-title">MINING STATUS</div>
+          <div class="action-description">
+            Your pickaxes are mining automatically! Gold accumulates even when you're offline.
+          </div>
+          
+          <div style="text-align: center; margin: 20px 0;">
+            <div style="font-size: 48px; margin-bottom: 10px;">⛏️</div>
+            <div style="color: #4CAF50; font-weight: 600;" id="miningStatus">Ready to mine!</div>
+          </div>
+          
+          <div style="background: #f0f8ff; padding: 15px; border-radius: 8px; border-left: 4px solid #4CAF50;">
+            <div style="font-size: 14px; color: #333; font-weight: 600;">Active Pickaxes:</div>
+            <div id="pickaxeInventory" style="font-size: 12px; color: #666; margin-top: 5px;">None</div>
+          </div>
+        </div>
+
+        <!-- Sell Gold -->
+        <div class="action-panel">
+          <div class="panel-title">SELL GOLD</div>
+          <div class="action-description">
+            Convert your mined gold to SOL. 10% fee used to maintain the mining operation!
+          </div>
+          
+          <input type="number" id="sellAmount" class="action-input" placeholder="Enter gold amount to sell" />
+          <button id="sellBtn" class="action-button btn-sell">SELL</button>
+          <div id="sellMsg" class="msg"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/main.js"></script>
+</body>
+</html>
