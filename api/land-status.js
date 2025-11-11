@@ -18,11 +18,17 @@ export default async function handler(req, res) {
       
       if (result.rows.length > 0) {
         const user = result.rows[0];
+        console.log(`✅ Found user in database:`, {
+          wallet: user.wallet,
+          has_land: user.has_land,
+          land_purchase_date: user.land_purchase_date
+        });
         return res.json({
           hasLand: user.has_land || false,
           landPurchaseDate: user.land_purchase_date
         });
       } else {
+        console.log(`❌ User ${address.slice(0, 8)}... not found in database`);
         // User doesn't exist in database
         return res.json({
           hasLand: false,
@@ -31,7 +37,8 @@ export default async function handler(req, res) {
       }
       
     } catch (dbError) {
-      console.warn('Database error, using in-memory fallback:', dbError.message);
+      console.error('❌ Database error in land-status:', dbError.message);
+      console.error('Stack trace:', dbError.stack);
       
       // Fallback to in-memory storage
       global.users = global.users || {};
