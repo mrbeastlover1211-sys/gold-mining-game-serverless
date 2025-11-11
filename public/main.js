@@ -616,7 +616,7 @@ async function buyPickaxe(pickaxeType) {
   
   // Check if user has land before allowing pickaxe purchase
   try {
-    const landResponse = await fetch(`/land-status?address=${encodeURIComponent(state.address)}`);
+    const landResponse = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
     const landData = await landResponse.json();
     
     if (!landData.hasLand) {
@@ -760,7 +760,7 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
   
   // Check if user has land before allowing pickaxe purchase
   try {
-    const landResponse = await fetch(`/land-status?address=${encodeURIComponent(state.address)}`);
+    const landResponse = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
     const landData = await landResponse.json();
     
     if (!landData.hasLand) {
