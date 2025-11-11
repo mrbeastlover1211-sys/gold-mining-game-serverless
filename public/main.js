@@ -141,6 +141,29 @@ async function connectWallet() {
     }
     
     const address = account.toString();
+    
+    // Check if this is a different wallet than before
+    const previousAddress = state.address;
+    if (previousAddress && previousAddress !== address) {
+      console.log(`🔄 Wallet switched from ${previousAddress.slice(0, 8)}... to ${address.slice(0, 8)}...`);
+      
+      // Clear any existing popups
+      const existingModal = document.getElementById('mandatoryLandModal');
+      if (existingModal) {
+        existingModal.remove();
+      }
+      
+      // Clear existing timers
+      if (window.landCheckTimeout) {
+        clearTimeout(window.landCheckTimeout);
+        window.landCheckTimeout = null;
+      }
+      
+      // Stop existing mining and polling
+      stopMining();
+      stopStatusPolling();
+    }
+    
     state.wallet = provider;
     state.address = address;
     localStorage.setItem('gm_address', address);
@@ -743,7 +766,7 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
     if (!landData.hasLand) {
       $('#storeMsg').textContent = '🏠 You need to purchase land first before buying pickaxes!';
       $('#storeMsg').className = 'msg error';
-      showLandPurchaseModal();
+      showMandatoryLandPurchaseModal();
       return;
     }
   } catch (e) {
@@ -801,9 +824,10 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
 async function checkLandStatusAndShowPopup() {
   if (!state.address) return;
   
-  // Check if land was purchased in this session
-  if (sessionStorage.getItem('landPurchased') === 'true') {
-    console.log('✅ Land purchased in this session, skipping popup');
+  // Check if land was purchased for THIS specific wallet address
+  const landPurchasedKey = `landPurchased_${state.address}`;
+  if (sessionStorage.getItem(landPurchasedKey) === 'true') {
+    console.log('✅ Land purchased for this wallet in this session, skipping popup');
     return;
   }
   
@@ -836,13 +860,15 @@ async function checkLandStatusAndShowPopup() {
       if (existingModal) {
         existingModal.remove();
       }
-      // Set session flag to prevent future checks
-      sessionStorage.setItem('landPurchased', 'true');
+      // Set wallet-specific session flag to prevent future checks
+      const landPurchasedKey = `landPurchased_${state.address}`;
+      sessionStorage.setItem(landPurchasedKey, 'true');
     }
   } catch (e) {
     console.error('Failed to check land status:', e);
-    // Only show popup if we can't verify land status AND no session flag
-    if (!sessionStorage.getItem('landPurchased')) {
+    // Only show popup if we can't verify land status AND no session flag for this wallet
+    const landPurchasedKey = `landPurchased_${state.address}`;
+    if (!sessionStorage.getItem(landPurchasedKey)) {
       console.log('⚠️ Could not verify land status, showing popup as fallback');
       showMandatoryLandPurchaseModal();
     }
@@ -1310,8 +1336,9 @@ async function purchaseMandatoryLand() {
       await refreshStatus();
       await updateWalletBalance();
       
-      // Set a flag to prevent future popups for this session
-      sessionStorage.setItem('landPurchased', 'true');
+      // Set a wallet-specific flag to prevent future popups for this session
+      const landPurchasedKey = `landPurchased_${state.address}`;
+      sessionStorage.setItem(landPurchasedKey, 'true');
       
     }, 2000);
     
@@ -1377,8 +1404,21 @@ function closeMandatoryLandModal() {
 
 // Clear session storage when page loads (for testing)
 function resetLandSession() {
-  sessionStorage.removeItem('landPurchased');
-  console.log('🔄 Land session reset');
+  // Clear all wallet-specific land purchase flags
+  const keys = Object.keys(sessionStorage);
+  keys.forEach(key => {
+    if (key.startsWith('landPurchased_')) {
+      sessionStorage.removeItem(key);
+    }
+  });
+  console.log('🔄 Land session reset for all wallets');
+}
+
+// Clear land session for specific wallet
+function resetLandSessionForWallet(address) {
+  const landPurchasedKey = `landPurchased_${address}`;
+  sessionStorage.removeItem(landPurchasedKey);
+  console.log(`🔄 Land session reset for wallet: ${address.slice(0, 8)}...`);
 }
 
 // Legacy close function
