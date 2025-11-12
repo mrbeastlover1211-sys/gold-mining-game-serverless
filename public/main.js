@@ -608,10 +608,21 @@ function stopMining() {
 }
 
 async function buyPickaxe(pickaxeType) {
+  // Debug wallet connection state
+  console.log('🔍 Wallet state check:', {
+    address: state.address,
+    wallet: !!state.wallet,
+    hasAddress: !!state.address,
+    addressLength: state.address?.length
+  });
+  
   if (!state.address) {
+    console.log('❌ Wallet not connected - showing error');
     $('#shopMsg').textContent = 'Please connect your wallet first!';
     $('#shopMsg').className = 'msg error';
     return;
+  } else {
+    console.log('✅ Wallet connected - proceeding with purchase');
   }
   
   // Check if user has land - but don't be overly aggressive
