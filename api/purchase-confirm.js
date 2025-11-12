@@ -190,7 +190,9 @@ export default async function handler(req, res) {
           user.landPurchaseDate
         ]);
         
-        console.log(`💾 Pickaxe purchase saved to database for ${address}`);
+        // Verify the save worked
+        const verifyResult = await db.query('SELECT address, silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes, total_mining_power FROM users WHERE address = $1', [address]);
+        console.log(`💾 Pickaxe purchase saved to database for ${address}:`, verifyResult.rows[0]);
         
       } catch (dbError) {
         console.error('Failed to save to database:', dbError.message);
