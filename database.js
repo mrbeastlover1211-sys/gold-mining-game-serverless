@@ -324,15 +324,51 @@ const userDatabase = new UserDatabase();
 // Export both the instance and a getDatabase function for compatibility
 export default userDatabase;
 
-// Add getDatabase function for API compatibility - returns the Pool directly
+// Add getDatabase function for API compatibility - with Supabase-specific fixes
 export async function getDatabase() {
   try {
+    const { Pool } = await import('pg');
+    
+    // Create new pool with Supabase-specific configuration
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false
+      },
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+      max: 10,
+      min: 1
+    });
+    
     // Test the connection
-    await userDatabase.pool.query('SELECT 1');
-    console.log('✅ Database connection verified');
-    return userDatabase.pool;
+    const client = await pool.connect();
+    await client.query('SELECT 1');
+    client.release();
+    
+    console.log('✅ Database connection verified with SSL');
+    return pool;
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);
-    throw new Error(`Database connection failed: ${error.message}`);
+    
+    // Try without SSL as fallback
+    try {
+      const { Pool } = await import('pg');
+      const pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: false,
+        connectionTimeoutMillis: 10000
+      });
+      
+      const client = await pool.connect();
+      await client.query('SELECT 1');
+      client.release();
+      
+      console.log('✅ Database connection verified without SSL');
+      return pool;
+    } catch (fallbackError) {
+      console.error('❌ All connection attempts failed');
+      throw new Error(`Database connection failed: ${error.message}`);
+    }
   }
 }
