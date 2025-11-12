@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     
     console.log(`📊 Getting status for: ${address.slice(0, 8)}...`);
     
-    // Use database - proper implementation
+    // Use Neon database - working implementation
     try {
       const { getDatabase } = await import('../database.js');
       const db = await getDatabase();

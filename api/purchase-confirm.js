@@ -169,14 +169,24 @@ export default async function handler(req, res) {
         const { getDatabase } = await import('../database.js');
         const db = await getDatabase();
         
-        // FORCE INSERT/UPDATE with correct schema - bypass all conflicts
-        await db.query(`
-          DELETE FROM users WHERE address = $1
-        `, [address]);
-        
-        const insertResult = await db.query(`
-          INSERT INTO users (address, silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes, total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity, has_land, land_purchase_date)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        // UPDATE user data in Neon database with proper UPSERT
+        const upsertResult = await db.query(`
+          INSERT INTO users (
+            address, silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes, 
+            total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity, 
+            has_land, land_purchase_date
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          ON CONFLICT (address) DO UPDATE SET
+            silver_pickaxes = EXCLUDED.silver_pickaxes,
+            gold_pickaxes = EXCLUDED.gold_pickaxes,
+            diamond_pickaxes = EXCLUDED.diamond_pickaxes,
+            netherite_pickaxes = EXCLUDED.netherite_pickaxes,
+            total_mining_power = EXCLUDED.total_mining_power,
+            checkpoint_timestamp = EXCLUDED.checkpoint_timestamp,
+            last_checkpoint_gold = EXCLUDED.last_checkpoint_gold,
+            last_activity = EXCLUDED.last_activity,
+            has_land = COALESCE(EXCLUDED.has_land, users.has_land),
+            land_purchase_date = COALESCE(EXCLUDED.land_purchase_date, users.land_purchase_date)
           RETURNING *
         `, [
           address,
@@ -192,7 +202,7 @@ export default async function handler(req, res) {
           user.landPurchaseDate || null
         ]);
         
-        console.log(`💾 FORCED INSERT result:`, insertResult.rows[0]);
+        console.log(`💾 Neon database UPSERT result:`, upsertResult.rows[0]);
         
         // Verify the save worked
         const verifyResult = await db.query('SELECT address, silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes, total_mining_power FROM users WHERE address = $1', [address]);
