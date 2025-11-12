@@ -93,12 +93,23 @@ export default async function handler(req, res) {
       useDatabase = true;
       
       // Get user from database
-      const result = await db.query('SELECT * FROM users WHERE wallet = $1', [address]);
+      const result = await db.query('SELECT * FROM users WHERE address = $1', [address]);
       
       if (result.rows.length > 0) {
         const dbUser = result.rows[0];
+        
+        // Convert database pickaxe columns to inventory object
+        const inventory = {
+          silver: dbUser.silver_pickaxes || 0,
+          gold: dbUser.gold_pickaxes || 0,
+          diamond: dbUser.diamond_pickaxes || 0,
+          netherite: dbUser.netherite_pickaxes || 0
+        };
+        
+        console.log(`📦 Loaded user inventory from database:`, inventory);
+        
         user = {
-          inventory: dbUser.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 },
+          inventory: inventory,
           total_mining_power: dbUser.total_mining_power || 0,
           checkpoint_timestamp: dbUser.checkpoint_timestamp || nowSec(),
           last_checkpoint_gold: dbUser.last_checkpoint_gold || 0,
@@ -147,6 +158,8 @@ export default async function handler(req, res) {
     // Add new pickaxe(s)
     user.inventory[pickaxeType] = (user.inventory[pickaxeType] || 0) + qty;
     
+    console.log(`🛒 Added ${qty}x ${pickaxeType} pickaxe. New inventory:`, user.inventory);
+    
     // Create new checkpoint with updated mining power
     const newCurrentGold = createCheckpoint(user, address);
     
@@ -156,15 +169,19 @@ export default async function handler(req, res) {
         const { getDatabase } = await import('../database.js');
         const db = await getDatabase();
         
+        // Save individual pickaxe counts to database columns
         await db.query(`
-          INSERT INTO users (wallet, inventory, total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity, has_land, land_purchase_date)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-          ON CONFLICT (wallet) DO UPDATE SET
-          inventory = $2, total_mining_power = $3, checkpoint_timestamp = $4, 
-          last_checkpoint_gold = $5, last_activity = $6
+          INSERT INTO users (address, silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes, total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity, has_land, land_purchase_date)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          ON CONFLICT (address) DO UPDATE SET
+          silver_pickaxes = $2, gold_pickaxes = $3, diamond_pickaxes = $4, netherite_pickaxes = $5,
+          total_mining_power = $6, checkpoint_timestamp = $7, last_checkpoint_gold = $8, last_activity = $9
         `, [
           address,
-          user.inventory,
+          user.inventory.silver || 0,
+          user.inventory.gold || 0,
+          user.inventory.diamond || 0,
+          user.inventory.netherite || 0,
           user.total_mining_power,
           user.checkpoint_timestamp,
           user.last_checkpoint_gold,
