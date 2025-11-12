@@ -88,9 +88,10 @@ export default async function handler(req, res) {
     let useDatabase = false;
     
     try {
-      const { getDatabase } = await import('../database.js');
-      const db = await getDatabase();
-      useDatabase = true;
+      throw new Error('Using file storage - database unavailable');
+      // const { getDatabase } = await import('../database.js');
+      // const db = await getDatabase();
+      // useDatabase = true;
       
       // Get user from database
       const result = await db.query('SELECT * FROM users WHERE address = $1', [address]);

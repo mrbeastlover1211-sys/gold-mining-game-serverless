@@ -10,10 +10,11 @@ export default async function handler(req, res) {
     
     console.log(`📊 Getting status for: ${address.slice(0, 8)}...`);
     
-    // Try to import and use database
+    // Use file storage fallback since database is gone
     try {
-      const { getDatabase } = await import('../database.js');
-      const db = await getDatabase();
+      throw new Error('Using file storage fallback');
+      // const { getDatabase } = await import('../database.js');
+      // const db = await getDatabase();
       
       console.log(`🗄️ Loading user data from database: ${address.slice(0, 8)}...`);
       
