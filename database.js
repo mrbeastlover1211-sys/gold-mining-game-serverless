@@ -324,7 +324,15 @@ const userDatabase = new UserDatabase();
 // Export both the instance and a getDatabase function for compatibility
 export default userDatabase;
 
-// Add getDatabase function for API compatibility
-export function getDatabase() {
-  return userDatabase.pool;
+// Add getDatabase function for API compatibility - returns the Pool directly
+export async function getDatabase() {
+  try {
+    // Test the connection
+    await userDatabase.pool.query('SELECT 1');
+    console.log('✅ Database connection verified');
+    return userDatabase.pool;
+  } catch (error) {
+    console.error('❌ Database connection failed:', error.message);
+    throw new Error(`Database connection failed: ${error.message}`);
+  }
 }
