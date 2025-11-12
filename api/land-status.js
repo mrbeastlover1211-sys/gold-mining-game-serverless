@@ -19,20 +19,28 @@ export default async function handler(req, res) {
       if (result.rows.length > 0) {
         const user = result.rows[0];
         console.log(`✅ Found user in database:`, {
-          wallet: user.wallet,
+          address: user.address?.slice(0, 8) + '...',
           has_land: user.has_land,
           land_purchase_date: user.land_purchase_date
         });
         return res.json({
-          hasLand: user.has_land || false,
-          landPurchaseDate: user.land_purchase_date
+          hasLand: !!user.has_land, // Force boolean conversion
+          landPurchaseDate: user.land_purchase_date,
+          debug: {
+            raw_has_land: user.has_land,
+            user_exists: true
+          }
         });
       } else {
         console.log(`❌ User ${address.slice(0, 8)}... not found in database`);
         // User doesn't exist in database
         return res.json({
           hasLand: false,
-          landPurchaseDate: null
+          landPurchaseDate: null,
+          debug: {
+            user_exists: false,
+            message: 'User not found in database'
+          }
         });
       }
       

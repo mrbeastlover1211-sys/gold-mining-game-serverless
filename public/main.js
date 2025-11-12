@@ -614,36 +614,39 @@ async function buyPickaxe(pickaxeType) {
     return;
   }
   
-  // STRICT land ownership check - ALWAYS show persistent popup if no land
+  // Check if user has land - but don't be overly aggressive
   try {
-    const landResponse = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
-    
-    if (!landResponse.ok) {
-      throw new Error(`Land verification failed: ${landResponse.status}`);
-    }
-    
-    const landData = await landResponse.json();
-    console.log('🔍 Pickaxe purchase land check:', landData);
-    
-    if (!landData.hasLand) {
-      console.log('🚨 BLOCKING pickaxe purchase - no land ownership detected');
-      $('#shopMsg').textContent = '🏠 Land ownership required to buy pickaxes!';
-      $('#shopMsg').className = 'msg error';
-      
-      // Show persistent popup that cannot be closed
-      showPersistentLandPopup();
-      return;
+    // First check if we already verified land in this session
+    const landVerifiedKey = `landVerified_${state.address}`;
+    if (sessionStorage.getItem(landVerifiedKey) === 'true') {
+      console.log('✅ Land already verified in this session - proceeding with pickaxe purchase');
     } else {
-      console.log('✅ Land verification passed - allowing pickaxe purchase');
+      // Check database for land ownership
+      const landResponse = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
+      
+      if (!landResponse.ok) {
+        console.warn(`⚠️ Land verification API error: ${landResponse.status} - proceeding anyway`);
+        // Don't block on API failure for pickaxe purchases
+      } else {
+        const landData = await landResponse.json();
+        console.log('🔍 Pickaxe purchase land check:', landData);
+        
+        if (!landData.hasLand) {
+          console.log('🚨 BLOCKING pickaxe purchase - no land ownership detected');
+          $('#shopMsg').textContent = '🏠 You need to purchase land first before buying pickaxes!';
+          $('#shopMsg').className = 'msg error';
+          showPersistentLandPopup();
+          return;
+        } else {
+          console.log('✅ Land verification passed - caching for session');
+          // Cache successful land verification
+          sessionStorage.setItem(landVerifiedKey, 'true');
+        }
+      }
     }
   } catch (e) {
-    console.error('❌ Land verification failed:', e);
-    $('#shopMsg').textContent = '❌ Cannot verify land ownership. Please refresh and try again.';
-    $('#shopMsg').className = 'msg error';
-    
-    // Show popup on verification failure
-    showPersistentLandPopup();
-    return;
+    console.warn('⚠️ Land verification failed, but allowing pickaxe purchase:', e.message);
+    // Don't block pickaxe purchases on verification errors
   }
   
   const quantity = parseInt($(`#qty-${pickaxeType}`).value) || 1;
