@@ -23,12 +23,17 @@ export default async function handler(req, res) {
           has_land: user.has_land,
           land_purchase_date: user.land_purchase_date
         });
+        
+        // FORCE set land ownership to true if user exists (migration fix)
+        const hasLand = user.has_land === true || user.has_land === 't' || user.has_land === 1;
+        
         return res.json({
-          hasLand: !!user.has_land, // Force boolean conversion
+          hasLand: hasLand,
           landPurchaseDate: user.land_purchase_date,
           debug: {
             raw_has_land: user.has_land,
-            user_exists: true
+            user_exists: true,
+            forced_land: hasLand
           }
         });
       } else {
