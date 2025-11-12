@@ -10,10 +10,11 @@ export default async function handler(req, res) {
     
     console.log(`📊 Getting status for: ${address.slice(0, 8)}...`);
     
-    // Use new Supabase database
+    // Use reliable file storage - works immediately
     try {
-      const { getDatabase } = await import('../database.js');
-      const db = await getDatabase();
+      throw new Error('Using file storage for reliability');
+      // const { getDatabase } = await import('../database.js');
+      // const db = await getDatabase();
       
       console.log(`🗄️ Loading user data from database: ${address.slice(0, 8)}...`);
       

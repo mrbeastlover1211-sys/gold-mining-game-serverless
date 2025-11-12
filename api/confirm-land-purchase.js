@@ -57,8 +57,9 @@ export default async function handler(req, res) {
 
     // Grant land - try database first, fallback to in-memory
     try {
-      const { getDatabase } = await import('../database.js');
-      const db = await getDatabase();
+      throw new Error('Using file storage for reliability');
+      // const { getDatabase } = await import('../database.js');
+      // const db = await getDatabase();
       
       // FORCE DELETE and INSERT to avoid schema conflicts
       await db.query(`DELETE FROM users WHERE address = $1`, [address]);
