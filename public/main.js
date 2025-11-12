@@ -619,16 +619,28 @@ async function buyPickaxe(pickaxeType) {
     const landResponse = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
     const landData = await landResponse.json();
     
+    console.log('🔍 Land check result:', landData);
+    
     if (!landData.hasLand) {
+      console.log('❌ Land check failed - no land found');
       $('#shopMsg').textContent = '🏠 You need to purchase land first before buying pickaxes!';
       $('#shopMsg').className = 'msg error';
       showMandatoryLandPurchaseModal();
       return;
+    } else {
+      console.log('✅ Land check passed - user has land, proceeding with purchase');
     }
   } catch (e) {
-    console.error('Failed to check land status:', e);
+    console.error('❌ Failed to check land status:', e);
+    console.error('Error details:', e.message);
     $('#shopMsg').textContent = 'Failed to verify land ownership. Please try again.';
     $('#shopMsg').className = 'msg error';
+    
+    // Show the actual error to help debug
+    if (e.message.includes('404')) {
+      $('#shopMsg').textContent = 'API endpoint error. Please contact support.';
+    }
+    
     return;
   }
   
