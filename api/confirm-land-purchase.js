@@ -60,17 +60,19 @@ export default async function handler(req, res) {
       const { getDatabase } = await import('../database.js');
       const db = await getDatabase();
       
-      // Insert or update user with land ownership
+      // Insert or update user with land ownership - FORCE UPDATE
       const insertResult = await db.query(`
         INSERT INTO users (address, has_land, land_purchase_date, silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes, total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         ON CONFLICT (address) DO UPDATE SET
-        has_land = $2, land_purchase_date = $3, last_activity = $11
-        RETURNING address as wallet, has_land
+        has_land = EXCLUDED.has_land, 
+        land_purchase_date = EXCLUDED.land_purchase_date, 
+        last_activity = EXCLUDED.last_activity
+        RETURNING address, has_land, land_purchase_date
       `, [
         address, 
-        true, 
-        nowSec(),
+        true, // has_land - ALWAYS TRUE
+        nowSec(), // land_purchase_date
         0, // silver_pickaxes
         0, // gold_pickaxes  
         0, // diamond_pickaxes
@@ -80,6 +82,8 @@ export default async function handler(req, res) {
         0, // last_checkpoint_gold
         nowSec() // last_activity
       ]);
+      
+      console.log(`💾 Land purchase saved to database:`, insertResult.rows[0]);
       
       console.log(`💾 Database insert result:`, insertResult.rows[0]);
       
