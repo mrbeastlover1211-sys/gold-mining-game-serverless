@@ -60,15 +60,13 @@ export default async function handler(req, res) {
       const { getDatabase } = await import('../database.js');
       const db = await getDatabase();
       
-      // Insert or update user with land ownership - FORCE UPDATE
+      // FORCE DELETE and INSERT to avoid schema conflicts
+      await db.query(`DELETE FROM users WHERE address = $1`, [address]);
+      
       const insertResult = await db.query(`
         INSERT INTO users (address, has_land, land_purchase_date, silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes, total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-        ON CONFLICT (address) DO UPDATE SET
-        has_land = EXCLUDED.has_land, 
-        land_purchase_date = EXCLUDED.land_purchase_date, 
-        last_activity = EXCLUDED.last_activity
-        RETURNING address, has_land, land_purchase_date
+        RETURNING *
       `, [
         address, 
         true, // has_land - ALWAYS TRUE

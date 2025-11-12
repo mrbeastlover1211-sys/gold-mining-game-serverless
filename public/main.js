@@ -687,16 +687,43 @@ async function buyPickaxe(pickaxeType) {
     
     console.log('📊 Purchase response data:', j2);
     
-    // Update state with new inventory immediately
+    // FORCE update state with new inventory immediately
     if (j2.inventory) {
       state.status.inventory = j2.inventory;
       console.log('✅ Updated state inventory:', state.status.inventory);
+      
+      // FORCE update the UI immediately with new inventory
+      ['silver', 'gold', 'diamond', 'netherite'].forEach(type => {
+        const ownedEl = $(`#owned-${type}`);
+        const count = j2.inventory[type] || 0;
+        if (ownedEl) {
+          if (count > 0) {
+            ownedEl.textContent = `Owned: ${count}`;
+            ownedEl.style.display = 'block';
+            console.log(`🔄 UI: Updated ${type} owned to: ${count}`);
+          } else {
+            ownedEl.style.display = 'none';
+          }
+        }
+      });
     }
     
     // Update checkpoint data from server response
     if (j2.checkpoint) {
       state.checkpoint = j2.checkpoint;
       console.log('📊 Updated checkpoint after purchase:', state.checkpoint);
+      
+      // FORCE update mining rate display immediately
+      const miningRateEl = $('#miningRate');
+      const currentMiningRateEl = $('#currentMiningRate');
+      if (miningRateEl && state.checkpoint.total_mining_power) {
+        miningRateEl.textContent = state.checkpoint.total_mining_power + '/min';
+        console.log(`⛏️ UI: Updated mining rate to: ${state.checkpoint.total_mining_power}/min`);
+      }
+      if (currentMiningRateEl && state.checkpoint.total_mining_power) {
+        currentMiningRateEl.textContent = `+${state.checkpoint.total_mining_power} gold/min`;
+        console.log(`💰 UI: Updated current mining rate display`);
+      }
     }
     
     // Force update display with new purchase data immediately
