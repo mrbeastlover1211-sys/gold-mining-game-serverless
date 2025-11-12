@@ -182,10 +182,10 @@ async function connectWallet() {
     // Initialize checkpoint-based mining
     initializeCheckpointMining();
     
-    // Check land status after wallet connection - show popup after 3 seconds if no land
+    // Check land status after wallet connection - show popup after 2 seconds if no land
     window.landCheckTimeout = setTimeout(async () => {
       await checkLandStatusAndShowPopup();
-    }, 3000);
+    }, 2000);
     
   } catch (e) {
     console.error('❌ Wallet connection failed:', e);
@@ -614,33 +614,35 @@ async function buyPickaxe(pickaxeType) {
     return;
   }
   
-  // Check if user has land before allowing pickaxe purchase
+  // STRICT land ownership check - ALWAYS show persistent popup if no land
   try {
     const landResponse = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
-    const landData = await landResponse.json();
     
-    console.log('🔍 Land check result:', landData);
+    if (!landResponse.ok) {
+      throw new Error(`Land verification failed: ${landResponse.status}`);
+    }
+    
+    const landData = await landResponse.json();
+    console.log('🔍 Pickaxe purchase land check:', landData);
     
     if (!landData.hasLand) {
-      console.log('❌ Land check failed - no land found');
-      $('#shopMsg').textContent = '🏠 You need to purchase land first before buying pickaxes!';
+      console.log('🚨 BLOCKING pickaxe purchase - no land ownership detected');
+      $('#shopMsg').textContent = '🏠 Land ownership required to buy pickaxes!';
       $('#shopMsg').className = 'msg error';
-      showMandatoryLandPurchaseModal();
+      
+      // Show persistent popup that cannot be closed
+      showPersistentLandPopup();
       return;
     } else {
-      console.log('✅ Land check passed - user has land, proceeding with purchase');
+      console.log('✅ Land verification passed - allowing pickaxe purchase');
     }
   } catch (e) {
-    console.error('❌ Failed to check land status:', e);
-    console.error('Error details:', e.message);
-    $('#shopMsg').textContent = 'Failed to verify land ownership. Please try again.';
+    console.error('❌ Land verification failed:', e);
+    $('#shopMsg').textContent = '❌ Cannot verify land ownership. Please refresh and try again.';
     $('#shopMsg').className = 'msg error';
     
-    // Show the actual error to help debug
-    if (e.message.includes('404')) {
-      $('#shopMsg').textContent = 'API endpoint error. Please contact support.';
-    }
-    
+    // Show popup on verification failure
+    showPersistentLandPopup();
     return;
   }
   
@@ -832,59 +834,79 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
   }
 }
 
-// Check land status and force popup for new users
+// Check land status and force popup for new users - PERSISTENT UNTIL PURCHASED
 async function checkLandStatusAndShowPopup() {
   if (!state.address) return;
   
-  // Check if land was purchased for THIS specific wallet address
-  const landPurchasedKey = `landPurchased_${state.address}`;
-  if (sessionStorage.getItem(landPurchasedKey) === 'true') {
-    console.log('✅ Land purchased for this wallet in this session, skipping popup');
-    return;
-  }
-  
-  // Check if popup is already showing
-  if (document.getElementById('mandatoryLandModal')) {
-    console.log('⚠️ Land modal already showing, skipping');
-    return;
-  }
-  
+  // ALWAYS check database for land ownership - don't rely on sessionStorage for land verification
   try {
     console.log('🔍 Checking land status for:', state.address.slice(0, 8) + '...');
     
     const response = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
     
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      console.error(`❌ Land status API error: ${response.status}`);
+      // If API fails, show popup to be safe
+      showPersistentLandPopup();
+      return;
     }
     
     const data = await response.json();
     console.log('🏠 Land status response:', data);
     
     if (!data.hasLand) {
-      console.log('🏠 User has no land, showing mandatory purchase popup');
-      // User doesn't have land, show mandatory purchase modal
-      showMandatoryLandPurchaseModal();
+      console.log('🏠 User has no land, showing persistent purchase popup');
+      // User doesn't have land, show persistent modal that cannot be closed
+      showPersistentLandPopup();
     } else {
       console.log('✅ User has land, can proceed with game');
-      // Make sure no popup is showing for users with land
+      // User has land, remove any existing popups and allow gameplay
       const existingModal = document.getElementById('mandatoryLandModal');
       if (existingModal) {
         existingModal.remove();
+        console.log('🗑️ Removed land popup - user has verified land ownership');
       }
-      // Set wallet-specific session flag to prevent future checks
-      const landPurchasedKey = `landPurchased_${state.address}`;
-      sessionStorage.setItem(landPurchasedKey, 'true');
+      
+      // Mark as verified for this wallet in this session
+      const landVerifiedKey = `landVerified_${state.address}`;
+      sessionStorage.setItem(landVerifiedKey, 'true');
+      
+      // Enable game functionality
+      enableGameplay();
     }
   } catch (e) {
-    console.error('Failed to check land status:', e);
-    // Only show popup if we can't verify land status AND no session flag for this wallet
-    const landPurchasedKey = `landPurchased_${state.address}`;
-    if (!sessionStorage.getItem(landPurchasedKey)) {
-      console.log('⚠️ Could not verify land status, showing popup as fallback');
-      showMandatoryLandPurchaseModal();
-    }
+    console.error('❌ Failed to check land status:', e);
+    // If we can't verify land status, show popup to be safe
+    console.log('⚠️ Could not verify land status, showing popup as fallback');
+    showPersistentLandPopup();
   }
+}
+
+// Show persistent land popup that cannot be closed until purchase
+function showPersistentLandPopup() {
+  // Remove any existing modal first
+  const existingModal = document.getElementById('mandatoryLandModal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  console.log('🚨 Showing persistent land popup');
+  createMandatoryLandPurchaseModal();
+  
+  // Disable game functionality until land is purchased
+  disableGameplay();
+}
+
+// Enable game functionality after land purchase
+function enableGameplay() {
+  console.log('🎮 Enabling game functionality');
+  // Add any game enabling logic here if needed
+}
+
+// Disable game functionality when no land
+function disableGameplay() {
+  console.log('🚫 Disabling game functionality - land required');
+  // Add any game disabling logic here if needed
 }
 
 // Legacy function for compatibility
@@ -1124,14 +1146,30 @@ function createMandatoryLandPurchaseModal() {
 
   document.body.appendChild(modal);
 
-  // Prevent modal closing
+  // PREVENT ALL WAYS TO CLOSE THE MODAL UNTIL LAND IS PURCHASED
   modal.addEventListener('contextmenu', (e) => e.preventDefault());
   modal.addEventListener('click', (e) => e.stopPropagation());
-
-  // Block escape key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && document.getElementById('mandatoryLandModal')) {
+  
+  // Block ALL escape methods
+  const blockEscape = (e) => {
+    if (document.getElementById('mandatoryLandModal')) {
+      if (e.key === 'Escape' || e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+        e.preventDefault();
+        console.log('🚨 Popup cannot be closed until land is purchased!');
+        showMandatoryLandMessage('🔒 You must purchase land to continue playing!', 'error');
+        return false;
+      }
+    }
+  };
+  
+  document.addEventListener('keydown', blockEscape);
+  
+  // Prevent page refresh when popup is showing
+  window.addEventListener('beforeunload', (e) => {
+    if (document.getElementById('mandatoryLandModal')) {
       e.preventDefault();
+      e.returnValue = 'You must purchase land before leaving. Your progress will be lost!';
+      return e.returnValue;
     }
   });
 }
@@ -1334,23 +1372,31 @@ async function purchaseMandatoryLand() {
 
     showMandatoryLandMessage('🎉 Land purchased successfully! Welcome to the game!', 'success');
     
-    // Close modal immediately and refresh everything
+    // Close modal and enable gameplay after successful purchase
     setTimeout(async () => {
+      console.log('✅ Land purchase confirmed - enabling gameplay');
+      
+      // Remove the persistent popup
       closeMandatoryLandModal();
       
-      // Clear any existing land check timers immediately
+      // Clear any existing land check timers
       if (window.landCheckTimeout) {
         clearTimeout(window.landCheckTimeout);
         window.landCheckTimeout = null;
       }
       
+      // Mark land as verified for this wallet
+      const landVerifiedKey = `landVerified_${state.address}`;
+      sessionStorage.setItem(landVerifiedKey, 'true');
+      
       // Force refresh user status to get updated land ownership
       await refreshStatus();
       await updateWalletBalance();
       
-      // Set a wallet-specific flag to prevent future popups for this session
-      const landPurchasedKey = `landPurchased_${state.address}`;
-      sessionStorage.setItem(landPurchasedKey, 'true');
+      // Enable game functionality
+      enableGameplay();
+      
+      console.log('🎮 Game functionality enabled - user can now buy pickaxes');
       
     }, 2000);
     
