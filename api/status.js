@@ -10,11 +10,10 @@ export default async function handler(req, res) {
     
     console.log(`📊 Getting status for: ${address.slice(0, 8)}...`);
     
-    // Use reliable file storage - works immediately
+    // Use database - proper implementation
     try {
-      throw new Error('Using file storage for reliability');
-      // const { getDatabase } = await import('../database.js');
-      // const db = await getDatabase();
+      const { getDatabase } = await import('../database.js');
+      const db = await getDatabase();
       
       console.log(`🗄️ Loading user data from database: ${address.slice(0, 8)}...`);
       
