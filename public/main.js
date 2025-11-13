@@ -646,7 +646,7 @@ async function buyPickaxe(pickaxeType) {
           console.log('🚨 BLOCKING pickaxe purchase - no land ownership detected');
           $('#shopMsg').textContent = '🏠 You need to purchase land first before buying pickaxes!';
           $('#shopMsg').className = 'msg error';
-          showPersistentLandPopup();
+          showLandModal();
           return;
         } else {
           console.log('✅ Land verification passed - caching for session');
@@ -875,11 +875,10 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
   }
 }
 
-// Check land status and force popup for new users - PERSISTENT UNTIL PURCHASED
+// Check land status and show popup for users without land
 async function checkLandStatusAndShowPopup() {
   if (!state.address) return;
   
-  // ALWAYS check database for land ownership - don't rely on sessionStorage for land verification
   try {
     console.log('🔍 Checking land status for:', state.address.slice(0, 8) + '...');
     
@@ -887,8 +886,7 @@ async function checkLandStatusAndShowPopup() {
     
     if (!response.ok) {
       console.error(`❌ Land status API error: ${response.status}`);
-      // If API fails, show popup to be safe
-      showPersistentLandPopup();
+      showLandModal();
       return;
     }
     
@@ -896,58 +894,115 @@ async function checkLandStatusAndShowPopup() {
     console.log('🏠 Land status response:', data);
     
     if (!data.hasLand) {
-      console.log('🏠 User has no land, showing persistent purchase popup');
-      // User doesn't have land, show persistent modal that cannot be closed
-      showPersistentLandPopup();
+      console.log('🏠 User has no land, showing land purchase modal');
+      showLandModal();
     } else {
       console.log('✅ User has land, can proceed with game');
-      // User has land, remove any existing popups and allow gameplay
-      const existingModal = document.getElementById('mandatoryLandModal');
-      if (existingModal) {
-        existingModal.remove();
-        console.log('🗑️ Removed land popup - user has verified land ownership');
-      }
+      hideLandModal();
       
       // Mark as verified for this wallet in this session
       const landVerifiedKey = `landVerified_${state.address}`;
       sessionStorage.setItem(landVerifiedKey, 'true');
-      
-      // Enable game functionality
-      enableGameplay();
     }
   } catch (e) {
     console.error('❌ Failed to check land status:', e);
-    // If we can't verify land status, show popup to be safe
-    console.log('⚠️ Could not verify land status, showing popup as fallback');
-    showPersistentLandPopup();
+    showLandModal();
   }
 }
 
-// Show persistent land popup that cannot be closed until purchase
-function showPersistentLandPopup() {
-  // Remove any existing modal first
-  const existingModal = document.getElementById('mandatoryLandModal');
-  if (existingModal) {
-    existingModal.remove();
+// Show the land modal using the existing HTML modal
+function showLandModal() {
+  const landModal = document.getElementById('landModal');
+  if (landModal) {
+    landModal.style.display = 'flex';
+    landModal.classList.add('show');
+    console.log('🏠 Showing land modal');
+  } else {
+    console.error('❌ Land modal not found in HTML');
+  }
+}
+
+// Hide the land modal
+function hideLandModal() {
+  const landModal = document.getElementById('landModal');
+  if (landModal) {
+    landModal.style.display = 'none';
+    landModal.classList.remove('show');
+    console.log('🏠 Hiding land modal');
+  }
+}
+
+// Purchase land using the HTML modal button
+async function purchaseLand() {
+  if (!state.address) {
+    showLandMessage('Please connect your wallet first!', 'error');
+    return;
   }
   
-  console.log('🚨 Showing persistent land popup');
-  createMandatoryLandPurchaseModal();
-  
-  // Disable game functionality until land is purchased
-  disableGameplay();
+  try {
+    showLandMessage('Creating land purchase transaction...', 'info');
+    
+    // Create land purchase transaction
+    const response = await fetch('/api/purchase-land', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.address })
+    });
+    
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+    
+    showLandMessage('Please sign the transaction in your wallet...', 'info');
+    
+    // Sign and send transaction
+    const txBytes = Uint8Array.from(atob(data.transaction), c => c.charCodeAt(0));
+    const tx = solanaWeb3.Transaction.from(txBytes);
+    
+    const sig = await state.wallet.signAndSendTransaction(tx);
+    showLandMessage(`Transaction submitted: ${sig.signature.slice(0, 8)}...`, 'info');
+    
+    // Confirm purchase
+    const confirmResponse = await fetch('/api/confirm-land-purchase', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        address: state.address, 
+        signature: sig.signature 
+      })
+    });
+    
+    const confirmData = await confirmResponse.json();
+    if (confirmData.error) throw new Error(confirmData.error);
+    
+    showLandMessage('✅ Land purchased successfully!', 'success');
+    
+    // Mark as verified
+    const landVerifiedKey = `landVerified_${state.address}`;
+    sessionStorage.setItem(landVerifiedKey, 'true');
+    
+    // Hide modal after successful purchase
+    setTimeout(() => {
+      hideLandModal();
+    }, 2000);
+    
+    // Refresh status to update land ownership
+    await refreshStatus();
+    await updateWalletBalance();
+    
+  } catch (e) {
+    console.error('❌ Land purchase failed:', e);
+    showLandMessage('❌ Purchase failed: ' + e.message, 'error');
+  }
 }
 
-// Enable game functionality after land purchase
-function enableGameplay() {
-  console.log('🎮 Enabling game functionality');
-  // Add any game enabling logic here if needed
-}
-
-// Disable game functionality when no land
-function disableGameplay() {
-  console.log('🚫 Disabling game functionality - land required');
-  // Add any game disabling logic here if needed
+// Show message in land modal
+function showLandMessage(message, type) {
+  const landMsg = document.getElementById('landMsg');
+  if (landMsg) {
+    landMsg.textContent = message;
+    landMsg.className = `msg ${type}`;
+    landMsg.style.display = 'block';
+  }
 }
 
 // Legacy function for compatibility
