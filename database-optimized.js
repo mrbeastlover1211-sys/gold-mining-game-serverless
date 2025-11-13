@@ -163,12 +163,16 @@ class OptimizedDatabase {
   }
   
   // Optimized user retrieval with caching
-  static async getUser(address) {
-    // Try cache first
-    const cached = this.getCachedUser(address);
-    if (cached) {
-      console.log(`⚡ Cache hit for ${address.slice(0, 8)}...`);
-      return cached;
+  static async getUser(address, forceRefresh = false) {
+    // Skip cache if force refresh requested (after purchases)
+    if (!forceRefresh) {
+      const cached = this.getCachedUser(address);
+      if (cached) {
+        console.log(`⚡ Cache hit for ${address.slice(0, 8)}...`);
+        return cached;
+      }
+    } else {
+      console.log(`🔄 Force refresh requested for ${address.slice(0, 8)}...`);
     }
     
     // Database fallback

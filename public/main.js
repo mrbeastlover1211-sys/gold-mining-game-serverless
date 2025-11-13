@@ -254,8 +254,12 @@ async function refreshStatus() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
     
+    // Add header to force refresh if after purchase
+    const headers = afterPurchase ? { 'x-last-purchase': Date.now().toString() } : {};
+    
     const r = await fetch(`/api/status?address=${encodeURIComponent(state.address)}`, {
-      signal: controller.signal
+      signal: controller.signal,
+      headers: headers
     });
     clearTimeout(timeoutId);
     
@@ -749,9 +753,9 @@ async function buyPickaxe(pickaxeType) {
     console.log('🔄 Forcing display update with new data...');
     updateDisplay(j2);
     
-    // Wait a moment for database to settle, then refresh once
+    // Wait a moment for database to settle, then refresh once with force flag
     await new Promise(resolve => setTimeout(resolve, 1000));
-    await refreshStatus();
+    await refreshStatus(true); // Force refresh after purchase
     await updateWalletBalance();
     
     // CRITICAL: Restart status polling after successful update

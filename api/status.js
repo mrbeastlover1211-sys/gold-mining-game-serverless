@@ -12,8 +12,12 @@ export default async function handler(req, res) {
     
     console.log(`📊 Getting status for: ${address.slice(0, 8)}...`);
     
-    // Get user with optimized caching - ALWAYS get fresh data for status checks
-    const user = await OptimizedDatabase.getUser(address);
+    // Check if recent purchase happened (force refresh if so)
+    const lastPurchaseTime = req.headers['x-last-purchase'] || 0;
+    const forceRefresh = lastPurchaseTime && (Date.now() - parseInt(lastPurchaseTime)) < 30000; // 30 second window
+    
+    // Get user with optional force refresh after purchases
+    const user = await OptimizedDatabase.getUser(address, forceRefresh);
     
     // Calculate current gold from checkpoint
     const currentTime = Math.floor(Date.now() / 1000);
