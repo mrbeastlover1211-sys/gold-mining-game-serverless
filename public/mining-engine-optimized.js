@@ -150,11 +150,21 @@ class OptimizedMiningEngine {
     
     // Update mining rate display
     const rateEl = document.getElementById('currentMiningRate');
+    const miningRateEl = document.getElementById('miningRate');
+    
     if (rateEl) {
       if (this.checkpoint.miningPower > 0) {
         rateEl.textContent = `+${this.checkpoint.miningPower.toLocaleString()} gold/min`;
       } else {
         rateEl.textContent = '+0 gold/min';
+      }
+    }
+    
+    if (miningRateEl) {
+      if (this.checkpoint.miningPower > 0) {
+        miningRateEl.textContent = `${this.checkpoint.miningPower.toLocaleString()}/min`;
+      } else {
+        miningRateEl.textContent = '0/min';
       }
     }
     
