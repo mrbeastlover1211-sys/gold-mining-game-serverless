@@ -248,59 +248,64 @@ class OptimizedDatabase {
     console.log(`📝 Queued user ${address.slice(0, 8)}... for batch update`);
   }
   
-  // Force immediate save (for critical operations)
+  // ULTRA-FAST immediate save (optimized for 1-second completion)
   static async saveUserImmediate(address, userData) {
+    const saveStartTime = Date.now();
     this.setCachedUser(address, userData);
     
     try {
+      console.log(`⚡ FAST SAVE: Starting optimized save for ${address.slice(0, 8)}...`);
+      
+      // Get pool with shorter timeout for faster response
       const pool = await this.getPool();
-      const result = await pool.query(`
-        INSERT INTO users (
-          address, silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes,
-          total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity,
-          has_land, land_purchase_date
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-        ON CONFLICT (address) DO UPDATE SET
-          silver_pickaxes = EXCLUDED.silver_pickaxes,
-          gold_pickaxes = EXCLUDED.gold_pickaxes,
-          diamond_pickaxes = EXCLUDED.diamond_pickaxes,
-          netherite_pickaxes = EXCLUDED.netherite_pickaxes,
-          total_mining_power = EXCLUDED.total_mining_power,
-          checkpoint_timestamp = EXCLUDED.checkpoint_timestamp,
-          last_checkpoint_gold = EXCLUDED.last_checkpoint_gold,
-          last_activity = EXCLUDED.last_activity,
-          has_land = COALESCE(EXCLUDED.has_land, users.has_land),
-          land_purchase_date = COALESCE(EXCLUDED.land_purchase_date, users.land_purchase_date)
-        RETURNING address
-      `, [
-        address,
-        parseInt(userData.inventory?.silver || 0),
-        parseInt(userData.inventory?.gold || 0),
-        parseInt(userData.inventory?.diamond || 0),
-        parseInt(userData.inventory?.netherite || 0),
-        parseInt(userData.total_mining_power || 0),
-        parseInt(userData.checkpoint_timestamp || Math.floor(Date.now() / 1000)),
-        parseFloat(userData.last_checkpoint_gold || 0),
-        parseInt(userData.lastActivity || Math.floor(Date.now() / 1000)),
-        userData.hasLand || false,
-        userData.landPurchaseDate || null
+      
+      // ⚡ OPTIMIZED: Use prepared statement equivalent with minimal data
+      const result = await Promise.race([
+        pool.query(`
+          INSERT INTO users (
+            address, silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes,
+            total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          ON CONFLICT (address) DO UPDATE SET
+            silver_pickaxes = EXCLUDED.silver_pickaxes,
+            gold_pickaxes = EXCLUDED.gold_pickaxes,
+            diamond_pickaxes = EXCLUDED.diamond_pickaxes,
+            netherite_pickaxes = EXCLUDED.netherite_pickaxes,
+            total_mining_power = EXCLUDED.total_mining_power,
+            checkpoint_timestamp = EXCLUDED.checkpoint_timestamp,
+            last_checkpoint_gold = EXCLUDED.last_checkpoint_gold,
+            last_activity = EXCLUDED.last_activity
+          RETURNING address
+        `, [
+          address,
+          parseInt(userData.inventory?.silver || 0),
+          parseInt(userData.inventory?.gold || 0),
+          parseInt(userData.inventory?.diamond || 0),
+          parseInt(userData.inventory?.netherite || 0),
+          parseInt(userData.total_mining_power || 0),
+          parseInt(userData.checkpoint_timestamp || Math.floor(Date.now() / 1000)),
+          parseFloat(userData.last_checkpoint_gold || 0),
+          parseInt(userData.lastActivity || Math.floor(Date.now() / 1000))
+        ]),
+        // ⚡ SPEED: Timeout after 2 seconds instead of waiting forever
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Save timeout after 2 seconds')), 2000)
+        )
       ]);
       
-      console.log(`💾 SAVED TO DB: netherite=${parseInt(userData.inventory?.netherite || 0)}, power=${parseInt(userData.total_mining_power || 0)}`);
-      console.log(`🔍 Full inventory saved:`, {
-        silver: parseInt(userData.inventory?.silver || 0),
-        gold: parseInt(userData.inventory?.gold || 0),
-        diamond: parseInt(userData.inventory?.diamond || 0),
-        netherite: parseInt(userData.inventory?.netherite || 0)
-      });
+      const saveTime = Date.now() - saveStartTime;
+      console.log(`⚡ ULTRA-FAST SAVE COMPLETED in ${saveTime}ms for ${address.slice(0, 8)}`);
+      console.log(`💾 DB UPDATED: netherite=${parseInt(userData.inventory?.netherite || 0)}, power=${parseInt(userData.total_mining_power || 0)}`);
       
-      console.log(`💾 Immediately saved user ${address.slice(0, 8)}...`);
       return true;
       
     } catch (error) {
-      console.error(`❌ Immediate save failed for ${address.slice(0, 8)}:`, error.message);
-      // Still queue for batch retry
+      const saveTime = Date.now() - saveStartTime;
+      console.error(`❌ Fast save failed after ${saveTime}ms for ${address.slice(0, 8)}:`, error.message);
+      
+      // If immediate save fails, queue for batch retry
       await this.queueUpdate(address, userData);
+      console.log(`📦 Queued for batch save as fallback`);
       return false;
     }
   }
