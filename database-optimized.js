@@ -67,6 +67,12 @@ class OptimizedDatabase {
     return null;
   }
   
+  // Force cache invalidation (for immediate updates)
+  static invalidateCache(address) {
+    userCache.delete(address);
+    console.log(`🗑️ Cache invalidated for ${address.slice(0, 8)}...`);
+  }
+  
   static setCachedUser(address, userData) {
     // Prevent memory bloat
     if (userCache.size >= MAX_CACHE_SIZE) {

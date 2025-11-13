@@ -182,6 +182,9 @@ async function connectWallet() {
     // Initialize checkpoint-based mining
     initializeCheckpointMining();
     
+    // Start status polling to keep data fresh
+    startStatusPolling();
+    
     // Check land status after wallet connection - show popup after 2 seconds if no land
     window.landCheckTimeout = setTimeout(async () => {
       await checkLandStatusAndShowPopup();
@@ -737,13 +740,27 @@ async function buyPickaxe(pickaxeType) {
       }
     }
     
+    // CRITICAL: Stop status polling temporarily to prevent overwrites
+    console.log('🛑 Temporarily stopping status polling to prevent overwrites...');
+    const wasPolling = state.intervalId !== null;
+    stopStatusPolling();
+    
     // Force update display with new purchase data immediately
     console.log('🔄 Forcing display update with new data...');
     updateDisplay(j2);
     
-    // Refresh to show new data from server
+    // Wait a moment for database to settle, then refresh once
+    await new Promise(resolve => setTimeout(resolve, 1000));
     await refreshStatus();
     await updateWalletBalance();
+    
+    // CRITICAL: Restart status polling after successful update
+    if (wasPolling) {
+      console.log('▶️ Restarting status polling...');
+      setTimeout(() => {
+        startStatusPolling();
+      }, 2000); // Wait 2 seconds before restarting polling
+    }
     
     // Force restart mining with new checkpoint data
     if (state.checkpoint && state.checkpoint.total_mining_power > 0) {
