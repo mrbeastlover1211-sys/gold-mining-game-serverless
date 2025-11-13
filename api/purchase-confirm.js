@@ -52,7 +52,6 @@ export default async function handler(req, res) {
   // Removing artificial timeout that's causing failures
 
   if (req.method !== 'POST') {
-    clearTimeout(timeout);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -69,7 +68,6 @@ export default async function handler(req, res) {
 
     // Validate signature format
     if (typeof signature !== 'string' || signature.length < 80 || signature.length > 90) {
-      clearTimeout(timeout);
       return res.status(400).json({ error: 'invalid signature format' });
     }
 
