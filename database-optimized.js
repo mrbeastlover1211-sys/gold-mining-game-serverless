@@ -274,17 +274,25 @@ class OptimizedDatabase {
         RETURNING address
       `, [
         address,
-        userData.inventory?.silver || 0,
-        userData.inventory?.gold || 0,
-        userData.inventory?.diamond || 0,
-        userData.inventory?.netherite || 0,
-        userData.total_mining_power || 0,
-        userData.checkpoint_timestamp || Math.floor(Date.now() / 1000),
-        userData.last_checkpoint_gold || 0,
-        userData.lastActivity || Math.floor(Date.now() / 1000),
+        parseInt(userData.inventory?.silver || 0),
+        parseInt(userData.inventory?.gold || 0),
+        parseInt(userData.inventory?.diamond || 0),
+        parseInt(userData.inventory?.netherite || 0),
+        parseInt(userData.total_mining_power || 0),
+        parseInt(userData.checkpoint_timestamp || Math.floor(Date.now() / 1000)),
+        parseFloat(userData.last_checkpoint_gold || 0),
+        parseInt(userData.lastActivity || Math.floor(Date.now() / 1000)),
         userData.hasLand || false,
         userData.landPurchaseDate || null
       ]);
+      
+      console.log(`💾 SAVED TO DB: netherite=${parseInt(userData.inventory?.netherite || 0)}, power=${parseInt(userData.total_mining_power || 0)}`);
+      console.log(`🔍 Full inventory saved:`, {
+        silver: parseInt(userData.inventory?.silver || 0),
+        gold: parseInt(userData.inventory?.gold || 0),
+        diamond: parseInt(userData.inventory?.diamond || 0),
+        netherite: parseInt(userData.inventory?.netherite || 0)
+      });
       
       console.log(`💾 Immediately saved user ${address.slice(0, 8)}...`);
       return true;
