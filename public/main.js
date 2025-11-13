@@ -496,12 +496,19 @@ async function loadInitialUserData() {
     console.log('✅ User data loaded from database:', userData);
     
     // Return the checkpoint data needed for the mining engine
-    return {
+    console.log('🔄 Processing user data for mining engine:', userData);
+    
+    const checkpointData = {
       last_checkpoint_gold: userData.gold || 0,
       inventory: userData.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 },
       total_mining_power: userData.checkpoint?.total_mining_power || 0,
       checkpoint_timestamp: userData.checkpoint?.checkpoint_timestamp || Math.floor(Date.now() / 1000)
     };
+    
+    console.log('📊 Checkpoint data for engine:', checkpointData);
+    console.log('🎯 Inventory being passed:', checkpointData.inventory);
+    
+    return checkpointData;
     
   } catch (error) {
     console.error('❌ Failed to load user data:', error.message);
