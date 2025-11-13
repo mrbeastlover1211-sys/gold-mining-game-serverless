@@ -169,10 +169,20 @@ class OptimizedDatabase {
       const cached = this.getCachedUser(address);
       if (cached) {
         console.log(`⚡ Cache hit for ${address.slice(0, 8)}...`);
-        return cached;
+        // Verify cache has valid inventory data
+        if (cached.inventory && typeof cached.inventory === 'object') {
+          return cached;
+        } else {
+          console.log(`⚠️ Cache has invalid inventory, forcing refresh...`);
+          forceRefresh = true;
+        }
       }
-    } else {
+    }
+    
+    if (forceRefresh) {
       console.log(`🔄 Force refresh requested for ${address.slice(0, 8)}...`);
+      // Invalidate bad cache
+      this.invalidateCache(address);
     }
     
     // Database fallback
