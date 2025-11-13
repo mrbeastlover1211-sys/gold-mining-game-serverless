@@ -110,12 +110,30 @@ export default async function handler(req, res) {
       last_checkpoint_gold: user.last_checkpoint_gold || 0
     });
     
-    // ⚡ ULTRA-FAST: Respond immediately, save in background
-    console.log(`⚡ Responding immediately, saving in background...`);
+    // 🔧 SIMULTANEOUS: Save to database BEFORE responding (same time as UI update)
+    console.log(`💾 Saving to database IMMEDIATELY (simultaneous with response)...`);
     
-    // Send response FIRST before database save
+    try {
+      const saveSuccess = await OptimizedDatabase.saveUserImmediate(address, user);
+      
+      if (saveSuccess) {
+        console.log(`✅ Database save completed in ${Date.now() - startTime}ms - SIMULTANEOUS WITH UI UPDATE!`);
+        OptimizedDatabase.invalidateCache(address);
+        OptimizedDatabase.setCachedUser(address, user);
+        console.log(`💾 DATABASE UPDATED IMMEDIATELY: netherite=${user.inventory?.netherite || 0}, power=${user.total_mining_power || 0}`);
+      } else {
+        console.warn(`⚠️ Immediate save failed, queuing for batch`);
+        await OptimizedDatabase.queueUpdate(address, user);
+      }
+    } catch (saveError) {
+      console.error(`❌ Immediate save error:`, saveError.message);
+      await OptimizedDatabase.queueUpdate(address, user);
+    }
+
+    // Send response AFTER database save (ensures data is saved before UI updates)
     clearTimeout(timeout);
-    console.log(`🎯 Purchase confirmation completed in ${Date.now() - startTime}ms`);
+    console.log(`🎯 Purchase confirmation with database save completed in ${Date.now() - startTime}ms`);
+    console.log(`✅ DATA IS ALREADY IN DATABASE - SAFE TO REFRESH IMMEDIATELY!`);
 
     res.json({ 
       ok: true, 
@@ -131,37 +149,6 @@ export default async function handler(req, res) {
         last_checkpoint_gold: user.last_checkpoint_gold
       }
     });
-    
-    // Save to database in background (after response sent)
-    setImmediate(async () => {
-      try {
-        console.log(`💾 Background save starting for ${address.slice(0, 8)}...`);
-        const saveStart = Date.now();
-        
-        const saveSuccess = await OptimizedDatabase.saveUserImmediate(address, user);
-        
-        if (saveSuccess) {
-          const saveTime = Date.now() - saveStart;
-          console.log(`✅ 🎉 BACKGROUND SAVE COMPLETED for ${address.slice(0, 8)} in ${saveTime}ms`);
-          console.log(`🔄 Cache updated with new inventory data`);
-          console.log(`💾 DATABASE NOW HAS: netherite=${user.inventory?.netherite || 0}, power=${user.total_mining_power || 0}`);
-          console.log(`✅ 🎉 SAFE TO REFRESH PAGE NOW! Data will persist!`);
-          
-          OptimizedDatabase.invalidateCache(address);
-          OptimizedDatabase.setCachedUser(address, user);
-        } else {
-          console.error(`❌ Background save failed for ${address.slice(0, 8)}, queuing for batch`);
-          await OptimizedDatabase.queueUpdate(address, user);
-          console.log(`📦 Purchase queued for batch save - will save in next batch cycle`);
-        }
-      } catch (saveError) {
-        console.error(`❌ Background save error for ${address.slice(0, 8)}:`, saveError.message);
-        await OptimizedDatabase.queueUpdate(address, user);
-        console.log(`📦 Purchase queued for batch save due to error`);
-      }
-    });
-    
-    return; // Exit immediately after sending response
 
     // ⚡ SPEED: Send response quickly
     clearTimeout(timeout);
