@@ -303,7 +303,7 @@ async function refreshStatus(afterPurchase = false) {
     // Also update mining display if checkpoint exists
     if (state.checkpoint && state.checkpoint.total_mining_power > 0) {
       console.log('⛏️ Found existing mining power, starting mining...');
-      initializeCheckpointMining();
+      startCheckpointGoldLoop(); // Use existing function instead of missing one
     } else {
       console.log('ℹ️ No mining power found on refresh');
     }
