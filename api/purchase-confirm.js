@@ -102,6 +102,9 @@ export default async function handler(req, res) {
     
     // Save with optimized batching (immediate for purchases)
     await OptimizedDatabase.saveUserImmediate(address, user);
+    
+    // CRITICAL: Clear cache after immediate save to force fresh data
+    OptimizedDatabase.setCachedUser(address, user);
 
     res.json({ 
       ok: true, 

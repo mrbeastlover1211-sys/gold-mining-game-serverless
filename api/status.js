@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     
     console.log(`📊 Getting status for: ${address.slice(0, 8)}...`);
     
-    // Get user with optimized caching
+    // Get user with optimized caching - ALWAYS get fresh data for status checks
     const user = await OptimizedDatabase.getUser(address);
     
     // Calculate current gold from checkpoint
@@ -25,6 +25,9 @@ export default async function handler(req, res) {
     // Update last activity - batch this update
     user.lastActivity = currentTime;
     await OptimizedDatabase.saveUser(address, user);
+    
+    // CRITICAL: Ensure cache has latest data after any updates
+    OptimizedDatabase.setCachedUser(address, user);
     
     const totalRate = (user.inventory?.silver || 0) * 1 + 
                      (user.inventory?.gold || 0) * 10 + 
