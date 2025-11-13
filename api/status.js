@@ -16,8 +16,17 @@ export default async function handler(req, res) {
     const lastPurchaseTime = req.headers['x-last-purchase'] || 0;
     const forceRefresh = lastPurchaseTime && (Date.now() - parseInt(lastPurchaseTime)) < 30000; // 30 second window
     
-    // Get user with optional force refresh after purchases
-    const user = await OptimizedDatabase.getUser(address, forceRefresh);
+    // 🔧 FIX: Always force fresh data from database to fix missing data issue
+    console.log(`📊 Getting fresh user data from database for ${address.slice(0, 8)}...`);
+    const user = await OptimizedDatabase.getUser(address, true); // ALWAYS force refresh
+    console.log(`📊 Retrieved user inventory:`, user.inventory);
+    console.log(`📊 Retrieved user data:`, {
+      silver: user.inventory?.silver || 0,
+      gold: user.inventory?.gold || 0, 
+      diamond: user.inventory?.diamond || 0,
+      netherite: user.inventory?.netherite || 0,
+      total_mining_power: user.total_mining_power || 0
+    });
     
     // Calculate current gold from checkpoint
     const currentTime = Math.floor(Date.now() / 1000);
