@@ -102,11 +102,28 @@ export default async function handler(req, res) {
       last_checkpoint_gold: user.last_checkpoint_gold || 0
     });
     
-    // ⚡ BACK TO INSTANT RESPONSE: Respond immediately, save in background
-    console.log(`⚡ Responding instantly to avoid timeout, saving in background...`);
+    // 💾 SAVE FIRST: Ensure data is saved before responding
+    console.log(`💾 Saving purchase data to database BEFORE responding...`);
+    
+    try {
+      const saveSuccess = await OptimizedDatabase.saveUserImmediate(address, user);
+      
+      if (saveSuccess) {
+        console.log(`✅ Purchase data saved successfully for ${address.slice(0, 8)}`);
+        console.log(`💾 DATABASE NOW HAS: ${JSON.stringify(user.inventory)}`);
+      } else {
+        throw new Error('Save returned false');
+      }
+    } catch (saveError) {
+      console.error(`❌ Failed to save purchase data:`, saveError.message);
+      return res.status(500).json({ 
+        error: 'Purchase processed but failed to save. Please contact support.',
+        details: saveError.message 
+      });
+    }
 
-    // Send response IMMEDIATELY to prevent timeout
-    console.log(`🎯 Purchase confirmation completed in ${Date.now() - startTime}ms - INSTANT RESPONSE!`);
+    // ✅ Send response AFTER successful save
+    console.log(`🎯 Purchase confirmation completed in ${Date.now() - startTime}ms - DATA SAVED!`);
 
     res.json({ 
       ok: true, 
@@ -120,25 +137,6 @@ export default async function handler(req, res) {
         total_mining_power: user.total_mining_power,
         checkpoint_timestamp: user.checkpoint_timestamp,
         last_checkpoint_gold: user.last_checkpoint_gold
-      }
-    });
-    
-    // Save to database in background (after response sent)
-    setImmediate(async () => {
-      try {
-        console.log(`💾 Background save starting for ${address.slice(0, 8)}...`);
-        const saveSuccess = await OptimizedDatabase.saveUserImmediate(address, user);
-        
-        if (saveSuccess) {
-          console.log(`✅ Background save completed for ${address.slice(0, 8)}`);
-          console.log(`💾 DATABASE NOW HAS: ${JSON.stringify(user.inventory)}`);
-        } else {
-          console.error(`❌ Background save failed, queuing for batch`);
-          await OptimizedDatabase.queueUpdate(address, user);
-        }
-      } catch (saveError) {
-        console.error(`❌ Background save error:`, saveError.message);
-        await OptimizedDatabase.queueUpdate(address, user);
       }
     });
     
