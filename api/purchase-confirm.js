@@ -48,13 +48,13 @@ function createCheckpoint(user, address) {
 }
 
 export default async function handler(req, res) {
-  // ⏱️ TIMEOUT FIX: Set response timeout protection
+  // ⏱️ ULTRA-FAST TIMEOUT FIX: Set response timeout protection
   const timeout = setTimeout(() => {
     if (!res.headersSent) {
       console.error('⚠️ Function timeout protection triggered');
       res.status(500).json({ error: 'Purchase confirmation timed out - please try again' });
     }
-  }, 8000); // 8 second timeout (before Vercel's 10 second limit)
+  }, 6000); // 6 second timeout (even faster)
 
   if (req.method !== 'POST') {
     clearTimeout(timeout);
@@ -110,39 +110,49 @@ export default async function handler(req, res) {
       last_checkpoint_gold: user.last_checkpoint_gold || 0
     });
     
-    try {
-      const saveSuccess = await OptimizedDatabase.saveUserImmediate(address, user);
-      
-      if (saveSuccess) {
-        console.log(`✅ Purchase successfully saved to database in ${Date.now() - startTime}ms`);
+    // ⚡ ULTRA-FAST: Respond immediately, save in background
+    console.log(`⚡ Responding immediately, saving in background...`);
+    
+    // Send response FIRST before database save
+    clearTimeout(timeout);
+    console.log(`🎯 Purchase confirmation completed in ${Date.now() - startTime}ms`);
+
+    res.json({ 
+      ok: true, 
+      status: status, 
+      pickaxeType, 
+      quantity: qty, 
+      inventory: user.inventory, 
+      totalRate: totalRate(user.inventory),
+      gold: newCurrentGold,
+      checkpoint: {
+        total_mining_power: user.total_mining_power,
+        checkpoint_timestamp: user.checkpoint_timestamp,
+        last_checkpoint_gold: user.last_checkpoint_gold
+      }
+    });
+    
+    // Save to database in background (after response sent)
+    setImmediate(async () => {
+      try {
+        console.log(`💾 Background save starting...`);
+        const saveSuccess = await OptimizedDatabase.saveUserImmediate(address, user);
         
-        // Quick cache update
-        OptimizedDatabase.invalidateCache(address);
-        OptimizedDatabase.setCachedUser(address, user);
-        
-        // Verify save worked by checking database
-        setTimeout(async () => {
-          try {
-            const verification = await OptimizedDatabase.getUser(address, true); // Force refresh
-            console.log(`🔍 Verification check - saved inventory:`, verification.inventory);
-          } catch (e) {
-            console.error(`❌ Verification failed:`, e.message);
-          }
-        }, 1000);
-        
-      } else {
-        console.error(`❌ CRITICAL: Database save returned false for ${address.slice(0, 8)}`);
-        // Force a manual database operation
+        if (saveSuccess) {
+          console.log(`✅ Background save completed for ${address.slice(0, 8)}`);
+          OptimizedDatabase.invalidateCache(address);
+          OptimizedDatabase.setCachedUser(address, user);
+        } else {
+          console.error(`❌ Background save failed, queuing for batch`);
+          await OptimizedDatabase.queueUpdate(address, user);
+        }
+      } catch (saveError) {
+        console.error(`❌ Background save error:`, saveError.message);
         await OptimizedDatabase.queueUpdate(address, user);
       }
-    } catch (saveError) {
-      console.error(`❌ CRITICAL: Database save threw error:`, saveError.message);
-      console.error(`❌ Save error stack:`, saveError.stack);
-      
-      // Try batch update as fallback
-      await OptimizedDatabase.queueUpdate(address, user);
-      console.log(`📦 Queued purchase for batch update as fallback`);
-    }
+    });
+    
+    return; // Exit immediately after sending response
 
     // ⚡ SPEED: Send response quickly
     clearTimeout(timeout);
