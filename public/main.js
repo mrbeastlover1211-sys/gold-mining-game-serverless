@@ -703,14 +703,26 @@ async function buyPickaxe(pickaxeType) {
     const sig = await state.wallet.signAndSendTransaction(tx);
     $('#shopMsg').textContent = `Transaction submitted: ${sig.signature.slice(0, 8)}...`;
 
-    // Confirm with better error handling
+    // Confirm with detailed logging  
+    console.log('🚀 Starting purchase confirmation...', { 
+      address: state.address.slice(0, 8), 
+      pickaxeType, 
+      quantity, 
+      signature: sig.signature.slice(0, 8) 
+    });
+    
     const r2 = await fetch('/api/purchase-confirm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ address: state.address, pickaxeType, quantity, signature: sig.signature }),
     });
     
-    console.log('🔄 Purchase confirmation response status:', r2.status);
+    console.log('📊 Purchase confirmation response:', {
+      status: r2.status,
+      statusText: r2.statusText,
+      ok: r2.ok,
+      headers: Object.fromEntries(r2.headers.entries())
+    });
     
     if (!r2.ok) {
       const errorText = await r2.text();
