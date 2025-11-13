@@ -100,21 +100,28 @@ export default async function handler(req, res) {
     // Create new checkpoint with updated mining power
     const newCurrentGold = createCheckpoint(user, address);
     
-    // Save with optimized batching (immediate for purchases)
-    console.log(`💾 Saving user data immediately to database...`);
+    // 🔧 CRITICAL FIX: Ensure database save with correct data
+    console.log(`💾 Saving purchase data immediately to database...`);
+    console.log(`📊 Data being saved:`, {
+      address: address.slice(0, 8) + '...',
+      inventory: user.inventory,
+      total_mining_power: user.total_mining_power,
+      gold: newCurrentGold
+    });
+    
     const saveSuccess = await OptimizedDatabase.saveUserImmediate(address, user);
     
     if (saveSuccess) {
-      // CRITICAL: Force database flush and cache update
-      console.log(`🗑️ Clearing all cache for immediate refresh...`);
-      OptimizedDatabase.invalidateCache(address);
+      console.log(`✅ Purchase successfully saved to database for ${address.slice(0, 8)}...`);
       
-      // Set fresh data in cache with extended TTL to prevent overwrites
+      // CRITICAL: Force database flush and cache update
+      OptimizedDatabase.invalidateCache(address);
       OptimizedDatabase.setCachedUser(address, user);
       
-      console.log(`✅ Purchase data saved and cached for ${address.slice(0, 8)}...`);
+      console.log(`🔄 Cache updated with new purchase data`);
     } else {
-      console.error(`❌ Database save failed for ${address.slice(0, 8)}...`);
+      console.error(`❌ CRITICAL: Database save failed for ${address.slice(0, 8)}...`);
+      throw new Error('Failed to save purchase to database');
     }
 
     res.json({ 
