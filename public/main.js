@@ -737,29 +737,13 @@ async function buyPickaxe(pickaxeType) {
     
     console.log('🔄 Processing purchase response:', j2);
     
-    // ⚡ OPTIMIZED: Use client-side mining engine for instant updates
-    console.log('⚡ Using optimized mining engine for instant pickaxe updates...');
+    // 💾 FIXED: Force refresh from database after purchase confirmation
+    console.log('💾 Purchase confirmed by server - refreshing from database...');
     
-    // Add pickaxe to local mining engine (instant UI update)
-    const engineData = window.optimizedMiningEngine.addPickaxe(pickaxeType, quantity);
+    // Force refresh user data from database to get the saved state
+    await refreshStatus(true); // Pass true to force refresh after purchase
     
-    if (engineData) {
-      console.log('✅ Pickaxe added to mining engine:', engineData);
-      console.log('🎯 UI updated instantly - no server polling needed!');
-      
-      // Optionally sync the state with server response for validation
-      if (j2.checkpoint) {
-        console.log('🔄 Syncing engine with server checkpoint...');
-        window.optimizedMiningEngine.sync({
-          gold: j2.checkpoint.last_checkpoint_gold || engineData.gold,
-          inventory: j2.inventory || engineData.inventory,
-          miningPower: j2.checkpoint.total_mining_power || engineData.miningPower,
-          timestamp: j2.checkpoint.checkpoint_timestamp || engineData.timestamp
-        });
-      }
-    } else {
-      console.error('❌ Failed to update mining engine');
-    }
+    console.log('✅ Database refresh completed - purchase should now persist on page reload!');
     
     // Update wallet balance 
     await updateWalletBalance();
