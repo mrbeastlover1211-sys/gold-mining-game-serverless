@@ -696,13 +696,33 @@ async function buyPickaxe(pickaxeType) {
     const sig = await state.wallet.signAndSendTransaction(tx);
     $('#shopMsg').textContent = `Transaction submitted: ${sig.signature.slice(0, 8)}...`;
 
-    // Confirm
+    // Confirm with better error handling
     const r2 = await fetch('/api/purchase-confirm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ address: state.address, pickaxeType, quantity, signature: sig.signature }),
     });
-    const j2 = await r2.json();
+    
+    console.log('🔄 Purchase confirmation response status:', r2.status);
+    
+    if (!r2.ok) {
+      const errorText = await r2.text();
+      console.error('❌ Purchase confirmation failed:', errorText);
+      throw new Error(`Purchase confirmation failed: ${errorText}`);
+    }
+    
+    const responseText = await r2.text();
+    console.log('📄 Raw response:', responseText.substring(0, 200) + '...');
+    
+    let j2;
+    try {
+      j2 = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('❌ JSON parse error:', parseError);
+      console.error('❌ Response text:', responseText);
+      throw new Error(`Invalid response from server: ${responseText.substring(0, 100)}`);
+    }
+    
     if (j2.error) throw new Error(j2.error);
 
     $('#shopMsg').textContent = `✅ Successfully purchased ${quantity}x ${pickaxeType} pickaxe!`;
