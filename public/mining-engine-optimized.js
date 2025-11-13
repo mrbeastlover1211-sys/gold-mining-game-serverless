@@ -186,6 +186,23 @@ class OptimizedMiningEngine {
           ownedEl.style.display = 'none';
         }
       }
+      
+      // ALSO update inventory grid displays
+      const countEl = document.getElementById(`${type}-count`);
+      const itemEl = document.querySelector(`.inventory-item[data-type="${type}"]`);
+      
+      if (countEl) {
+        countEl.textContent = count;
+      }
+      
+      if (itemEl) {
+        itemEl.setAttribute('data-count', count);
+        if (count > 0) {
+          itemEl.style.opacity = '1';
+        } else {
+          itemEl.style.opacity = '0.3';
+        }
+      }
     });
   }
   
