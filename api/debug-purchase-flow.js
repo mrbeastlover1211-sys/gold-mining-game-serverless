@@ -27,11 +27,19 @@ export default async function handler(req, res) {
     
     const client = await pool.connect();
     
-    // Get recent transactions for this user
+    // First, check what columns exist in transactions table
+    const columns = await client.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'transactions'
+    `);
+    
+    console.log('Transactions table columns:', columns.rows.map(r => r.column_name));
+    
+    // Get recent transactions for this user (using correct column names)
     const recentTx = await client.query(`
       SELECT * FROM transactions 
       WHERE user_address = $1 
-      ORDER BY timestamp DESC 
+      ORDER BY id DESC 
       LIMIT 10
     `, [address]);
     
