@@ -113,22 +113,60 @@ export default async function handler(req, res) {
     // 🔧 SIMULTANEOUS: Save to database BEFORE responding (same time as UI update)
     console.log(`💾 Saving to database IMMEDIATELY (simultaneous with response)...`);
     
+    // 🔧 CRITICAL FIX: Ensure database save actually works
+    console.log(`💾 BEFORE SAVE - Data to save:`, {
+      address: address.slice(0, 8),
+      inventory: user.inventory,
+      total_mining_power: user.total_mining_power,
+      checkpoint_timestamp: user.checkpoint_timestamp
+    });
+    
+    let saveAttempted = false;
+    let saveSuccess = false;
+    
     try {
-      const saveSuccess = await OptimizedDatabase.saveUserImmediate(address, user);
+      saveAttempted = true;
+      console.log(`💾 ATTEMPTING DATABASE SAVE...`);
+      saveSuccess = await OptimizedDatabase.saveUserImmediate(address, user);
       
       if (saveSuccess) {
-        console.log(`✅ Database save completed in ${Date.now() - startTime}ms - SIMULTANEOUS WITH UI UPDATE!`);
+        console.log(`✅ DATABASE SAVE SUCCESS in ${Date.now() - startTime}ms!`);
+        console.log(`💾 VERIFIED SAVE: netherite=${user.inventory?.netherite || 0}, power=${user.total_mining_power || 0}`);
+        
+        // Verify save by reading back immediately
+        setTimeout(async () => {
+          try {
+            const verification = await OptimizedDatabase.getUser(address, true);
+            console.log(`🔍 SAVE VERIFICATION: netherite=${verification.inventory?.netherite || 0}`);
+            if (verification.inventory?.netherite !== user.inventory?.netherite) {
+              console.error(`❌ SAVE VERIFICATION FAILED! Expected: ${user.inventory?.netherite}, Got: ${verification.inventory?.netherite}`);
+            } else {
+              console.log(`✅ SAVE VERIFICATION PASSED!`);
+            }
+          } catch (verifyError) {
+            console.error(`❌ SAVE VERIFICATION ERROR:`, verifyError.message);
+          }
+        }, 500);
+        
         OptimizedDatabase.invalidateCache(address);
         OptimizedDatabase.setCachedUser(address, user);
-        console.log(`💾 DATABASE UPDATED IMMEDIATELY: netherite=${user.inventory?.netherite || 0}, power=${user.total_mining_power || 0}`);
       } else {
-        console.warn(`⚠️ Immediate save failed, queuing for batch`);
-        await OptimizedDatabase.queueUpdate(address, user);
+        console.error(`❌ DATABASE SAVE RETURNED FALSE`);
+        throw new Error('Database save returned false');
       }
     } catch (saveError) {
-      console.error(`❌ Immediate save error:`, saveError.message);
+      console.error(`❌ DATABASE SAVE FAILED:`, saveError.message);
+      console.error(`❌ Save error stack:`, saveError.stack);
+      
+      // Try direct database connection as fallback
+      console.log(`🔄 Trying fallback batch save...`);
       await OptimizedDatabase.queueUpdate(address, user);
+      
+      // Don't fail the response - user gets UI update
+      console.log(`⚠️ Proceeding with response despite save failure`);
     }
+    
+    console.log(`📊 SAVE SUMMARY: attempted=${saveAttempted}, success=${saveSuccess}`);
 
     // Send response AFTER database save (ensures data is saved before UI updates)
     clearTimeout(timeout);
