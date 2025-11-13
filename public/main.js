@@ -242,7 +242,7 @@ function updateConnectButtonDisplay() {
   }
 }
 
-async function refreshStatus() {
+async function refreshStatus(afterPurchase = false) {
   if (!state.address) {
     console.log('⏭️ Skipping status refresh - no wallet connected');
     return;
