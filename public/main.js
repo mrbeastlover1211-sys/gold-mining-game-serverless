@@ -1642,8 +1642,32 @@ async function tryAutoConnect() {
   const cached = localStorage.getItem('gm_address');
   
   if (provider && provider.isConnected && provider.publicKey) {
-    console.log('🟢 Wallet already connected, auto-connecting...');
-    await connectWallet();
+    console.log('🟢 Wallet already connected, restoring game state...');
+    
+    // Directly restore state without calling connectWallet to prevent loops
+    state.wallet = provider;
+    state.address = provider.publicKey.toString();
+    
+    console.log('✅ Wallet state restored:', state.address.slice(0, 8) + '...');
+    
+    // Load all user data immediately to prevent data loss
+    await updateWalletBalance();
+    updateConnectButtonDisplay();
+    
+    console.log('📊 Loading user status from database...');
+    await refreshStatus();
+    
+    console.log('⛏️ Initializing mining and polling...');
+    initializeCheckpointMining();
+    startStatusPolling();
+    
+    console.log('✅ Game state fully restored after page refresh!');
+    
+    // Check land status after restoration
+    setTimeout(async () => {
+      await checkLandStatusAndShowPopup();
+    }, 2000);
+    
   } else if (cached) {
     console.log('🟡 Found cached address, trying auto-connect...');
     try {
