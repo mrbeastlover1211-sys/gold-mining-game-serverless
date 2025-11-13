@@ -737,13 +737,29 @@ async function buyPickaxe(pickaxeType) {
     
     console.log('🔄 Processing purchase response:', j2);
     
-    // 💾 FIXED: Force refresh from database after purchase confirmation
-    console.log('💾 Purchase confirmed by server - refreshing from database...');
+    // 🔧 HYBRID FIX: Update UI immediately + ensure database persistence
+    console.log('⚡ Updating UI immediately with purchase response...');
     
-    // Force refresh user data from database to get the saved state
-    await refreshStatus(true); // Pass true to force refresh after purchase
+    // 1. IMMEDIATE UI UPDATE: Use server response for instant feedback
+    if (j2.inventory) {
+      state.status.inventory = j2.inventory;
+      console.log('✅ Updated local inventory to:', j2.inventory);
+      
+      // Update display immediately
+      updateDisplay({
+        gold: state.status.gold,
+        inventory: j2.inventory,
+        checkpoint: j2.checkpoint
+      });
+      console.log('🎯 UI updated instantly!');
+    }
     
-    console.log('✅ Database refresh completed - purchase should now persist on page reload!');
+    // 2. BACKGROUND VERIFICATION: Ensure database persistence
+    setTimeout(async () => {
+      console.log('💾 Verifying database save in background...');
+      await refreshStatus(true); // Force database refresh to verify save
+      console.log('✅ Database verification complete - purchase should persist on reload!');
+    }, 1000); // 1 second delay to let database save complete
     
     // Update wallet balance 
     await updateWalletBalance();
