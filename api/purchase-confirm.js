@@ -98,24 +98,50 @@ export default async function handler(req, res) {
     // Create new checkpoint with updated mining power
     const newCurrentGold = createCheckpoint(user, address);
     
-    // ⚡ SPEED: Quick database save with timeout protection
-    console.log(`💾 Fast-saving purchase data to database...`);
+    // 🔧 CRITICAL FIX: Ensure database save actually works
+    console.log(`💾 Attempting to save purchase data to database...`);
+    console.log(`📊 Saving data:`, {
+      address: address.slice(0, 8) + '...',
+      silver_pickaxes: user.inventory?.silver || 0,
+      gold_pickaxes: user.inventory?.gold || 0,
+      diamond_pickaxes: user.inventory?.diamond || 0,
+      netherite_pickaxes: user.inventory?.netherite || 0,
+      total_mining_power: user.total_mining_power || 0,
+      last_checkpoint_gold: user.last_checkpoint_gold || 0
+    });
     
-    const savePromise = OptimizedDatabase.saveUserImmediate(address, user);
-    const saveSuccess = await Promise.race([
-      savePromise,
-      new Promise(resolve => setTimeout(() => resolve(false), 5000)) // 5 second save timeout
-    ]);
-    
-    if (saveSuccess) {
-      console.log(`✅ Purchase saved in ${Date.now() - startTime}ms`);
+    try {
+      const saveSuccess = await OptimizedDatabase.saveUserImmediate(address, user);
       
-      // Quick cache update
-      OptimizedDatabase.invalidateCache(address);
-      OptimizedDatabase.setCachedUser(address, user);
-    } else {
-      console.warn(`⚠️ Database save timed out, but proceeding with response`);
-      // Don't fail the entire request if save is slow
+      if (saveSuccess) {
+        console.log(`✅ Purchase successfully saved to database in ${Date.now() - startTime}ms`);
+        
+        // Quick cache update
+        OptimizedDatabase.invalidateCache(address);
+        OptimizedDatabase.setCachedUser(address, user);
+        
+        // Verify save worked by checking database
+        setTimeout(async () => {
+          try {
+            const verification = await OptimizedDatabase.getUser(address, true); // Force refresh
+            console.log(`🔍 Verification check - saved inventory:`, verification.inventory);
+          } catch (e) {
+            console.error(`❌ Verification failed:`, e.message);
+          }
+        }, 1000);
+        
+      } else {
+        console.error(`❌ CRITICAL: Database save returned false for ${address.slice(0, 8)}`);
+        // Force a manual database operation
+        await OptimizedDatabase.queueUpdate(address, user);
+      }
+    } catch (saveError) {
+      console.error(`❌ CRITICAL: Database save threw error:`, saveError.message);
+      console.error(`❌ Save error stack:`, saveError.stack);
+      
+      // Try batch update as fallback
+      await OptimizedDatabase.queueUpdate(address, user);
+      console.log(`📦 Queued purchase for batch update as fallback`);
     }
 
     // ⚡ SPEED: Send response quickly
