@@ -176,24 +176,49 @@ async function connectWallet() {
     // Update connect button to show wallet info
     updateConnectButtonDisplay();
     
-    // ⚡ OPTIMIZED: Load user status ONCE and initialize mining engine
-    console.log('📊 Loading initial user data from database (one-time only)...');
+    // ⚡ FIXED: Load user status and update display properly
+    console.log('📊 Loading initial user data from database...');
     const userData = await loadInitialUserData();
     
     if (userData) {
-      console.log('⚡ Initializing optimized mining engine with user data...');
-      window.optimizedMiningEngine.initialize(userData);
-      console.log('🎉 Mining engine started - real-time updates without server polling!');
-      console.log('💡 Database requests reduced by 99%+ - only called on purchases now!');
-    } else {
-      console.log('ℹ️ New user - starting with default values');
-      // Initialize with empty state for new users
-      window.optimizedMiningEngine.initialize({
-        last_checkpoint_gold: 0,
-        inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 },
-        total_mining_power: 0,
-        checkpoint_timestamp: Math.floor(Date.now() / 1000)
+      console.log('✅ User data loaded:', userData);
+      
+      // Initialize mining engine with correct method name
+      window.optimizedMiningEngine.init({
+        gold: userData.last_checkpoint_gold || 0,
+        inventory: userData.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 }
       });
+      
+      // CRITICAL: Update the display with loaded data
+      updateDisplay({
+        gold: userData.last_checkpoint_gold || 0,
+        inventory: userData.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 },
+        checkpoint: {
+          total_mining_power: userData.total_mining_power || 0,
+          checkpoint_timestamp: userData.checkpoint_timestamp,
+          last_checkpoint_gold: userData.last_checkpoint_gold || 0
+        }
+      });
+      
+      // Store checkpoint for real-time updates
+      state.checkpoint = {
+        total_mining_power: userData.total_mining_power || 0,
+        checkpoint_timestamp: userData.checkpoint_timestamp,
+        last_checkpoint_gold: userData.last_checkpoint_gold || 0
+      };
+      
+      console.log('🎉 User data displayed and mining engine ready!');
+    } else {
+      console.log('ℹ️ New user - starting with empty state');
+      
+      // Initialize empty state for new users
+      const emptyState = {
+        gold: 0,
+        inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 }
+      };
+      
+      window.optimizedMiningEngine.init(emptyState);
+      updateDisplay(emptyState);
     }
     
     // Check land status after wallet connection - show popup after 2 seconds if no land
