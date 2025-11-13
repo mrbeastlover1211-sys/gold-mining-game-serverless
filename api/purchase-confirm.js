@@ -74,8 +74,8 @@ export default async function handler(req, res) {
     console.log(`⚡ Fast-track purchase confirmation for ${address.slice(0, 8)} - ${qty}x ${pickaxeType}`);
     const status = 'confirmed'; // Skip validation to prevent timeout
     
-    // ⚡ SPEED: Get user data quickly
-    const user = await OptimizedDatabase.getUser(address);
+    // ⚡ SPEED: Get user data quickly - FORCE FRESH DATA
+    const user = await OptimizedDatabase.getUser(address, true); // Force refresh to avoid cache
     console.log(`📊 User data retrieved in ${Date.now() - startTime}ms`);
     
     // ⚡ SPEED: Quick checkpoint creation
