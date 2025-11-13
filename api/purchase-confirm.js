@@ -135,20 +135,29 @@ export default async function handler(req, res) {
     // Save to database in background (after response sent)
     setImmediate(async () => {
       try {
-        console.log(`💾 Background save starting...`);
+        console.log(`💾 Background save starting for ${address.slice(0, 8)}...`);
+        const saveStart = Date.now();
+        
         const saveSuccess = await OptimizedDatabase.saveUserImmediate(address, user);
         
         if (saveSuccess) {
-          console.log(`✅ Background save completed for ${address.slice(0, 8)}`);
+          const saveTime = Date.now() - saveStart;
+          console.log(`✅ 🎉 BACKGROUND SAVE COMPLETED for ${address.slice(0, 8)} in ${saveTime}ms`);
+          console.log(`🔄 Cache updated with new inventory data`);
+          console.log(`💾 DATABASE NOW HAS: netherite=${user.inventory?.netherite || 0}, power=${user.total_mining_power || 0}`);
+          console.log(`✅ 🎉 SAFE TO REFRESH PAGE NOW! Data will persist!`);
+          
           OptimizedDatabase.invalidateCache(address);
           OptimizedDatabase.setCachedUser(address, user);
         } else {
-          console.error(`❌ Background save failed, queuing for batch`);
+          console.error(`❌ Background save failed for ${address.slice(0, 8)}, queuing for batch`);
           await OptimizedDatabase.queueUpdate(address, user);
+          console.log(`📦 Purchase queued for batch save - will save in next batch cycle`);
         }
       } catch (saveError) {
-        console.error(`❌ Background save error:`, saveError.message);
+        console.error(`❌ Background save error for ${address.slice(0, 8)}:`, saveError.message);
         await OptimizedDatabase.queueUpdate(address, user);
+        console.log(`📦 Purchase queued for batch save due to error`);
       }
     });
     
