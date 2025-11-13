@@ -61,7 +61,6 @@ export default async function handler(req, res) {
 
     const { address, pickaxeType, signature, quantity } = req.body || {};
     if (!address || !pickaxeType || !PICKAXES[pickaxeType] || !signature) {
-      clearTimeout(timeout);
       return res.status(400).json({ error: 'address, pickaxeType, signature required' });
     }
     const qty = Math.max(1, Math.min(1000, parseInt(quantity || '1', 10)));
@@ -123,27 +122,27 @@ export default async function handler(req, res) {
         last_checkpoint_gold: user.last_checkpoint_gold
       }
     });
-
-    // ⚡ SPEED: Send response quickly
-    clearTimeout(timeout);
-    console.log(`🎯 Purchase confirmation completed in ${Date.now() - startTime}ms`);
-
-    res.json({ 
-      ok: true, 
-      status: status, 
-      pickaxeType, 
-      quantity: qty, 
-      inventory: user.inventory, 
-      totalRate: totalRate(user.inventory),
-      gold: newCurrentGold,
-      checkpoint: {
-        total_mining_power: user.total_mining_power,
-        checkpoint_timestamp: user.checkpoint_timestamp,
-        last_checkpoint_gold: user.last_checkpoint_gold
+    
+    // Save to database in background (after response sent)
+    setImmediate(async () => {
+      try {
+        console.log(`💾 Background save starting for ${address.slice(0, 8)}...`);
+        const saveSuccess = await OptimizedDatabase.saveUserImmediate(address, user);
+        
+        if (saveSuccess) {
+          console.log(`✅ Background save completed for ${address.slice(0, 8)}`);
+          console.log(`💾 DATABASE NOW HAS: ${JSON.stringify(user.inventory)}`);
+        } else {
+          console.error(`❌ Background save failed, queuing for batch`);
+          await OptimizedDatabase.queueUpdate(address, user);
+        }
+      } catch (saveError) {
+        console.error(`❌ Background save error:`, saveError.message);
+        await OptimizedDatabase.queueUpdate(address, user);
       }
     });
+    
   } catch (e) {
-    clearTimeout(timeout);
     console.error('Purchase confirmation error:', e);
     
     if (!res.headersSent) {
