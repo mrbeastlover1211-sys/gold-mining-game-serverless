@@ -269,39 +269,47 @@ class OptimizedDatabase {
       // Get pool with shorter timeout for faster response
       const pool = await this.getPool();
       
-      // ⚡ OPTIMIZED: Use prepared statement equivalent with minimal data
-      const result = await Promise.race([
-        pool.query(`
-          INSERT INTO users (
-            address, silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes,
-            total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-          ON CONFLICT (address) DO UPDATE SET
-            silver_pickaxes = EXCLUDED.silver_pickaxes,
-            gold_pickaxes = EXCLUDED.gold_pickaxes,
-            diamond_pickaxes = EXCLUDED.diamond_pickaxes,
-            netherite_pickaxes = EXCLUDED.netherite_pickaxes,
-            total_mining_power = EXCLUDED.total_mining_power,
-            checkpoint_timestamp = EXCLUDED.checkpoint_timestamp,
-            last_checkpoint_gold = EXCLUDED.last_checkpoint_gold,
-            last_activity = EXCLUDED.last_activity
-          RETURNING address
-        `, [
-          address,
-          parseInt(userData.inventory?.silver || 0),
-          parseInt(userData.inventory?.gold || 0),
-          parseInt(userData.inventory?.diamond || 0),
-          parseInt(userData.inventory?.netherite || 0),
-          parseInt(userData.total_mining_power || 0),
-          parseInt(userData.checkpoint_timestamp || Math.floor(Date.now() / 1000)),
-          parseFloat(userData.last_checkpoint_gold || 0),
-          parseInt(userData.lastActivity || Math.floor(Date.now() / 1000))
-        ]),
-        // ⚡ SPEED: Timeout after 2 seconds instead of waiting forever
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Save timeout after 2 seconds')), 2000)
-        )
+      // 🔧 CRITICAL FIX: Use direct database query without timeout racing
+      console.log(`🔧 EXECUTING DATABASE SAVE with values:`, [
+        address,
+        parseInt(userData.inventory?.silver || 0),
+        parseInt(userData.inventory?.gold || 0),
+        parseInt(userData.inventory?.diamond || 0),
+        parseInt(userData.inventory?.netherite || 0),
+        parseInt(userData.total_mining_power || 0),
+        parseInt(userData.checkpoint_timestamp || Math.floor(Date.now() / 1000)),
+        parseFloat(userData.last_checkpoint_gold || 0),
+        parseInt(userData.lastActivity || Math.floor(Date.now() / 1000))
       ]);
+      
+      const result = await pool.query(`
+        INSERT INTO users (
+          address, silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes,
+          total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ON CONFLICT (address) DO UPDATE SET
+          silver_pickaxes = EXCLUDED.silver_pickaxes,
+          gold_pickaxes = EXCLUDED.gold_pickaxes,
+          diamond_pickaxes = EXCLUDED.diamond_pickaxes,
+          netherite_pickaxes = EXCLUDED.netherite_pickaxes,
+          total_mining_power = EXCLUDED.total_mining_power,
+          checkpoint_timestamp = EXCLUDED.checkpoint_timestamp,
+          last_checkpoint_gold = EXCLUDED.last_checkpoint_gold,
+          last_activity = EXCLUDED.last_activity
+        RETURNING address
+      `, [
+        address,
+        parseInt(userData.inventory?.silver || 0),
+        parseInt(userData.inventory?.gold || 0),
+        parseInt(userData.inventory?.diamond || 0),
+        parseInt(userData.inventory?.netherite || 0),
+        parseInt(userData.total_mining_power || 0),
+        parseInt(userData.checkpoint_timestamp || Math.floor(Date.now() / 1000)),
+        parseFloat(userData.last_checkpoint_gold || 0),
+        parseInt(userData.lastActivity || Math.floor(Date.now() / 1000))
+      ]);
+      
+      console.log(`✅ DATABASE QUERY EXECUTED SUCCESSFULLY, returned:`, result.rows);
       
       const saveTime = Date.now() - saveStartTime;
       console.log(`⚡ ULTRA-FAST SAVE COMPLETED in ${saveTime}ms for ${address.slice(0, 8)}`);
