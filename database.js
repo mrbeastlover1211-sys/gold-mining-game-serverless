@@ -1,5 +1,5 @@
 // Database module for Gold Mining Game
-// Supports 100,000+ users with PostgreSQL/Supabase
+// Supports 100,000+ users with PostgreSQL/Neon
 
 import pkg from 'pg';
 const { Pool } = pkg;
@@ -324,12 +324,12 @@ const userDatabase = new UserDatabase();
 // Export both the instance and a getDatabase function for compatibility
 export default userDatabase;
 
-// Add getDatabase function for API compatibility - with Supabase-specific fixes
+// Add getDatabase function for API compatibility - with Neon-specific fixes
 export async function getDatabase() {
   try {
     const { Pool } = await import('pg');
     
-    // Create new pool with Supabase-specific configuration
+    // Create new pool with Neon-specific configuration
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL,
       ssl: {

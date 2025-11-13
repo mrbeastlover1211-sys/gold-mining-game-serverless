@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     console.log('🔍 Connection Debug Info:');
     console.log('- DATABASE_URL exists:', !!dbUrl);
     console.log('- URL length:', dbUrl?.length);
-    console.log('- URL format check:', dbUrl?.includes('supabase.co'));
+    console.log('- URL format check:', dbUrl?.includes('neon.tech'));
     
     if (!dbUrl) {
       return res.json({
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
         hostname: urlParts.hostname,
         dns_error: dnsError.message,
         url_parts: urlParts,
-        suggestion: 'The Supabase project hostname is not resolvable. This usually means the project is not fully initialized or there is a DNS issue.'
+        suggestion: 'The Neon project hostname is not resolvable. This usually means the project is not fully initialized or there is a DNS issue.'
       });
     }
     

@@ -82,7 +82,7 @@ If users report lost data, you can manually restore them:
 ## 🚀 **Prevent Future Data Loss**
 
 ✅ Database is now properly configured  
-✅ All new purchases save to Supabase  
+✅ All new purchases save to Neon  
 ✅ Data persists across deployments  
 ✅ No more data loss issues  
 

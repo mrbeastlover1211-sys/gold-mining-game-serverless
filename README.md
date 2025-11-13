@@ -19,7 +19,7 @@ A Solana-based idle mining game built for serverless deployment on Vercel.
 3. Add environment variables:
 
 ```
-DATABASE_URL=your_supabase_database_url
+DATABASE_URL=your_neon_database_url
 TREASURY_PUBLIC_KEY=your_solana_wallet_public_key
 SOLANA_CLUSTER_URL=https://api.devnet.solana.com
 GOLD_PRICE_SOL=0.000001
@@ -41,7 +41,7 @@ After deployment:
 
 - **Frontend**: Static files served from Vercel CDN
 - **Backend**: Serverless functions in `/api` folder  
-- **Database**: PostgreSQL (Supabase) with in-memory fallback
+- **Database**: PostgreSQL (Neon) with in-memory fallback
 - **Blockchain**: Solana Devnet/Mainnet
 
 ## 🎯 Built for Scale
