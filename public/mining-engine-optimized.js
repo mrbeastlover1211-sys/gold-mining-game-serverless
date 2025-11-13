@@ -20,15 +20,28 @@ class OptimizedMiningEngine {
   initialize(checkpoint) {
     console.log('⚡ Initializing optimized mining engine with checkpoint:', checkpoint);
     
+    // Ensure inventory has all pickaxe types with proper structure
+    const inventory = checkpoint.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 };
+    
     this.checkpoint = {
       baseGold: parseFloat(checkpoint.last_checkpoint_gold) || 0,
-      inventory: checkpoint.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 },
+      inventory: {
+        silver: parseInt(inventory.silver) || 0,
+        gold: parseInt(inventory.gold) || 0,
+        diamond: parseInt(inventory.diamond) || 0,
+        netherite: parseInt(inventory.netherite) || 0
+      },
       miningPower: checkpoint.total_mining_power || 0,
       timestamp: checkpoint.checkpoint_timestamp || Math.floor(Date.now() / 1000)
     };
     
-    console.log('🎯 Mining engine initialized:', this.checkpoint);
+    console.log('🎯 Mining engine initialized with inventory:', this.checkpoint.inventory);
+    console.log('📊 Total pickaxes loaded:', Object.values(this.checkpoint.inventory).reduce((sum, count) => sum + count, 0));
+    
     this.start();
+    
+    // CRITICAL: Force immediate UI update with loaded data
+    this.updateUI();
   }
   
   // Calculate current gold based on time elapsed
