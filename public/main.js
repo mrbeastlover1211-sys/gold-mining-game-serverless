@@ -1020,18 +1020,33 @@ async function purchaseLand() {
       })
     });
     
+    if (!confirmResponse.ok) {
+      const errorText = await confirmResponse.text();
+      throw new Error(`Confirm failed: ${errorText}`);
+    }
+    
     const confirmData = await confirmResponse.json();
     if (confirmData.error) throw new Error(confirmData.error);
     
-    showLandMessage('✅ Land purchased successfully!', 'success');
+    console.log('✅ Land purchase confirmed successfully!');
+    showLandMessage('✅ Land purchased successfully! Loading game...', 'success');
     
     // Mark as verified IMMEDIATELY
     const landVerifiedKey = `landVerified_${state.address}`;
     sessionStorage.setItem(landVerifiedKey, 'true');
     
-    // Hide modal immediately after successful purchase
-    hideLandModal();
-    console.log('🎉 Land modal hidden after successful purchase');
+    // Wait a moment to show success message, then hide modal
+    setTimeout(() => {
+      hideLandModal();
+      console.log('🎉 Land modal hidden after successful purchase');
+      
+      // Also remove any mandatory modals
+      const mandatoryModal = document.getElementById('mandatoryLandModal');
+      if (mandatoryModal) {
+        mandatoryModal.remove();
+        console.log('🗑️ Removed mandatory land modal');
+      }
+    }, 2000);
     
     // Refresh status to update land ownership
     await refreshStatus();
@@ -1045,11 +1060,38 @@ async function purchaseLand() {
 
 // Show message in land modal
 function showLandMessage(message, type) {
-  const landMsg = document.getElementById('landMsg');
+  console.log(`🏠 Land message: ${message} (${type})`);
+  
+  // Try multiple possible message elements
+  let landMsg = document.getElementById('landMsg');
+  if (!landMsg) {
+    landMsg = document.getElementById('mandatoryLandMsg');
+  }
+  
   if (landMsg) {
     landMsg.textContent = message;
     landMsg.className = `msg ${type}`;
     landMsg.style.display = 'block';
+    
+    // Style based on message type
+    if (type === 'success') {
+      landMsg.style.background = 'linear-gradient(45deg, #00ff88, #00cc6a)';
+      landMsg.style.color = 'white';
+    } else if (type === 'error') {
+      landMsg.style.background = 'linear-gradient(45deg, #ff6b6b, #ff4757)';
+      landMsg.style.color = 'white';
+    } else {
+      landMsg.style.background = 'linear-gradient(45deg, #3498db, #2980b9)';
+      landMsg.style.color = 'white';
+    }
+    
+    console.log('✅ Land message displayed successfully');
+  } else {
+    console.error('❌ Land message element not found!');
+    // Fallback to alert for critical messages
+    if (type === 'error') {
+      alert('Error: ' + message);
+    }
   }
 }
 
