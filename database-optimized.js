@@ -285,8 +285,9 @@ class OptimizedDatabase {
       const result = await pool.query(`
         INSERT INTO users (
           address, silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes,
-          total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity,
+          has_land, land_purchase_date
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         ON CONFLICT (address) DO UPDATE SET
           silver_pickaxes = EXCLUDED.silver_pickaxes,
           gold_pickaxes = EXCLUDED.gold_pickaxes,
@@ -295,7 +296,9 @@ class OptimizedDatabase {
           total_mining_power = EXCLUDED.total_mining_power,
           checkpoint_timestamp = EXCLUDED.checkpoint_timestamp,
           last_checkpoint_gold = EXCLUDED.last_checkpoint_gold,
-          last_activity = EXCLUDED.last_activity
+          last_activity = EXCLUDED.last_activity,
+          has_land = EXCLUDED.has_land,
+          land_purchase_date = EXCLUDED.land_purchase_date
         RETURNING address
       `, [
         address,
@@ -306,7 +309,9 @@ class OptimizedDatabase {
         parseInt(userData.total_mining_power || 0),
         parseInt(userData.checkpoint_timestamp || Math.floor(Date.now() / 1000)),
         parseFloat(userData.last_checkpoint_gold || 0),
-        parseInt(userData.lastActivity || Math.floor(Date.now() / 1000))
+        parseInt(userData.lastActivity || Math.floor(Date.now() / 1000)),
+        userData.hasLand || false,
+        userData.landPurchaseDate || null
       ]);
       
       console.log(`✅ DATABASE QUERY EXECUTED SUCCESSFULLY, returned:`, result.rows);
