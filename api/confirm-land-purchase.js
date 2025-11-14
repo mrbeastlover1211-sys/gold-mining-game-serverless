@@ -55,44 +55,37 @@ export default async function handler(req, res) {
       status = 'confirmed';
     }
 
-    // Grant land - try database first, fallback to in-memory
+    // Grant land - use OptimizedDatabase (same as pickaxe purchases)
     try {
-      const { getDatabase } = await import('../database.js');
-      const db = await getDatabase();
+      const { OptimizedDatabase } = await import('../database-optimized.js');
       
-      // UPSERT land ownership in Neon database
-      const upsertResult = await db.query(`
-        INSERT INTO users (
-          address, has_land, land_purchase_date, silver_pickaxes, gold_pickaxes, 
-          diamond_pickaxes, netherite_pickaxes, total_mining_power, checkpoint_timestamp, 
-          last_checkpoint_gold, last_activity
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-        ON CONFLICT (address) DO UPDATE SET
-          has_land = EXCLUDED.has_land,
-          land_purchase_date = EXCLUDED.land_purchase_date,
-          last_activity = EXCLUDED.last_activity
-        RETURNING *
-      `, [
-        address, 
-        true, // has_land - ALWAYS TRUE
-        nowSec(), // land_purchase_date
-        0, // silver_pickaxes (preserve existing or set to 0)
-        0, // gold_pickaxes
-        0, // diamond_pickaxes
-        0, // netherite_pickaxes
-        0, // total_mining_power
-        nowSec(), // checkpoint_timestamp
-        0, // last_checkpoint_gold
-        nowSec() // last_activity
-      ]);
+      // Get existing user data or create new
+      const existingUser = await OptimizedDatabase.getUser(address, true);
       
-      const insertResult = upsertResult;
+      // Update with land ownership
+      const updatedUser = {
+        ...existingUser,
+        hasLand: true,
+        landPurchaseDate: nowSec(),
+        lastActivity: nowSec()
+      };
       
-      console.log(`💾 Land purchase saved to database:`, insertResult.rows[0]);
+      // Save using the same system as pickaxe purchases
+      const saveResult = await OptimizedDatabase.saveUserImmediate(address, updatedUser);
       
-      console.log(`💾 Database insert result:`, insertResult.rows[0]);
+      if (saveResult) {
+        console.log(`✅ Land purchase saved successfully for ${address}`);
+      } else {
+        throw new Error('Failed to save land purchase to database');
+      }
       
-      console.log(`🏡 Land granted to ${address} in database`);
+      // Update global.users for backwards compatibility
+      global.users = global.users || {};
+      global.users[address] = global.users[address] || {};
+      global.users[address].hasLand = true;
+      global.users[address].landPurchaseDate = nowSec();
+      
+      console.log(`🏡 Land granted to ${address} via OptimizedDatabase`);
       
     } catch (dbError) {
       console.warn('Database error, using in-memory fallback:', dbError.message);
