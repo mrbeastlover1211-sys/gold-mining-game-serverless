@@ -1243,7 +1243,7 @@ function createMandatoryLandPurchaseModal() {
     margin-bottom: 15px;
   `;
 
-  button.addEventListener('click', purchaseMandatoryLand);
+  button.addEventListener('click', purchaseLand);
   button.addEventListener('mouseover', () => {
     button.style.transform = 'translateY(-2px)';
     button.style.boxShadow = '0 8px 25px rgba(0,255,136,0.3)';
@@ -1538,7 +1538,6 @@ async function purchaseMandatoryLand() {
       await updateWalletBalance();
       
       // Enable game functionality
-      enableGameplay();
       
       console.log('🎮 Game functionality enabled - user can now buy pickaxes');
       
