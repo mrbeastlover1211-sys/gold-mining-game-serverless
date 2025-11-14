@@ -1026,14 +1026,13 @@ async function purchaseLand() {
     
     showLandMessage('✅ Land purchased successfully!', 'success');
     
-    // Mark as verified
+    // Mark as verified IMMEDIATELY
     const landVerifiedKey = `landVerified_${state.address}`;
     sessionStorage.setItem(landVerifiedKey, 'true');
     
-    // Hide modal after successful purchase
-    setTimeout(() => {
-      hideLandModal();
-    }, 2000);
+    // Hide modal immediately after successful purchase
+    hideLandModal();
+    console.log('🎉 Land modal hidden after successful purchase');
     
     // Refresh status to update land ownership
     await refreshStatus();
