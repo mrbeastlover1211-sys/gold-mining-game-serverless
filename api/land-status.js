@@ -7,47 +7,30 @@ export default async function handler(req, res) {
     const { address } = req.query;
     if (!address) return res.status(400).json({ error: 'address required' });
     
-    // Try database first, fallback to in-memory
+    // Use OptimizedDatabase (same as all other endpoints)
     try {
-      const { getDatabase } = await import('../database.js');
-      const db = await getDatabase();
+      const { OptimizedDatabase } = await import('../database-optimized.js');
       
-      const result = await db.query('SELECT address, has_land, land_purchase_date, silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes FROM users WHERE address = $1', [address]);
+      console.log(`🔍 Checking land status for ${address.slice(0, 8)}...`);
       
-      console.log(`🔍 Database query result for ${address}:`, result.rows);
+      // Get user data using the same system as status and purchases
+      const userData = await OptimizedDatabase.getUser(address, true);
       
-      if (result.rows.length > 0) {
-        const user = result.rows[0];
-        console.log(`✅ Found user in database:`, {
-          address: user.address?.slice(0, 8) + '...',
-          has_land: user.has_land,
-          land_purchase_date: user.land_purchase_date
-        });
-        
-        // FORCE set land ownership to true if user exists (migration fix)
-        const hasLand = user.has_land === true || user.has_land === 't' || user.has_land === 1;
-        
-        return res.json({
-          hasLand: hasLand,
-          landPurchaseDate: user.land_purchase_date,
-          debug: {
-            raw_has_land: user.has_land,
-            user_exists: true,
-            forced_land: hasLand
-          }
-        });
-      } else {
-        console.log(`❌ User ${address.slice(0, 8)}... not found in database`);
-        // User doesn't exist in database
-        return res.json({
-          hasLand: false,
-          landPurchaseDate: null,
-          debug: {
-            user_exists: false,
-            message: 'User not found in database'
-          }
-        });
-      }
+      console.log(`📊 User data from OptimizedDatabase:`, {
+        address: address.slice(0, 8) + '...',
+        hasLand: userData.hasLand,
+        landPurchaseDate: userData.landPurchaseDate
+      });
+      
+      return res.json({
+        hasLand: userData.hasLand || false,
+        landPurchaseDate: userData.landPurchaseDate,
+        debug: {
+          user_exists: true,
+          raw_hasLand: userData.hasLand,
+          system: 'OptimizedDatabase'
+        }
+      });
       
     } catch (dbError) {
       console.error('❌ Database error in land-status:', dbError.message);
