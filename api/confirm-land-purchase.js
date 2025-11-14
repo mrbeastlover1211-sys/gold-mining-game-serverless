@@ -71,12 +71,22 @@ export default async function handler(req, res) {
       };
       
       // Save using the same system as pickaxe purchases
+      console.log(`💾 Attempting to save land purchase for ${address}...`);
+      console.log(`📊 Updated user data:`, {
+        address: address.slice(0, 8),
+        hasLand: updatedUser.hasLand,
+        landPurchaseDate: updatedUser.landPurchaseDate,
+        lastActivity: updatedUser.lastActivity
+      });
+      
       const saveResult = await OptimizedDatabase.saveUserImmediate(address, updatedUser);
       
       if (saveResult) {
         console.log(`✅ Land purchase saved successfully for ${address}`);
+        console.log(`🎉 Database should now show hasLand: true for this wallet`);
       } else {
-        throw new Error('Failed to save land purchase to database');
+        console.error(`❌ SaveUserImmediate returned false for ${address}`);
+        throw new Error('Failed to save land purchase to database - saveUserImmediate returned false');
       }
       
       // Update global.users for backwards compatibility
@@ -88,11 +98,18 @@ export default async function handler(req, res) {
       console.log(`🏡 Land granted to ${address} via OptimizedDatabase`);
       
     } catch (dbError) {
-      console.warn('Database error, using in-memory fallback:', dbError.message);
+      console.error('🚨 CRITICAL: Database save failed for land purchase!');
+      console.error('📊 Error details:', dbError.message);
+      console.error('📊 Stack trace:', dbError.stack);
+      console.error('📊 Address:', address);
+      console.error('📊 This is why land is not saving to database!');
       
-      // Fallback to in-memory storage
-      global.users[address].hasLand = true;
-      global.users[address].landPurchaseDate = nowSec();
+      // IMPORTANT: Don't just fallback - this hides the real problem!
+      // Return error instead of silently failing
+      return res.status(500).json({ 
+        error: 'Failed to save land purchase to database: ' + dbError.message,
+        details: 'Land purchase failed - please try again'
+      });
     }
 
     console.log(`🏡 Land granted to ${address} at ${new Date().toISOString()}`);
