@@ -221,10 +221,9 @@ async function connectWallet() {
       updateDisplay(emptyState);
     }
     
-    // Check land status after wallet connection - show popup after 2 seconds if no land
-    window.landCheckTimeout = setTimeout(async () => {
-      await checkLandStatusAndShowPopup();
-    }, 2000);
+    // Check land status immediately after wallet connection
+    console.log('🔍 Checking land ownership immediately after wallet connection...');
+    await checkLandStatusAndShowPopup();
     
   } catch (e) {
     console.error('❌ Wallet connection failed:', e);
