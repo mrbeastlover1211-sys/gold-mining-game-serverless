@@ -2931,3 +2931,23 @@ h6 { font-size: 12px; }
   font-size: 12px;
   margin-top: 2px;
 }
+
+/* Sell Gold Header Button */
+.sell-gold-header-btn {
+  padding: 8px 16px;
+  background: linear-gradient(45deg, #f59e0b, #d97706);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.sell-gold-header-btn:hover {
+  background: linear-gradient(45deg, #d97706, #f59e0b);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+}

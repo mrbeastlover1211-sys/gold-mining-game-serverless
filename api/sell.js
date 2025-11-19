@@ -1,6 +1,6 @@
 // Use same working pattern as status.js and buy-with-gold.js
 import { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { getUserOptimized, saveUserOptimized } from '../database.js';
+import { getUserOptimized, saveUserOptimized, getDatabase } from '../database.js';
 
 // Constants (same as in config.js)
 const GOLD_PRICE_SOL = parseFloat(process.env.GOLD_PRICE_SOL || '0.000001');
@@ -127,7 +127,14 @@ export default async function handler(req, res) {
     // Save user data using same method as other working APIs
     await saveUserOptimized(address, user);
 
-    console.log(`💰 ${address.slice(0, 8)}... sold ${validatedAmount} gold for ${payoutSol.toFixed(6)} SOL`);
+    // Record the sale in gold_sales table for admin processing
+    const db = await getDatabase();
+    await db.query(`
+      INSERT INTO gold_sales (wallet_address, gold_amount, payout_sol, status, created_at)
+      VALUES ($1, $2, $3, 'pending', NOW())
+    `, [address, validatedAmount, payoutSol]);
+
+    console.log(`💰 ${address.slice(0, 8)}... sold ${validatedAmount} gold for ${payoutSol.toFixed(6)} SOL - Recorded as pending`);
 
     if (!TREASURY_SECRET_KEY) {
       // No auto payout, return success with pending status
