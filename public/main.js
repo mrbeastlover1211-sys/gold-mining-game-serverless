@@ -2223,3 +2223,64 @@ function joinWaitlist() {
 
 console.log('🔧 Added missing modal functions');
 
+
+
+// Fix: Explicitly bind functions to global window object
+window.connectWallet = connectWallet;
+window.buyPickaxe = buyPickaxe;
+window.purchaseLand = purchaseLand;
+window.showHowItWorksModal = showHowItWorksModal;
+window.hideHowItWorksModal = hideHowItWorksModal;
+window.closeV2Modal = closeV2Modal;
+window.joinWaitlist = joinWaitlist;
+
+// Fix: Add proper event listeners to override onclick issues
+function bindEventListeners() {
+  console.log('🔧 Binding event listeners...');
+  
+  // Connect Wallet button
+  const connectBtn = document.getElementById('connectBtn');
+  if (connectBtn) {
+    connectBtn.onclick = null; // Clear existing onclick
+    connectBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      console.log('🔗 Connect Wallet button clicked via event listener');
+      connectWallet();
+    });
+    console.log('✅ Connected connectBtn event listener');
+  }
+  
+  // Refer button  
+  const referBtn = document.getElementById('referBtn');
+  if (referBtn) {
+    referBtn.onclick = null;
+    referBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      console.log('🎁 Refer button clicked');
+      // Add refer functionality here
+      alert('Refer feature coming soon!');
+    });
+    console.log('✅ Connected referBtn event listener');
+  }
+  
+  // V2 button
+  const v2Btn = document.getElementById('v2ComingSoonBtn');
+  if (v2Btn) {
+    v2Btn.onclick = null;
+    v2Btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      console.log('🎃 V2 button clicked');
+      // Show V2 modal or alert
+      alert('V2.0 Halloween Edition coming soon! 🎃');
+    });
+    console.log('✅ Connected v2Btn event listener');
+  }
+  
+  console.log('🔧 Event listeners binding complete');
+}
+
+// Call binding after DOM is ready
+setTimeout(bindEventListeners, 1000);
+
+console.log('🔧 Global function binding added');
+
