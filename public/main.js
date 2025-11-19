@@ -226,37 +226,75 @@ function setupWalletSwitchDetection(provider) {
   
   // Listen for account changes in Phantom
   if (provider.on) {
-    provider.on('accountChanged', (publicKey) => {
-      console.log('🔄 Wallet switch detected!');
-      if (publicKey) {
-        const newAddress = publicKey.toString();
-        const currentAddress = state.address;
-        
-        if (newAddress !== currentAddress) {
-          console.log('👤 Wallet switched from', currentAddress?.slice(0, 8), 'to', newAddress.slice(0, 8));
-          handleWalletSwitch(newAddress);
+    try {
+      provider.on('accountChanged', (publicKey) => {
+        console.log('🔄 Phantom accountChanged event fired!', publicKey?.toString()?.slice(0, 8));
+        if (publicKey) {
+          const newAddress = publicKey.toString();
+          const currentAddress = state.address;
+          
+          console.log('📊 Account change details:', {
+            current: currentAddress?.slice(0, 8),
+            new: newAddress.slice(0, 8),
+            different: newAddress !== currentAddress
+          });
+          
+          if (newAddress !== currentAddress) {
+            console.log('👤 Wallet switched from', currentAddress?.slice(0, 8), 'to', newAddress.slice(0, 8));
+            handleWalletSwitch(newAddress);
+          }
+        } else {
+          console.log('👤 Wallet disconnected');
+          handleWalletDisconnect();
         }
-      } else {
-        console.log('👤 Wallet disconnected');
-        handleWalletDisconnect();
-      }
-    });
-    
-    console.log('✅ Wallet switch detection active');
+      });
+      
+      console.log('✅ Phantom accountChanged listener added');
+    } catch (e) {
+      console.error('❌ Failed to add accountChanged listener:', e);
+    }
+  } else {
+    console.log('⚠️ Provider.on not available, using polling only');
   }
   
-  // Backup: Poll for wallet changes every 3 seconds
-  setInterval(() => {
-    if (provider.isConnected && provider.publicKey) {
+  // Enhanced backup polling with more details
+  let pollCount = 0;
+  const pollInterval = setInterval(() => {
+    pollCount++;
+    
+    if (provider.isConnected && provider.publicKey && state.address) {
       const currentPhantomAddress = provider.publicKey.toString();
       const gameAddress = state.address;
       
-      if (gameAddress && currentPhantomAddress !== gameAddress) {
-        console.log('🔄 Polling detected wallet switch:', gameAddress?.slice(0, 8), '→', currentPhantomAddress.slice(0, 8));
+      // Debug every 10 polls (30 seconds)
+      if (pollCount % 10 === 0) {
+        console.log(`🔍 Wallet poll #${pollCount}:`, {
+          phantom: currentPhantomAddress.slice(0, 8),
+          game: gameAddress.slice(0, 8),
+          same: currentPhantomAddress === gameAddress
+        });
+      }
+      
+      if (currentPhantomAddress !== gameAddress) {
+        console.log('🔄 POLLING DETECTED WALLET SWITCH!');
+        console.log('   From:', gameAddress?.slice(0, 8));
+        console.log('   To:', currentPhantomAddress.slice(0, 8));
         handleWalletSwitch(currentPhantomAddress);
+        clearInterval(pollInterval); // Stop polling after switch detected
+      }
+    } else {
+      // Debug connection issues
+      if (pollCount % 20 === 0) { // Every 60 seconds
+        console.log(`🔍 Wallet poll #${pollCount} - no connection:`, {
+          providerConnected: provider.isConnected,
+          hasPublicKey: !!provider.publicKey,
+          hasGameAddress: !!state.address
+        });
       }
     }
   }, 3000);
+  
+  console.log('✅ Enhanced wallet polling started');
 }
 
 // 🔧 NEW: Handle wallet switch
