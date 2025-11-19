@@ -1345,6 +1345,17 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
     return;
   }
   
+  // First, fetch the latest status to get current gold amount
+  showStoreMessage('🔍 Checking your gold balance...', 'loading');
+  try {
+    await refreshStatus(); // Refresh status to get latest gold
+    updateGoldDisplay(); // Update the gold display immediately
+  } catch (e) {
+    console.error('Failed to refresh status:', e);
+    showStoreMessage('Failed to check your status. Please try again.', 'error');
+    return;
+  }
+  
   // Check if user has land before allowing pickaxe purchase
   try {
     const landResponse = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
@@ -1361,8 +1372,10 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
     return;
   }
   
-  // Check if user has enough gold
+  // Check if user has enough gold (after fetching latest status)
   const currentGold = state.status?.gold || 0;
+  console.log(`💰 Current gold balance: ${currentGold}, Required: ${goldCost}`);
+  
   if (currentGold < goldCost) {
     showStoreMessage(`❌ Not enough gold! You need ${goldCost.toLocaleString()} gold but only have ${currentGold.toLocaleString()} gold.`, 'error');
     return;
