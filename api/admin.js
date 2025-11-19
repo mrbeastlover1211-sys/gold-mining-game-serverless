@@ -17,15 +17,36 @@ function requireAuth(req) {
 }
 
 export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { action, password, ...params } = req.body;
+    console.log('🔧 Admin API request received');
+    console.log('Request body:', req.body);
+
+    const { action, password, ...params } = req.body || {};
+
+    if (!action) {
+      return res.status(400).json({ error: 'Action required' });
+    }
+
+    if (!password) {
+      return res.status(400).json({ error: 'Password required' });
+    }
 
     // Simple password auth
     if (password !== ADMIN_PASSWORD) {
+      console.log('❌ Invalid password attempt');
       return res.status(401).json({ error: 'Invalid admin password' });
     }
 
@@ -49,10 +70,14 @@ export default async function handler(req, res) {
     }
 
   } catch (e) {
-    console.error('❌ Admin API error:', e.message);
-    res.status(500).json({
+    console.error('❌ Admin API main catch block error:', e.message);
+    console.error('❌ Full error:', e);
+    console.error('❌ Stack trace:', e.stack);
+    
+    return res.status(500).json({
       error: 'Admin API error',
-      details: e.message
+      details: e.message,
+      stack: e.stack?.split('\n').slice(0, 5)
     });
   }
 }

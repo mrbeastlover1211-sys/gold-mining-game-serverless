@@ -381,7 +381,22 @@
           })
         });
 
-        const data = await response.json();
+        console.log('Login response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Login failed - Status:', response.status, 'Response:', errorText);
+          throw new Error(`Login failed: ${response.status} - ${errorText.slice(0, 100)}`);
+        }
+
+        let data;
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          const responseText = await response.text();
+          console.error('JSON Parse Error:', parseError, 'Response:', responseText);
+          throw new Error(`Invalid server response. Please check server logs.`);
+        }
         
         if (data.success) {
           adminPassword = password;
@@ -390,9 +405,10 @@
           showMessage('✅ Admin access granted', 'success');
           loadDashboard();
         } else {
-          showMessage('❌ Invalid password', 'error');
+          showMessage('❌ ' + (data.error || 'Login failed'), 'error');
         }
       } catch (e) {
+        console.error('Login error:', e);
         showMessage('❌ Login failed: ' + e.message, 'error');
       }
     }
