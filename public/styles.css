@@ -2278,12 +2278,100 @@ h6 { font-size: 12px; }
   }
 }
 
+/* Tablet and Mobile adjustments */
+@media (max-width: 1024px) {
+  .game-dashboard {
+    grid-template-areas: 
+      "header header"
+      "stats stats"
+      "shop shop"
+      "mining mining"
+      "wallet wallet"
+      "selling selling"
+      "footer footer";
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 60px auto auto auto auto auto 50px;
+  }
+}
+
+/* Mobile Medium (up to 768px) */
+@media (max-width: 768px) {
+  body {
+    overflow-y: auto;
+    height: auto;
+    background-attachment: scroll;
+  }
+
+  .game-dashboard {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    padding: 10px;
+    gap: 15px;
+  }
+
+  .header {
+    width: 100%;
+    padding: 10px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .header-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .logo {
+    text-align: center;
+  }
+
+  /* Make all sections stack vertically */
+  .stats-section,
+  .shop-section, 
+  .mining-section,
+  .wallet-section,
+  .selling-section,
+  .footer {
+    width: 100%;
+    order: initial;
+  }
+}
+
 /* Mobile Small (up to 576px) */
 @media (max-width: 576px) {
   .game-dashboard {
     margin: 0;
     padding: 8px;
+    gap: 10px;
+  }
+
+  .header {
+    padding: 8px;
+  }
+
+  .header-content {
     gap: 8px;
+  }
+
+  .logo h1 {
+    font-size: 18px;
+  }
+
+  .header-buttons {
+    gap: 5px;
+  }
+
+  .refer-btn,
+  .v2-coming-soon-btn,
+  .connect-btn {
+    padding: 8px 10px;
+    font-size: 10px;
   }
   
   .stat-cards {
@@ -2385,23 +2473,217 @@ h6 { font-size: 12px; }
     font-size: 16px;
   }
   
+  /* Sections mobile optimization */
+  .stats-section,
+  .shop-section,
+  .mining-section,
+  .wallet-section,
+  .selling-section {
+    margin-bottom: 15px;
+  }
+
+  .section-title {
+    font-size: 16px;
+    margin-bottom: 10px;
+    text-align: center;
+    padding: 10px;
+    background: rgba(0, 212, 170, 0.1);
+    border-radius: 8px;
+  }
+
+  /* Stats cards mobile */
+  .stat-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .stat-card {
+    padding: 15px;
+    text-align: center;
+    background: rgba(26, 26, 26, 0.8);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 212, 170, 0.3);
+  }
+
+  .stat-card h3 {
+    font-size: 12px;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+  }
+
+  .stat-card .value {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--primary);
+  }
+
+  /* Inventory and Shop mobile */
+  .inventory-grid,
+  .shop-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pickaxe-item,
+  .shop-item {
+    padding: 15px;
+    border-radius: 12px;
+    background: rgba(26, 26, 26, 0.8);
+    border: 1px solid rgba(0, 212, 170, 0.3);
+  }
+
+  .pickaxe-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+  }
+
+  .pickaxe-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto;
+  }
+
+  .pickaxe-name {
+    font-size: 16px;
+    font-weight: bold;
+  }
+
+  .pickaxe-rate {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .pickaxe-price {
+    font-size: 14px;
+    margin: 10px 0;
+    text-align: center;
+  }
+
+  .quantity-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 15px 0;
+  }
+
+  .qty-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    border-radius: 8px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+
+  .qty-input {
+    width: 60px;
+    height: 40px;
+    text-align: center;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(26, 26, 26, 0.8);
+    color: white;
+  }
+
+  .buy-btn {
+    width: 100%;
+    padding: 15px;
+    font-size: 16px;
+    margin-top: 15px;
+    border-radius: 8px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  /* Wallet section mobile optimization */
+  .wallet-info {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+    padding: 15px;
+    background: rgba(26, 26, 26, 0.8);
+    border-radius: 12px;
+  }
+
+  .wallet-address {
+    font-size: 12px;
+    word-break: break-all;
+    padding: 8px;
+    background: rgba(42, 42, 42, 0.6);
+    border-radius: 6px;
+  }
+
+  .wallet-balance {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--secondary);
+  }
+
   /* Modal responsive adjustments */
+  .modal-overlay {
+    padding: 10px;
+  }
+
   .modal-content {
     width: 95% !important;
     max-width: 400px !important;
-    margin: 10px !important;
+    margin: 20px auto !important;
+    max-height: 90vh;
+    overflow-y: auto;
   }
   
   .modal-header {
-    padding: 20px 15px !important;
+    padding: 15px !important;
+    text-align: center;
+  }
+
+  .modal-header h2 {
+    font-size: 18px;
   }
   
   .modal-body {
-    padding: 20px 15px !important;
+    padding: 15px !important;
   }
   
   .modal-footer {
-    padding: 0 15px 20px 15px !important;
+    padding: 15px !important;
+  }
+
+  /* Steps and features mobile */
+  .steps-container,
+  .v2-features {
+    gap: 15px;
+  }
+
+  .step-item,
+  .v2-feature-item {
+    padding: 15px;
+    border-radius: 12px;
+  }
+
+  .step-number {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+
+  .step-content h3 {
+    font-size: 16px;
+  }
+
+  .step-content p {
+    font-size: 14px;
+    line-height: 1.4;
   }
 }
 
@@ -2409,45 +2691,125 @@ h6 { font-size: 12px; }
 @media (max-width: 320px) {
   .game-dashboard {
     padding: 5px;
+    gap: 8px;
+  }
+
+  .header {
+    padding: 5px;
+  }
+
+  .logo h1 {
+    font-size: 16px;
+  }
+
+  .header-buttons {
+    flex-direction: column;
     gap: 5px;
+  }
+
+  .refer-btn,
+  .v2-coming-soon-btn,
+  .connect-btn {
+    padding: 6px 8px;
+    font-size: 9px;
+    width: 100%;
+    max-width: 120px;
   }
   
   .section-title {
     font-size: 14px;
+    padding: 8px;
   }
   
   .stat-card {
-    padding: 8px;
+    padding: 10px;
+  }
+
+  .stat-card .value {
+    font-size: 16px;
   }
   
   .pickaxe-item,
   .shop-item {
-    padding: 10px;
+    padding: 12px;
   }
-  
-  .connect-btn {
-    padding: 10px;
-    font-size: 12px;
+
+  .pickaxe-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .pickaxe-name {
+    font-size: 14px;
+  }
+
+  .pickaxe-rate {
+    font-size: 11px;
+  }
+
+  .pickaxe-price {
+    font-size: 13px;
   }
   
   .buy-btn {
-    padding: 10px;
-    font-size: 12px;
-  }
-  
-  .quantity-controls {
-    gap: 5px;
-  }
-  
-  .qty-btn {
-    width: 30px;
-    height: 30px;
+    padding: 12px;
     font-size: 14px;
   }
   
+  .quantity-controls {
+    gap: 8px;
+  }
+  
+  .qty-btn {
+    width: 35px;
+    height: 35px;
+    font-size: 16px;
+  }
+  
   .qty-input {
-    width: 40px;
-    height: 30px;
+    width: 50px;
+    height: 35px;
+    font-size: 14px;
+  }
+
+  .wallet-address {
+    font-size: 10px;
+  }
+
+  .wallet-balance {
+    font-size: 16px;
+  }
+
+  /* Modal adjustments for tiny screens */
+  .modal-content {
+    width: 98% !important;
+    margin: 5px auto !important;
+    max-height: 95vh;
+  }
+
+  .modal-header {
+    padding: 10px !important;
+  }
+
+  .modal-header h2 {
+    font-size: 16px;
+  }
+
+  .modal-body {
+    padding: 10px !important;
+  }
+
+  .step-content h3 {
+    font-size: 14px;
+  }
+
+  .step-content p {
+    font-size: 12px;
+  }
+
+  .step-number {
+    width: 25px;
+    height: 25px;
     font-size: 12px;
   }
 }
