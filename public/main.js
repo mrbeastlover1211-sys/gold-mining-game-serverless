@@ -1249,47 +1249,111 @@ async function buyPickaxe(pickaxeType) {
 }
 
 async function sellGold() {
+  const sellMsgElement = document.getElementById('sellMsg');
+  const sellAmountElement = document.getElementById('sellAmount');
+  
   if (!state.address) {
-    $('#sellMsg').textContent = 'Please connect your wallet first!';
-    $('#sellMsg').className = 'msg error';
+    if (sellMsgElement) {
+      sellMsgElement.textContent = 'Please connect your wallet first!';
+      sellMsgElement.className = 'msg error';
+    }
     return;
   }
   
-  const amountGold = parseFloat($('#sellAmount').value || '0');
+  const amountGold = parseFloat(sellAmountElement?.value || '0');
   if (!isFinite(amountGold) || amountGold <= 0) {
-    $('#sellMsg').textContent = 'Please enter a valid gold amount!';
-    $('#sellMsg').className = 'msg error';
+    if (sellMsgElement) {
+      sellMsgElement.textContent = 'Please enter a valid gold amount!';
+      sellMsgElement.className = 'msg error';
+    }
+    return;
+  }
+  
+  // First, refresh status to get latest gold amount
+  try {
+    if (sellMsgElement) {
+      sellMsgElement.textContent = '🔍 Checking your gold balance...';
+      sellMsgElement.className = 'msg';
+    }
+    await refreshStatus(); // Get latest gold
+    updateGoldDisplay();
+  } catch (e) {
+    console.error('Failed to refresh status:', e);
+    if (sellMsgElement) {
+      sellMsgElement.textContent = 'Failed to check your status. Please try again.';
+      sellMsgElement.className = 'msg error';
+    }
     return;
   }
   
   try {
-    $('#sellMsg').textContent = 'Processing sale...';
-    $('#sellMsg').className = 'msg';
+    if (sellMsgElement) {
+      sellMsgElement.textContent = `💰 Selling ${amountGold.toLocaleString()} gold for SOL...`;
+      sellMsgElement.className = 'msg';
+    }
     
-    const r = await fetch('/sell', {
+    const response = await fetch('/api/sell', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ address: state.address, amountGold }),
     });
-    const j = await r.json();
-    if (j.error) throw new Error(j.error);
     
-    if (j.mode === 'pending') {
-      $('#sellMsg').textContent = `✅ Sale recorded! Pending payout of ${j.payoutSol} SOL`;
-      $('#sellMsg').className = 'msg success';
-    } else {
-      $('#sellMsg').textContent = `✅ Sale complete! Received ${j.payoutSol} SOL`;
-      $('#sellMsg').className = 'msg success';
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Sell failed - Status:', response.status, 'Response:', errorText);
+      throw new Error(`Sell failed: ${response.status} - ${errorText.slice(0, 100)}`);
     }
     
-    $('#sellAmount').value = '';
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      const responseText = await response.text();
+      console.error('JSON Parse Error:', parseError, 'Response:', responseText);
+      throw new Error(`Invalid server response. Please try again.`);
+    }
+    
+    if (data.error) throw new Error(data.error);
+    
+    // Handle successful sale
+    if (sellMsgElement) {
+      if (data.mode === 'pending') {
+        sellMsgElement.textContent = `✅ Sale recorded! Pending payout of ${data.payoutSol} SOL`;
+        sellMsgElement.className = 'msg success';
+      } else if (data.signature) {
+        sellMsgElement.textContent = `✅ Sale complete! Received ${data.payoutSol} SOL (Tx: ${data.signature.slice(0, 8)}...)`;
+        sellMsgElement.className = 'msg success';
+      } else {
+        sellMsgElement.textContent = `✅ ${data.message || 'Sale successful!'}`;
+        sellMsgElement.className = 'msg success';
+      }
+    }
+    
+    // Update local state
+    if (data.newGold !== undefined) {
+      state.status.gold = parseFloat(data.newGold);
+      updateGoldDisplay();
+    }
+    
+    // Clear input
+    if (sellAmountElement) {
+      sellAmountElement.value = '';
+    }
+    
+    console.log(`✅ Sold ${amountGold} gold for ${data.payoutSol} SOL`);
+    
+    // Refresh status and wallet balance
     await refreshStatus();
-    await updateWalletBalance();
+    if (typeof updateWalletBalance === 'function') {
+      await updateWalletBalance();
+    }
     
   } catch (e) {
-    console.error(e);
-    $('#sellMsg').textContent = '❌ Sale failed: ' + e.message;
-    $('#sellMsg').className = 'msg error';
+    console.error('Sell gold failed:', e);
+    if (sellMsgElement) {
+      sellMsgElement.textContent = `❌ Sale failed: ${e.message}`;
+      sellMsgElement.className = 'msg error';
+    }
   }
 }
 
