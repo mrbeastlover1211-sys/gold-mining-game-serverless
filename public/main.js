@@ -642,21 +642,28 @@ function startCheckpointGoldLoop() {
     clearInterval(state.goldUpdateInterval);
   }
   
+  console.log('🚀 Starting checkpoint gold loop with state:', {
+    hasCheckpoint: !!state.checkpoint,
+    checkpoint: state.checkpoint
+  });
+  
   // Update display every second using checkpoint calculation
   state.goldUpdateInterval = setInterval(() => {
-    if (state.checkpoint) {
-      // Calculate current gold from checkpoint (works even with 0 mining power)
+    if (state.checkpoint && state.checkpoint.total_mining_power > 0) {
+      // Calculate current gold from checkpoint
       const currentGold = calculateGoldFromCheckpoint(state.checkpoint);
       
       // Always update display with proper formatting
       const totalGoldEl = $('#totalGold');
       if (totalGoldEl) {
-        // Ensure gold is a valid number for proper formatting
         const safeGold = parseFloat(currentGold) || 0;
         totalGoldEl.textContent = safeGold.toLocaleString('en-US', { 
           minimumFractionDigits: 2, 
           maximumFractionDigits: 2 
         });
+        console.log('💰 Updated gold display to:', safeGold.toFixed(2));
+      } else {
+        console.error('❌ #totalGold element not found!');
       }
       
       // Update state
@@ -673,11 +680,16 @@ function startCheckpointGoldLoop() {
         }
       }
       
-      console.log('⏰ Mining display updated - Gold:', currentGold.toFixed(2), 'Power:', state.checkpoint.total_mining_power || 0);
+      console.log('⏰ Mining tick - Gold:', currentGold.toFixed(2), 'Power:', state.checkpoint.total_mining_power || 0);
+    } else {
+      console.log('⚠️ Mining loop running but no checkpoint or mining power:', {
+        hasCheckpoint: !!state.checkpoint,
+        miningPower: state.checkpoint?.total_mining_power || 0
+      });
     }
   }, 1000); // Update every second
   
-  console.log('⏰ Checkpoint gold loop started');
+  console.log('⏰ Checkpoint gold loop started with interval ID:', state.goldUpdateInterval);
 }
 
 // Calculate current gold from checkpoint data (pure math, no server calls)
@@ -2249,6 +2261,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.showMandatoryLandPurchaseModal = showMandatoryLandPurchaseModal;
     
     console.log('🎮 Gold Mining Game ready!');
+    
+    // 🔧 FORCE MINING START: Periodically check if mining should be started
+    let forceMiningCheckCount = 0;
+    const forceMiningCheck = setInterval(() => {
+      forceMiningCheckCount++;
+      console.log(`🔍 Force mining check #${forceMiningCheckCount}:`, {
+        hasCheckpoint: !!state.checkpoint,
+        miningPower: state.checkpoint?.total_mining_power || 0,
+        hasAddress: !!state.address,
+        intervalRunning: !!state.goldUpdateInterval
+      });
+      
+      if (state.checkpoint && state.checkpoint.total_mining_power > 0 && state.address && !state.goldUpdateInterval) {
+        console.log('🚀 FORCE STARTING mining loop - detected:', state.checkpoint.total_mining_power, 'mining power');
+        startCheckpointGoldLoop();
+        clearInterval(forceMiningCheck);
+        console.log('✅ Force mining check stopped - mining started');
+      }
+      
+      // Stop checking after 15 attempts (30 seconds)
+      if (forceMiningCheckCount >= 15) {
+        clearInterval(forceMiningCheck);
+        console.log('🛑 Stopped force mining checks after 30 seconds');
+      }
+    }, 2000); // Check every 2 seconds
     
   } catch (error) {
     console.error('❌ Failed to initialize:', error);
