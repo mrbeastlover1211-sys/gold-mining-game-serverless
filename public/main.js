@@ -1362,7 +1362,28 @@ function createMandatoryLandPurchaseModal() {
     margin-bottom: 15px;
   `;
 
-  button.addEventListener('click', purchaseLand);
+  button.addEventListener('click', async (e) => {
+    console.log('🏠 Land purchase button clicked!');
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Disable button during transaction
+    button.disabled = true;
+    button.style.opacity = '0.6';
+    button.textContent = '⏳ Processing...';
+    
+    try {
+      await purchaseLand();
+    } catch (error) {
+      console.error('❌ Land purchase button error:', error);
+      alert('Error: ' + error.message);
+    } finally {
+      // Re-enable button
+      button.disabled = false;
+      button.style.opacity = '1';
+      button.textContent = '🏠 Purchase Land (0.01 SOL)';
+    }
+  });
   button.addEventListener('mouseover', () => {
     button.style.transform = 'translateY(-2px)';
     button.style.boxShadow = '0 8px 25px rgba(0,255,136,0.3)';
