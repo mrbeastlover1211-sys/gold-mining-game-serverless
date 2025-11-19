@@ -149,9 +149,10 @@ export async function saveUserOptimized(address, userData) {
     console.timeEnd(`💾 Save user ${address.slice(0, 8)}...`);
     console.log(`✅ User ${address.slice(0, 8)}... saved successfully`);
     
-    // Update cache
+    // Clear cache to force fresh reads (prevents stale data)
     const cacheKey = `user_${address}`;
-    cache.set(cacheKey, { data: userData, timestamp: Date.now() });
+    cache.delete(cacheKey);
+    console.log(`🧹 Cache cleared for ${address.slice(0, 8)}... after save`);
     
     return true;
   } catch (error) {
