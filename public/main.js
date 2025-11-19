@@ -683,15 +683,31 @@ function startCheckpointGoldLoop() {
 // Calculate current gold from checkpoint data (pure math, no server calls)
 function calculateGoldFromCheckpoint(checkpoint) {
   if (!checkpoint || !checkpoint.total_mining_power) {
-    return checkpoint?.last_checkpoint_gold || 0;
+    return parseFloat(checkpoint?.last_checkpoint_gold) || 0;
   }
   
   const currentTime = Math.floor(Date.now() / 1000);
-  const timeSinceCheckpoint = currentTime - checkpoint.checkpoint_timestamp;
-  const goldPerSecond = checkpoint.total_mining_power / 60; // Convert per minute to per second
+  const checkpointTime = parseInt(checkpoint.checkpoint_timestamp, 10); // Convert string to number
+  const timeSinceCheckpoint = currentTime - checkpointTime;
+  const goldPerSecond = parseFloat(checkpoint.total_mining_power) / 60; // Convert per minute to per second
   const goldMined = goldPerSecond * timeSinceCheckpoint;
+  const baseGold = parseFloat(checkpoint.last_checkpoint_gold) || 0;
   
-  return checkpoint.last_checkpoint_gold + goldMined;
+  const totalGold = baseGold + goldMined;
+  
+  // Debug logging to see what's happening
+  console.log('⛏️ Mining calculation:', {
+    miningPower: checkpoint.total_mining_power,
+    checkpointTime: checkpointTime,
+    currentTime: currentTime,
+    timeSinceCheckpoint: timeSinceCheckpoint,
+    goldPerSecond: goldPerSecond,
+    goldMined: goldMined,
+    baseGold: baseGold,
+    totalGold: totalGold
+  });
+  
+  return totalGold;
 }
 
 // Sync mining progress to server (prevents data loss on refresh)
