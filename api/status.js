@@ -18,9 +18,25 @@ export default async function handler(req, res) {
     
     // 🔧 FIX: Always force fresh data from optimized database
     console.log(`📊 Getting fresh user data from database for ${address.slice(0, 8)}...`);
-    const user = await getUserOptimized(address); // Get user data from optimized database
+    let user;
+    try {
+      user = await getUserOptimized(address); // Get user data from optimized database
+      console.log(`🔍 Status API getUserOptimized result:`, {
+        found: !!user,
+        has_land: user?.has_land,
+        address: user?.address?.slice(0, 8)
+      });
+    } catch (dbError) {
+      console.error(`❌ Status API database error:`, dbError.message);
+      // Return error response instead of default
+      return res.status(500).json({
+        error: 'Database error in status API',
+        details: dbError.message
+      });
+    }
     
     if (!user) {
+      console.log(`⚠️ Status API: No user found for ${address.slice(0, 8)}...`);
       // Return default structure for new users
       return res.json({
         address,
@@ -40,6 +56,8 @@ export default async function handler(req, res) {
         }
       });
     }
+    
+    console.log(`✅ Status API: User found with has_land = ${user.has_land}`);
     
     // Create inventory object from database columns
     const inventory = {
