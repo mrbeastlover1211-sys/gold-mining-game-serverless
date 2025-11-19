@@ -195,10 +195,16 @@ export default async function handler(req, res) {
     });
     
   } catch (e) {
-    console.error('Purchase confirmation error:', e);
+    console.error('❌ Purchase confirmation error:', e.message);
+    console.error('❌ Full error:', e);
+    console.error('❌ Stack trace:', e.stack);
     
     if (!res.headersSent) {
-      res.status(500).json({ error: 'failed to confirm purchase: ' + (e?.message || 'unknown error') });
+      res.status(500).json({ 
+        error: 'Purchase confirmation failed: ' + (e?.message || 'unknown error'),
+        details: e.message,
+        stack: e.stack?.split('\n').slice(0, 5) // First 5 lines of stack
+      });
     }
   }
 }
