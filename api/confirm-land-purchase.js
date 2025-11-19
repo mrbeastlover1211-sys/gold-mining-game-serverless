@@ -68,6 +68,7 @@ export default async function handler(req, res) {
           address: address,
           has_land: false,
           land_purchase_date: null,
+          land_type: 'basic',
           silver_pickaxes: 0,
           gold_pickaxes: 0,
           diamond_pickaxes: 0,
@@ -76,11 +77,19 @@ export default async function handler(req, res) {
           checkpoint_timestamp: nowSec(),
           last_checkpoint_gold: 0,
           last_activity: nowSec(),
+          total_gold_mined: 0,
+          total_sol_spent: 0,
+          total_sol_earned: 0,
+          total_pickaxes_bought: 0,
+          play_time_minutes: 0,
+          login_streak: 0,
+          total_logins: 1,
+          player_level: 1,
+          experience_points: 0,
           referrer_address: null,
           total_referrals: 0,
           referral_rewards_earned: 0,
-          validation_failures: 0,
-          last_cheat_attempt: null
+          suspicious_activity_count: 0
         };
       }
       

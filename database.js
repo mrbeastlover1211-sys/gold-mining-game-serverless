@@ -43,14 +43,16 @@ export async function getUserOptimized(address, useCache = true) {
   try {
     console.time(`🔍 DB query for ${address.slice(0, 8)}...`);
     
-    // Single optimized query - gets all user data
+    // Single optimized query - gets all user data (using actual database columns)
     const result = await client.query(`
       SELECT 
-        address, has_land, land_purchase_date,
+        address, has_land, land_purchase_date, land_type,
         silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes,
         total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity,
+        total_gold_mined, total_sol_spent, total_sol_earned, total_pickaxes_bought, play_time_minutes,
+        login_streak, total_logins, player_level, experience_points,
         referrer_address, total_referrals, referral_rewards_earned,
-        validation_failures, last_cheat_attempt, created_at, updated_at
+        suspicious_activity_count, created_at, updated_at
       FROM users 
       WHERE address = $1
     `, [address]);
