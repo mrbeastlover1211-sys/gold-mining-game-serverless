@@ -200,3 +200,4 @@ class MiningEngine {
 
 // Export for use in main.js
 window.MiningEngine = MiningEngine;
+window.optimizedMiningEngine = new MiningEngine();

@@ -1,7 +1,11 @@
 import { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { PICKAXES, SOLANA_CLUSTER_URL, TREASURY_PUBLIC_KEY } from '../utils/constants.js';
 
-const connection = new Connection(SOLANA_CLUSTER_URL, 'confirmed');
+const PICKAXES = {
+  silver: { name: 'Silver', costSol: 0.001, ratePerSec: 1/60 },
+  gold: { name: 'Gold', costSol: 0.001, ratePerSec: 10/60 },
+  diamond: { name: 'Diamond', costSol: 0.001, ratePerSec: 100/60 },
+  netherite: { name: 'Netherite', costSol: 0.001, ratePerSec: 10000/60 },
+};
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -14,8 +18,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'address and valid pickaxeType required' });
     }
     const qty = Math.max(1, Math.min(1000, parseInt(quantity || '1', 10)));
+    
+    const TREASURY_PUBLIC_KEY = process.env.TREASURY_PUBLIC_KEY;
     if (!TREASURY_PUBLIC_KEY) {
-      return res.status(400).json({ error: 'treasury not configured; set TREASURY_PUBLIC_KEY in .env and restart server' });
+      return res.status(400).json({ error: 'treasury not configured; set TREASURY_PUBLIC_KEY in environment' });
     }
 
     let payer, treasury;
@@ -33,6 +39,8 @@ export default async function handler(req, res) {
     const unitLamports = Math.round(PICKAXES[pickaxeType].costSol * LAMPORTS_PER_SOL);
     const costLamports = unitLamports * qty;
 
+    const SOLANA_CLUSTER_URL = process.env.SOLANA_CLUSTER_URL || 'https://api.devnet.solana.com';
+    const connection = new Connection(SOLANA_CLUSTER_URL, 'confirmed');
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
 
     const tx = new Transaction({ feePayer: payer, recentBlockhash: blockhash });

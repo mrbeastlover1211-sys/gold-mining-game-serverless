@@ -1,8 +1,4 @@
 import { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { SOLANA_CLUSTER_URL, TREASURY_PUBLIC_KEY } from '../utils/constants.js';
-import { readUsers, ensureUser } from '../utils/helpers.js';
-
-const connection = new Connection(SOLANA_CLUSTER_URL, 'confirmed');
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -14,14 +10,23 @@ export default async function handler(req, res) {
     if (!address) {
       return res.status(400).json({ error: 'address required' });
     }
+    
+    const TREASURY_PUBLIC_KEY = process.env.TREASURY_PUBLIC_KEY;
     if (!TREASURY_PUBLIC_KEY) {
-      return res.status(400).json({ error: 'treasury not configured; set TREASURY_PUBLIC_KEY in .env and restart server' });
+      return res.status(400).json({ error: 'treasury not configured; set TREASURY_PUBLIC_KEY in environment' });
     }
 
     // Check if user already has land
-    const users = readUsers();
-    ensureUser(users, address);
-    if (users[address].hasLand) {
+    global.users = global.users || {};
+    if (!global.users[address]) {
+      global.users[address] = {
+        inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 },
+        hasLand: false,
+        landPurchaseDate: null
+      };
+    }
+    
+    if (global.users[address].hasLand) {
       return res.status(400).json({ error: 'User already owns land' });
     }
 
@@ -40,6 +45,8 @@ export default async function handler(req, res) {
     const landCostSOL = 0.01; // 0.01 SOL for land
     const costLamports = Math.round(landCostSOL * LAMPORTS_PER_SOL);
 
+    const SOLANA_CLUSTER_URL = process.env.SOLANA_CLUSTER_URL || 'https://api.devnet.solana.com';
+    const connection = new Connection(SOLANA_CLUSTER_URL, 'confirmed');
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
 
     const tx = new Transaction({ feePayer: payer, recentBlockhash: blockhash });

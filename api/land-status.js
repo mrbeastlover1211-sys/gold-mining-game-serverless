@@ -9,12 +9,12 @@ export default async function handler(req, res) {
     
     // Use UltraOptimizedDatabase (same as all other endpoints)
     try {
-      const { UltraOptimizedDatabase } = await import('../database-ultra-optimized.js');
+      const { getUser } = await import('../database.js');
       
       console.log(`🔍 Checking land status for ${address.slice(0, 8)}...`);
       
-      // Get user data using ultra-optimized system
-      const userData = await UltraOptimizedDatabase.getUser(address, true);
+      // Get user data using working database system
+      const userData = await getUser(address);
       
       console.log(`📊 User data from OptimizedDatabase:`, {
         address: address.slice(0, 8) + '...',
