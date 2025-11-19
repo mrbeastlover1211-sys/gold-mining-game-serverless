@@ -55,47 +55,69 @@ export default async function handler(req, res) {
       status = 'confirmed';
     }
 
-    // Grant land - use UltraOptimizedDatabase (same as pickaxe purchases)
+    // Grant land - use optimized database functions
     try {
-      const { getUser, saveUser } = await import('../database.js');
+      const { getUserOptimized, saveUserOptimized } = await import('../database.js');
       
-      // Get existing user data or create new
-      const existingUser = await getUser(address);
+      // Get existing user data or create new user structure
+      let existingUser = await getUserOptimized(address, false); // No cache for land purchase
       
-      // Update with land ownership
+      if (!existingUser) {
+        // Create new user structure for land purchase
+        existingUser = {
+          address: address,
+          has_land: false,
+          land_purchase_date: null,
+          silver_pickaxes: 0,
+          gold_pickaxes: 0,
+          diamond_pickaxes: 0,
+          netherite_pickaxes: 0,
+          total_mining_power: 0,
+          checkpoint_timestamp: nowSec(),
+          last_checkpoint_gold: 0,
+          last_activity: nowSec(),
+          referrer_address: null,
+          total_referrals: 0,
+          referral_rewards_earned: 0,
+          validation_failures: 0,
+          last_cheat_attempt: null
+        };
+      }
+      
+      // Update with land ownership (using database column names)
       const updatedUser = {
         ...existingUser,
-        hasLand: true,
-        landPurchaseDate: nowSec(),
-        lastActivity: nowSec()
+        has_land: true,
+        land_purchase_date: nowSec(),
+        last_activity: nowSec()
       };
       
-      // Save using ultra-fast core save
+      // Save using optimized function
       console.log(`💾 Attempting to save land purchase for ${address}...`);
       console.log(`📊 Updated user data:`, {
         address: address.slice(0, 8),
-        hasLand: updatedUser.hasLand,
-        landPurchaseDate: updatedUser.landPurchaseDate,
-        lastActivity: updatedUser.lastActivity
+        has_land: updatedUser.has_land,
+        land_purchase_date: updatedUser.land_purchase_date,
+        last_activity: updatedUser.last_activity
       });
       
-      const saveResult = await saveUser(address, updatedUser);
+      const saveResult = await saveUserOptimized(address, updatedUser);
       
       if (saveResult) {
         console.log(`✅ Land purchase saved successfully for ${address}`);
-        console.log(`🎉 Database should now show hasLand: true for this wallet`);
+        console.log(`🎉 Database should now show has_land: true for this wallet`);
       } else {
-        console.error(`❌ SaveUserImmediate returned false for ${address}`);
-        throw new Error('Failed to save land purchase to database - saveUserImmediate returned false');
+        console.error(`❌ saveUserOptimized returned false for ${address}`);
+        throw new Error('Failed to save land purchase to database - saveUserOptimized returned false');
       }
       
       // Update global.users for backwards compatibility
       global.users = global.users || {};
       global.users[address] = global.users[address] || {};
       global.users[address].hasLand = true;
-      global.users[address].landPurchaseDate = nowSec();
+      global.users[address].landPurchaseDate = updatedUser.land_purchase_date;
       
-      console.log(`🏡 Land granted to ${address} via UltraOptimizedDatabase`);
+      console.log(`🏡 Land granted to ${address} via OptimizedDatabase`);
       
     } catch (dbError) {
       console.error('🚨 CRITICAL: Database save failed for land purchase!');
