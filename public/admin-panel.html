@@ -372,7 +372,7 @@
       }
 
       try {
-        const response = await fetch('/api/admin', {
+        const response = await fetch('/api/admin-simple', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -415,7 +415,7 @@
 
     async function loadDashboard() {
       try {
-        const response = await fetch('/api/admin', {
+        const response = await fetch('/api/admin-simple', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -456,7 +456,7 @@
       payoutsContent.innerHTML = '<div class="loading">Loading pending payouts...</div>';
 
       try {
-        const response = await fetch('/api/admin', {
+        const response = await fetch('/api/admin-simple', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
