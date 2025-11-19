@@ -2148,3 +2148,17 @@ async function purchaseMandatoryLand() {
 }
 
 // Legacy purchase land function
+
+
+// Initialize the game when DOM is loaded
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('🎮 DOM loaded, initializing Gold Mining Game...');
+  
+  try {
+    // Load game configuration and start
+    await loadConfig();
+    console.log('🎉 Game initialized successfully!');
+  } catch (error) {
+    console.error('❌ Failed to initialize game:', error);
+  }
+});
