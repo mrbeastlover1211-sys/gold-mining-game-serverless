@@ -2209,9 +2209,10 @@ function hideHowItWorksModal() {
 // Missing function: closeV2Modal
 function closeV2Modal() {
   console.log('🎃 Closing V2 modal...');
-  const modal = document.getElementById('v2Modal');
+  const modal = document.getElementById('v2ComingSoonModal');
   if (modal) {
     modal.style.display = 'none';
+    console.log('✅ V2 modal closed');
   }
 }
 
@@ -2299,16 +2300,12 @@ function showReferModal() {
 // Show V2.0 modal  
 function showV2Modal() {
   console.log('🎃 Showing V2.0 modal...');
-  const modal = document.getElementById('v2Modal');
+  const modal = document.getElementById('v2ComingSoonModal');
   if (modal) {
     modal.style.display = 'flex';
+    console.log('✅ V2 modal displayed');
   } else {
-    console.log('❌ V2 modal not found in DOM');
-    // V2 modal should already exist in HTML, just show it
-    const existingModal = document.querySelector('.modal.v2-modal');
-    if (existingModal) {
-      existingModal.style.display = 'flex';
-    }
+    console.log('❌ V2ComingSoonModal not found in DOM');
   }
 }
 
