@@ -208,7 +208,7 @@ async function autoReconnectWallet() {
         console.log('🔄 Wallet switched from', savedAddress.slice(0, 8), 'to', account?.toString().slice(0, 8));
         
         // Clear old data and prompt reconnection
-        handleWalletSwitch(account?.toString());
+        await handleWalletSwitch(account?.toString(), provider);
       }
     } else {
       console.log('ℹ️ Phantom wallet not connected, user needs to connect manually');
@@ -241,7 +241,7 @@ function setupWalletSwitchDetection(provider) {
           
           if (newAddress !== currentAddress) {
             console.log('👤 Wallet switched from', currentAddress?.slice(0, 8), 'to', newAddress.slice(0, 8));
-            handleWalletSwitch(newAddress);
+            await handleWalletSwitch(newAddress, provider);
           }
         } else {
           console.log('👤 Wallet disconnected');
@@ -279,7 +279,7 @@ function setupWalletSwitchDetection(provider) {
         console.log('🔄 POLLING DETECTED WALLET SWITCH!');
         console.log('   From:', gameAddress?.slice(0, 8));
         console.log('   To:', currentPhantomAddress.slice(0, 8));
-        handleWalletSwitch(currentPhantomAddress);
+        await handleWalletSwitch(currentPhantomAddress, provider);
         clearInterval(pollInterval); // Stop polling after switch detected
       }
     } else {
@@ -298,7 +298,7 @@ function setupWalletSwitchDetection(provider) {
 }
 
 // 🔧 NEW: Handle wallet switch
-function handleWalletSwitch(newAddress) {
+async function handleWalletSwitch(newAddress, provider) {
   console.log('🔄 Handling wallet switch to:', newAddress?.slice(0, 8) + '...');
   
   // Clear current game state
@@ -313,20 +313,19 @@ function handleWalletSwitch(newAddress) {
     state.goldUpdateInterval = null;
   }
   
-  // Clear localStorage
-  localStorage.removeItem('gm_address');
-  
-  // Reset UI to disconnected state
-  updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
-  
-  // Update connect button to show disconnected state
-  const connectBtn = $('#connectBtn');
-  if (connectBtn) {
-    connectBtn.textContent = 'Connect Wallet';
-    connectBtn.disabled = false;
+  // Clear any existing land modals
+  const existingModal = document.getElementById('mandatoryLandModal');
+  if (existingModal) {
+    existingModal.remove();
   }
   
-  // Show wallet switch notification
+  // Clear existing timers
+  if (window.landCheckTimeout) {
+    clearTimeout(window.landCheckTimeout);
+    window.landCheckTimeout = null;
+  }
+  
+  // Show switching notification
   const notification = document.createElement('div');
   notification.id = 'walletSwitchNotification';
   notification.style.cssText = `
@@ -334,7 +333,7 @@ function handleWalletSwitch(newAddress) {
     top: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background: linear-gradient(45deg, #ff6b35, #f7931e);
+    background: linear-gradient(45deg, #4ade80, #22c55e);
     color: white;
     padding: 15px 25px;
     border-radius: 10px;
@@ -349,29 +348,125 @@ function handleWalletSwitch(newAddress) {
   notification.innerHTML = `
     <div>🔄 Wallet Switch Detected!</div>
     <div style="font-size: 14px; margin-top: 5px;">
-      Please click "Connect Wallet" to load your data for the new wallet
+      Loading data for new wallet...
     </div>
-    <button onclick="this.parentElement.remove()" style="
-      background: rgba(255,255,255,0.2);
-      border: none;
-      color: white;
-      padding: 5px 10px;
-      border-radius: 5px;
-      margin-top: 10px;
-      cursor: pointer;
-    ">Got it!</button>
   `;
   
   document.body.appendChild(notification);
   
-  // Auto-remove notification after 8 seconds
+  try {
+    // Automatically set up the new wallet
+    state.wallet = provider;
+    state.address = newAddress;
+    localStorage.setItem('gm_address', newAddress);
+    
+    console.log('✅ New wallet connected automatically:', newAddress.slice(0, 8) + '...');
+    
+    // Update balance
+    await updateWalletBalance();
+    updateConnectButtonDisplay();
+    
+    // Load user data for the new wallet
+    console.log('📊 Loading data for switched wallet...');
+    const userData = await loadInitialUserData();
+    
+    if (userData) {
+      console.log('✅ Found existing data for this wallet:', userData);
+      
+      // Update display with loaded data
+      updateDisplay({
+        gold: userData.last_checkpoint_gold || 0,
+        inventory: userData.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 },
+        checkpoint: {
+          total_mining_power: userData.total_mining_power || 0,
+          checkpoint_timestamp: userData.checkpoint_timestamp,
+          last_checkpoint_gold: userData.last_checkpoint_gold || 0
+        }
+      });
+      
+      // Store checkpoint for mining
+      state.checkpoint = {
+        total_mining_power: userData.total_mining_power || 0,
+        checkpoint_timestamp: userData.checkpoint_timestamp,
+        last_checkpoint_gold: userData.last_checkpoint_gold || 0
+      };
+      
+      // Start mining if user has pickaxes
+      if (state.checkpoint.total_mining_power > 0) {
+        console.log('⛏️ Resuming mining for switched wallet...');
+        startCheckpointGoldLoop();
+      }
+      
+      // Update notification
+      notification.innerHTML = `
+        <div>✅ Wallet Switch Complete!</div>
+        <div style="font-size: 14px; margin-top: 5px;">
+          Loaded data for ${newAddress.slice(0, 6)}...${newAddress.slice(-4)}
+        </div>
+      `;
+      notification.style.background = 'linear-gradient(45deg, #22c55e, #16a34a)';
+      
+    } else {
+      console.log('ℹ️ No existing data found for this wallet - new user');
+      
+      // Initialize empty state for new users
+      updateDisplay({ 
+        gold: 0, 
+        inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } 
+      });
+      
+      // Update notification
+      notification.innerHTML = `
+        <div>✅ Wallet Switch Complete!</div>
+        <div style="font-size: 14px; margin-top: 5px;">
+          New wallet detected - ready to start!
+        </div>
+      `;
+      notification.style.background = 'linear-gradient(45deg, #3b82f6, #2563eb)';
+    }
+    
+    // Check land status for the new wallet
+    await checkLandStatusAndShowPopup();
+    
+    console.log('🎉 Wallet switch complete - all data loaded automatically!');
+    
+  } catch (error) {
+    console.error('❌ Failed to load data for switched wallet:', error);
+    
+    // Reset UI to disconnected state on error
+    updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
+    
+    const connectBtn = $('#connectBtn');
+    if (connectBtn) {
+      connectBtn.textContent = 'Connect Wallet';
+      connectBtn.disabled = false;
+    }
+    
+    // Show error notification
+    notification.innerHTML = `
+      <div>❌ Wallet Switch Error</div>
+      <div style="font-size: 14px; margin-top: 5px;">
+        Please click "Connect Wallet" to try again
+      </div>
+      <button onclick="this.parentElement.remove()" style="
+        background: rgba(255,255,255,0.2);
+        border: none;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        margin-top: 10px;
+        cursor: pointer;
+      ">OK</button>
+    `;
+    notification.style.background = 'linear-gradient(45deg, #ef4444, #dc2626)';
+  }
+  
+  // Auto-remove notification after 4 seconds
   setTimeout(() => {
     if (notification.parentElement) {
       notification.remove();
     }
-  }, 8000);
-  
-  console.log('🔔 Wallet switch notification shown - user needs to reconnect');
+  }, 4000);
 }
 
 // 🔧 NEW: Handle wallet disconnect
