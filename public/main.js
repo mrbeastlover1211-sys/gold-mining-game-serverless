@@ -2162,3 +2162,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('❌ Failed to initialize game:', error);
   }
 });
+
+
+// Debug: Test if functions are accessible globally
+window.testFunctions = function() {
+  console.log('🔧 Testing function accessibility...');
+  console.log('connectWallet exists:', typeof connectWallet);
+  console.log('buyPickaxe exists:', typeof buyPickaxe);
+  console.log('purchaseLand exists:', typeof purchaseLand);
+  console.log('showHowItWorksModal exists:', typeof showHowItWorksModal);
+};
+
+// Debug: Simple click test
+window.testClick = function() {
+  console.log('🔧 Button click test - this should appear when any button is clicked');
+  alert('Button click detected!');
+};
+
+console.log('🔧 Debug functions added - call testFunctions() in console to check');
+console.log('🔧 All functions defined, checking global scope...');
+console.log('🔧 window.connectWallet:', typeof window.connectWallet);
+console.log('🔧 window.buyPickaxe:', typeof window.buyPickaxe);
+
