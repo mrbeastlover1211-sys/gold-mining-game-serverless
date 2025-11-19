@@ -26,6 +26,9 @@ async function loadConfig() {
     updateStaticInfo();
     renderShop();
     
+    // 🔄 AUTO-RECONNECT: Check for saved wallet and reconnect automatically
+    await autoReconnectWallet();
+    
   } catch (e) {
     console.error('❌ Failed to load config:', e);
   }
@@ -120,6 +123,95 @@ function changeQuantity(pickaxeType, delta) {
   const currentValue = parseInt(input.value) || 1;
   const newValue = Math.max(1, Math.min(1000, currentValue + delta));
   input.value = newValue;
+}
+
+// Auto-reconnect wallet on page refresh
+async function autoReconnectWallet() {
+  try {
+    // Check if we have a saved address
+    const savedAddress = localStorage.getItem('gm_address');
+    if (!savedAddress) {
+      console.log('🔄 No saved wallet address found');
+      return;
+    }
+    
+    console.log('🔄 Found saved wallet address, attempting auto-reconnect...');
+    
+    // Check if Phantom is available
+    const provider = window.solana || window.phantom?.solana;
+    if (!provider) {
+      console.log('⚠️ Phantom wallet not available for auto-reconnect');
+      return;
+    }
+    
+    // Try to connect silently (if wallet is already connected)
+    if (provider.isConnected) {
+      console.log('✅ Phantom wallet already connected, restoring session...');
+      
+      const account = provider.publicKey;
+      if (account && account.toString() === savedAddress) {
+        // Restore wallet state
+        state.wallet = provider;
+        state.address = savedAddress;
+        
+        console.log('✅ Wallet auto-reconnected:', savedAddress.slice(0, 8) + '...');
+        
+        // Update UI
+        await updateWalletBalance();
+        updateConnectButtonDisplay();
+        
+        // Load user data
+        console.log('📊 Loading user data after auto-reconnect...');
+        const userData = await loadInitialUserData();
+        
+        if (userData) {
+          console.log('✅ User data restored after refresh:', userData);
+          
+          // Update display with restored data
+          updateDisplay({
+            gold: userData.last_checkpoint_gold || 0,
+            inventory: userData.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 },
+            checkpoint: {
+              total_mining_power: userData.total_mining_power || 0,
+              checkpoint_timestamp: userData.checkpoint_timestamp,
+              last_checkpoint_gold: userData.last_checkpoint_gold || 0
+            }
+          });
+          
+          // Restore checkpoint for mining
+          state.checkpoint = {
+            total_mining_power: userData.total_mining_power || 0,
+            checkpoint_timestamp: userData.checkpoint_timestamp,
+            last_checkpoint_gold: userData.last_checkpoint_gold || 0
+          };
+          
+          // Start mining if user has pickaxes
+          if (state.checkpoint.total_mining_power > 0) {
+            console.log('⛏️ Resuming mining after page refresh...');
+            startCheckpointGoldLoop();
+          }
+          
+          // Check land status
+          await checkLandStatusAndShowPopup();
+          
+          console.log('🎉 Wallet auto-reconnect and data restore complete!');
+        } else {
+          console.log('ℹ️ New user after auto-reconnect');
+          updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
+        }
+        
+      } else {
+        console.log('⚠️ Connected wallet address differs from saved address');
+        localStorage.removeItem('gm_address'); // Clear outdated saved address
+      }
+    } else {
+      console.log('ℹ️ Phantom wallet not connected, user needs to connect manually');
+    }
+    
+  } catch (error) {
+    console.error('❌ Auto-reconnect failed:', error);
+    // Don't show error to user, just let them connect manually
+  }
 }
 
 // Connect wallet - simplified version
