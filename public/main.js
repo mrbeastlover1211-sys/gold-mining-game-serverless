@@ -802,12 +802,31 @@ async function buyPickaxe(pickaxeType) {
       console.log('✅ Confirmed with server data:', j2.inventory);
     }
     
-    // 2. BACKGROUND VERIFICATION: Ensure database persistence
-    setTimeout(async () => {
-      console.log('💾 Verifying database save in background...');
-      await refreshStatus(true); // Force database refresh to verify save
-      console.log('✅ Database verification complete - purchase should persist on reload!');
-    }, 1000); // 1 second delay to let database save complete
+    // 2. UPDATE CHECKPOINT: Update local checkpoint for mining calculations
+    if (j2.checkpoint) {
+      state.checkpoint = {
+        total_mining_power: j2.checkpoint.total_mining_power || j2.totalRate,
+        checkpoint_timestamp: j2.checkpoint.checkpoint_timestamp || Math.floor(Date.now() / 1000),
+        last_checkpoint_gold: j2.checkpoint.last_checkpoint_gold || j2.gold || state.status.gold
+      };
+      console.log('⚡ Updated checkpoint for mining:', state.checkpoint);
+      
+      // Start mining if we have mining power
+      if (state.checkpoint.total_mining_power > 0) {
+        startCheckpointGoldLoop();
+      }
+    }
+    
+    // 3. FINAL DISPLAY UPDATE: Ensure UI shows the purchase
+    setTimeout(() => {
+      console.log('🔄 Final UI update after purchase...');
+      updateDisplay({
+        gold: state.status.gold,
+        inventory: state.status.inventory,
+        checkpoint: state.checkpoint
+      });
+      console.log('✅ Purchase UI update complete!');
+    }, 500);
     
     // Update wallet balance 
     await updateWalletBalance();
