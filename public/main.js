@@ -2387,6 +2387,9 @@ window.showReferModal = showReferModal;
 window.showV2Modal = showV2Modal;
 window.closeReferModal = closeReferModal;
 window.copyReferLink = copyReferLink;
+window.showHowItWorksModal = showHowItWorksModal;
+window.hideHowItWorksModal = hideHowItWorksModal;
+window.closeV2Modal = closeV2Modal;
 
 // Add event listeners for modal close buttons
 document.addEventListener('DOMContentLoaded', () => {
@@ -2397,7 +2400,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('✅ Added close modal event listener');
   }
   
-  // Close modal when clicking outside of it
+  // Close modal when clicking outside of it - REFERRAL MODAL
   const referralModal = document.getElementById('referralModal');
   if (referralModal) {
     referralModal.addEventListener('click', (e) => {
@@ -2405,7 +2408,29 @@ document.addEventListener('DOMContentLoaded', () => {
         closeReferModal();
       }
     });
-    console.log('✅ Added click-outside-to-close functionality');
+    console.log('✅ Added click-outside-to-close functionality for Referral modal');
+  }
+  
+  // Close modal when clicking outside of it - HOW IT WORKS MODAL
+  const howItWorksModal = document.getElementById('howItWorksModal');
+  if (howItWorksModal) {
+    howItWorksModal.addEventListener('click', (e) => {
+      if (e.target === howItWorksModal) {
+        hideHowItWorksModal();
+      }
+    });
+    console.log('✅ Added click-outside-to-close functionality for How It Works modal');
+  }
+  
+  // Close modal when clicking outside of it - V2.0 MODAL
+  const v2ComingSoonModal = document.getElementById('v2ComingSoonModal');
+  if (v2ComingSoonModal) {
+    v2ComingSoonModal.addEventListener('click', (e) => {
+      if (e.target === v2ComingSoonModal) {
+        closeV2Modal();
+      }
+    });
+    console.log('✅ Added click-outside-to-close functionality for V2.0 modal');
   }
 });
 
