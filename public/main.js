@@ -360,14 +360,16 @@ function updateDisplay(data) {
   console.log('🔄 Processed gold:', serverGold);
   console.log('🔄 Processed inventory:', serverInventory);
   
-  // Update gold display
+  // Update gold display with proper formatting
   const totalGoldEl = $('#totalGold');
   if (totalGoldEl) {
-    totalGoldEl.textContent = serverGold.toLocaleString('en-US', { 
+    // Ensure gold is a valid number for proper formatting
+    const safeGold = parseFloat(serverGold) || 0;
+    totalGoldEl.textContent = safeGold.toLocaleString('en-US', { 
       minimumFractionDigits: 2, 
       maximumFractionDigits: 2 
     });
-    console.log('✅ Gold display updated to:', totalGoldEl.textContent);
+    console.log('✅ Gold display updated to:', totalGoldEl.textContent, 'from value:', safeGold);
   } else {
     console.error('❌ #totalGold element not found!');
   }
@@ -554,10 +556,12 @@ function startCheckpointGoldLoop() {
       // Calculate current gold from checkpoint (works even with 0 mining power)
       const currentGold = calculateGoldFromCheckpoint(state.checkpoint);
       
-      // Always update display
+      // Always update display with proper formatting
       const totalGoldEl = $('#totalGold');
       if (totalGoldEl) {
-        totalGoldEl.textContent = currentGold.toLocaleString('en-US', { 
+        // Ensure gold is a valid number for proper formatting
+        const safeGold = parseFloat(currentGold) || 0;
+        totalGoldEl.textContent = safeGold.toLocaleString('en-US', { 
           minimumFractionDigits: 2, 
           maximumFractionDigits: 2 
         });
