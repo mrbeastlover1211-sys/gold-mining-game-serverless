@@ -2257,8 +2257,7 @@ function bindEventListeners() {
     referBtn.addEventListener('click', (e) => {
       e.preventDefault();
       console.log('🎁 Refer button clicked');
-      // Add refer functionality here
-      alert('Refer feature coming soon!');
+      showReferModal();
     });
     console.log('✅ Connected referBtn event listener');
   }
@@ -2270,8 +2269,7 @@ function bindEventListeners() {
     v2Btn.addEventListener('click', (e) => {
       e.preventDefault();
       console.log('🎃 V2 button clicked');
-      // Show V2 modal or alert
-      alert('V2.0 Halloween Edition coming soon! 🎃');
+      showV2Modal();
     });
     console.log('✅ Connected v2Btn event listener');
   }
@@ -2283,4 +2281,104 @@ function bindEventListeners() {
 setTimeout(bindEventListeners, 1000);
 
 console.log('🔧 Global function binding added');
+
+
+
+// Show Refer & Earn modal
+function showReferModal() {
+  console.log('🎁 Showing Refer & Earn modal...');
+  const modal = document.getElementById('referModal');
+  if (modal) {
+    modal.style.display = 'flex';
+  } else {
+    console.log('❌ Refer modal not found, creating it...');
+    createReferModal();
+  }
+}
+
+// Show V2.0 modal  
+function showV2Modal() {
+  console.log('🎃 Showing V2.0 modal...');
+  const modal = document.getElementById('v2Modal');
+  if (modal) {
+    modal.style.display = 'flex';
+  } else {
+    console.log('❌ V2 modal not found in DOM');
+    // V2 modal should already exist in HTML, just show it
+    const existingModal = document.querySelector('.modal.v2-modal');
+    if (existingModal) {
+      existingModal.style.display = 'flex';
+    }
+  }
+}
+
+// Close Refer modal
+function closeReferModal() {
+  console.log('🎁 Closing Refer modal...');
+  const modal = document.getElementById('referModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+// Create Refer modal if it doesn't exist
+function createReferModal() {
+  const modal = document.createElement('div');
+  modal.id = 'referModal';
+  modal.className = 'modal';
+  modal.style.display = 'flex';
+  
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🎁 Refer & Earn</h2>
+        <button class="modal-close" onclick="closeReferModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <p>Invite friends and earn rewards!</p>
+        <div class="refer-stats">
+          <div class="stat-item">
+            <div class="stat-number">0</div>
+            <div class="stat-label">Friends Referred</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">0</div>
+            <div class="stat-label">SOL Earned</div>
+          </div>
+        </div>
+        <div class="refer-link-section">
+          <label>Your Referral Link:</label>
+          <div class="refer-link-container">
+            <input type="text" id="referLink" value="https://yourgame.com/?ref=YOUR_CODE" readonly>
+            <button onclick="copyReferLink()" class="copy-btn">📋 Copy</button>
+          </div>
+        </div>
+        <p class="refer-terms">
+          💰 Earn 10% of your friends' land purchases!<br>
+          🎁 Get bonus rewards when they start mining!
+        </p>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+// Copy referral link
+function copyReferLink() {
+  const linkInput = document.getElementById('referLink');
+  if (linkInput) {
+    linkInput.select();
+    document.execCommand('copy');
+    alert('📋 Referral link copied to clipboard!');
+  }
+}
+
+// Bind these functions to global scope
+window.showReferModal = showReferModal;
+window.showV2Modal = showV2Modal;
+window.closeReferModal = closeReferModal;
+window.copyReferLink = copyReferLink;
+
+console.log('🔧 Added modal functions for Refer & V2 popups');
 
