@@ -2184,3 +2184,42 @@ console.log('🔧 All functions defined, checking global scope...');
 console.log('🔧 window.connectWallet:', typeof window.connectWallet);
 console.log('🔧 window.buyPickaxe:', typeof window.buyPickaxe);
 
+
+
+// Missing function: showHowItWorksModal
+function showHowItWorksModal() {
+  console.log('📖 Showing How It Works modal...');
+  const modal = document.getElementById('howItWorksModal');
+  if (modal) {
+    modal.style.display = 'flex';
+  } else {
+    console.log('❌ How It Works modal not found in DOM');
+  }
+}
+
+// Missing function: hideHowItWorksModal
+function hideHowItWorksModal() {
+  console.log('📖 Hiding How It Works modal...');
+  const modal = document.getElementById('howItWorksModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+// Missing function: closeV2Modal
+function closeV2Modal() {
+  console.log('🎃 Closing V2 modal...');
+  const modal = document.getElementById('v2Modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+// Missing function: joinWaitlist
+function joinWaitlist() {
+  console.log('🔔 Joining V2 waitlist...');
+  alert('Thank you for your interest! We\'ll notify you when V2.0 launches! 🎃');
+}
+
+console.log('🔧 Added missing modal functions');
+
