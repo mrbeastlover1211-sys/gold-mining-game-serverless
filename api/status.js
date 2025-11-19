@@ -79,10 +79,22 @@ export default async function handler(req, res) {
     
     // Calculate current gold from checkpoint
     const currentTime = Math.floor(Date.now() / 1000);
-    const timeSinceCheckpoint = currentTime - (user.checkpoint_timestamp || currentTime);
-    const goldPerSecond = (user.total_mining_power || 0) / 60;
+    const checkpointTime = user.checkpoint_timestamp || currentTime;
+    const timeSinceCheckpoint = currentTime - checkpointTime;
+    const miningPower = user.total_mining_power || 0;
+    const goldPerSecond = miningPower / 60;
     const goldMined = goldPerSecond * timeSinceCheckpoint;
-    const currentGold = (user.last_checkpoint_gold || 0) + goldMined;
+    const baseGold = parseFloat(user.last_checkpoint_gold || 0);
+    const currentGold = baseGold + goldMined;
+    
+    console.log(`💰 Gold calculation debug:`, {
+      baseGold,
+      goldMined,
+      currentGold,
+      timeSinceCheckpoint,
+      miningPower,
+      checkpointTime: user.checkpoint_timestamp
+    });
     
     // Update last activity - ultra-fast core update
     user.last_activity = currentTime;
@@ -93,11 +105,14 @@ export default async function handler(req, res) {
                      inventory.diamond * 100 + 
                      inventory.netherite * 10000;
     
+    // Ensure currentGold is a valid number for toFixed
+    const safeGold = isFinite(currentGold) ? currentGold : 0;
+    
     res.json({
       address,
       inventory: inventory,
       totalRate: totalRate,
-      gold: currentGold.toFixed(5),
+      gold: safeGold.toFixed(5),
       hasLand: user.has_land || false,
       checkpoint: {
         total_mining_power: user.total_mining_power || 0,
