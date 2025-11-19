@@ -2,7 +2,15 @@
   "public": true,
   "functions": {
     "api/**/*.js": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "environment": {
+        "VERCEL_URL": ""
+      }
+    }
+  },
+  "build": {
+    "env": {
+      "VERCEL_ANALYTICS_ID": ""
     }
   },
   "headers": [
