@@ -112,25 +112,16 @@ export default async function handler(req, res) {
     });
     
   } catch (e) {
-    console.error('Status error:', e);
+    console.error('❌ Status API main catch block error:', e.message);
+    console.error('❌ Full error:', e);
+    console.error('❌ Stack trace:', e.stack);
     
-    // Fallback to minimal response
-    res.json({
-      address: req.query.address,
-      inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 },
-      totalRate: 0,
-      gold: 0,
-      hasLand: false,
-      checkpoint: {
-        total_mining_power: 0,
-        checkpoint_timestamp: Math.floor(Date.now() / 1000),
-        last_checkpoint_gold: 0
-      },
-      referralStats: {
-        totalReferrals: 0,
-        referralGoldEarned: 0,
-        activeReferrals: 0
-      }
+    // Return error instead of fallback to identify the issue
+    return res.status(500).json({
+      error: 'Status API error',
+      details: e.message,
+      stack: e.stack?.split('\n').slice(0, 5), // First 5 lines of stack
+      address: req.query.address
     });
   }
 }
