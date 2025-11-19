@@ -7,28 +7,42 @@ export default async function handler(req, res) {
     const { address } = req.query;
     if (!address) return res.status(400).json({ error: 'address required' });
     
-    // Use UltraOptimizedDatabase (same as all other endpoints)
+    // Use OptimizedDatabase with correct column names
     try {
-      const { getUser } = await import('../database.js');
+      const { getUserOptimized } = await import('../database.js');
       
       console.log(`🔍 Checking land status for ${address.slice(0, 8)}...`);
       
-      // Get user data using working database system
-      const userData = await getUser(address);
+      // Get user data using optimized database system
+      const userData = await getUserOptimized(address);
+      
+      if (!userData) {
+        console.log(`📊 No user found for ${address.slice(0, 8)}...`);
+        return res.json({
+          hasLand: false,
+          landPurchaseDate: null,
+          debug: {
+            user_exists: false,
+            system: 'OptimizedDatabase'
+          }
+        });
+      }
       
       console.log(`📊 User data from OptimizedDatabase:`, {
         address: address.slice(0, 8) + '...',
-        hasLand: userData.hasLand,
-        landPurchaseDate: userData.landPurchaseDate
+        has_land: userData.has_land,
+        land_purchase_date: userData.land_purchase_date,
+        created_at: userData.created_at
       });
       
       return res.json({
-        hasLand: userData.hasLand || false,
-        landPurchaseDate: userData.landPurchaseDate,
+        hasLand: userData.has_land || false,
+        landPurchaseDate: userData.land_purchase_date,
         debug: {
           user_exists: true,
-          raw_hasLand: userData.hasLand,
-          system: 'UltraOptimizedDatabase'
+          raw_has_land: userData.has_land,
+          land_purchase_date: userData.land_purchase_date,
+          system: 'OptimizedDatabase'
         }
       });
       
