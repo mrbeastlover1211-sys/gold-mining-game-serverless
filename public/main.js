@@ -2292,6 +2292,16 @@ function showReferModal() {
   if (modal) {
     modal.style.display = 'flex';
     console.log('✅ Referral modal displayed');
+    
+    // Generate referral link
+    const currentUser = getCurrentWalletAddress();
+    if (currentUser) {
+      const referralLink = `${window.location.origin}?ref=${currentUser}`;
+      const linkElement = document.getElementById('referralLink');
+      if (linkElement) {
+        linkElement.value = referralLink;
+      }
+    }
   } else {
     console.log('❌ Referral modal not found in DOM');
   }
