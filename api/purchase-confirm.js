@@ -68,12 +68,12 @@ export default async function handler(req, res) {
     user[`${pickaxeType}_pickaxes`] = currentCount + qty;
     user.last_activity = nowSec();
     
-    // Calculate new mining power
+    // Calculate new mining power (FIXED: netherite = 10000, not 1000)
     user.total_mining_power = 
       (user.silver_pickaxes || 0) * 1 +
       (user.gold_pickaxes || 0) * 10 +
       (user.diamond_pickaxes || 0) * 100 +
-      (user.netherite_pickaxes || 0) * 1000;
+      (user.netherite_pickaxes || 0) * 10000;
     
     console.log(`🛒 Updated inventory:`, {
       silver: user.silver_pickaxes,
