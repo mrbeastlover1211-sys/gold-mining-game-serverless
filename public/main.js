@@ -1312,9 +1312,10 @@ function showStoreMessage(message, type = 'info') {
 
 // Helper functions for UI updates
 function updateGoldDisplay() {
-  const goldElement = document.querySelector('.stat-card .value');
+  const goldElement = document.getElementById('totalGold');
   if (goldElement && state.status?.gold !== undefined) {
     goldElement.textContent = Math.floor(state.status.gold).toLocaleString();
+    console.log('💰 Updated gold display:', Math.floor(state.status.gold).toLocaleString());
   }
 }
 
@@ -1380,7 +1381,21 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
       }),
     });
     
-    const data = await response.json();
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Purchase failed - Status:', response.status, 'Response:', errorText);
+      throw new Error(`Purchase failed: ${response.status} - ${errorText.slice(0, 100)}`);
+    }
+    
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      const responseText = await response.text();
+      console.error('JSON Parse Error:', parseError, 'Response:', responseText);
+      throw new Error(`Invalid server response. Please try again.`);
+    }
+    
     if (data.error) throw new Error(data.error);
     
     showStoreMessage(`✅ Successfully bought ${pickaxeType} pickaxe for ${goldCost.toLocaleString()} gold!`, 'success');
@@ -1410,8 +1425,7 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
     
   } catch (e) {
     console.error('Buy with gold failed:', e);
-    $('#storeMsg').textContent = '❌ Purchase failed: ' + e.message;
-    $('#storeMsg').className = 'msg error';
+    showStoreMessage(`❌ Purchase failed: ${e.message}`, 'error');
   }
 }
 
