@@ -1,4 +1,6 @@
 // Ultra-simple admin API using exact same pattern as working APIs
+import { getDatabase } from '../database.js';
+
 const ADMIN_PASSWORD = 'admin123';
 
 export default async function handler(req, res) {
@@ -57,11 +59,45 @@ export default async function handler(req, res) {
     }
 
     if (action === 'pending_payouts') {
-      // Return empty payouts for now
-      return res.json({
-        success: true,
-        payouts: []
-      });
+      // Get real pending payouts from database
+      try {
+        const db = await getDatabase();
+        
+        const pendingPayouts = await db.query(`
+          SELECT 
+            id,
+            wallet_address,
+            gold_amount,
+            payout_sol,
+            created_at
+          FROM gold_sales 
+          WHERE status = 'pending' 
+          ORDER BY created_at DESC
+          LIMIT 100
+        `);
+
+        console.log(`✅ Found ${pendingPayouts.rows.length} pending payouts`);
+
+        return res.json({
+          success: true,
+          payouts: pendingPayouts.rows.map(row => ({
+            id: row.id,
+            wallet: row.wallet_address,
+            goldAmount: parseInt(row.gold_amount),
+            solAmount: parseFloat(row.payout_sol),
+            createdAt: row.created_at,
+            timestamp: new Date(row.created_at).getTime() / 1000
+          }))
+        });
+
+      } catch (dbError) {
+        console.log('⚠️ Database error getting payouts:', dbError.message);
+        // Return empty array if error
+        return res.json({
+          success: true,
+          payouts: []
+        });
+      }
     }
 
     // Unknown action

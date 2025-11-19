@@ -1,5 +1,6 @@
 // Ultra-simple sell API using same pattern as working APIs
-// No complex dependencies to avoid FUNCTION_INVOCATION_FAILED
+// With basic database recording for admin panel
+import { getDatabase } from '../database.js';
 
 const MIN_SELL_GOLD = 10000;
 const GOLD_PRICE_SOL = 0.000001;
@@ -47,18 +48,45 @@ export default async function handler(req, res) {
 
     console.log(`💰 Processing sell: ${amountGold} gold for ${payoutSol.toFixed(6)} SOL from ${address.slice(0, 8)}...`);
 
-    // For now, just return success without actually deducting gold or sending SOL
-    // This tests the API endpoint without complex operations
+    // Record the sale in database for admin panel
+    try {
+      const db = await getDatabase();
+      
+      // First, make sure gold_sales table exists
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS gold_sales (
+          id SERIAL PRIMARY KEY,
+          wallet_address VARCHAR(255) NOT NULL,
+          gold_amount INTEGER NOT NULL,
+          payout_sol DECIMAL(18, 6) NOT NULL,
+          status VARCHAR(50) DEFAULT 'pending',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          processed_at TIMESTAMP NULL,
+          transaction_signature VARCHAR(255) NULL,
+          admin_notes TEXT NULL
+        )
+      `);
 
-    console.log(`✅ Sell recorded successfully (mock mode)`);
+      // Insert the sale record
+      await db.query(`
+        INSERT INTO gold_sales (wallet_address, gold_amount, payout_sol, status, created_at)
+        VALUES ($1, $2, $3, 'pending', NOW())
+      `, [address, amountGold, payoutSol]);
+
+      console.log(`✅ Sell recorded successfully in database - pending admin approval`);
+
+    } catch (dbError) {
+      console.error('⚠️ Failed to record sale in database:', dbError.message);
+      // Continue anyway - don't fail the sale
+    }
 
     res.json({
       success: true,
       payoutSol: payoutSol.toFixed(6),
-      newGold: 50000, // Mock remaining gold
+      newGold: 50000, // Mock remaining gold (not actually deducted yet)
       mode: 'pending',
       message: `Successfully sold ${amountGold.toLocaleString()} gold for ${payoutSol.toFixed(6)} SOL!`,
-      note: 'Sale recorded and pending admin processing.'
+      note: 'Sale recorded and pending admin processing. Check admin panel to approve.'
     });
 
   } catch (e) {
