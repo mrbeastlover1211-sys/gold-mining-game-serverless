@@ -2575,6 +2575,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     console.log('✅ Added click-outside-to-close functionality for V2.0 modal');
   }
+  
+  // Add sell button event listener
+  const sellBtn = document.getElementById('sellBtn');
+  if (sellBtn) {
+    sellBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      console.log('💰 Sell button clicked');
+      sellGold();
+    });
+    console.log('✅ Added sell button event listener');
+  } else {
+    console.log('❌ Sell button not found in DOM');
+  }
 });
 
 console.log('🔧 Added modal functions for Refer & V2 popups');
