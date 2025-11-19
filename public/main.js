@@ -1656,12 +1656,30 @@ async function purchaseMandatoryLand() {
 
     showMandatoryLandMessage('🎉 Land purchased successfully! Welcome to the game!', 'success');
     
-    // Close modal and enable gameplay after successful purchase
-    setTimeout(async () => {
-      console.log('✅ Land purchase confirmed - enabling gameplay');
-      
-      // Remove the persistent popup
-      closeMandatoryLandModal();
+    // 🚀 IMMEDIATELY CLOSE MODAL after successful purchase
+    console.log('✅ Land purchase confirmed - immediately closing modal');
+    
+    // Mark land as verified for this wallet FIRST
+    const landVerifiedKey = `landVerified_${state.address}`;
+    sessionStorage.setItem(landVerifiedKey, 'true');
+    
+    // Force close modal immediately - multiple attempts
+    setTimeout(() => {
+      console.log('🚪 Attempt 1: Direct modal removal...');
+      const modal = document.getElementById('mandatoryLandModal');
+      if (modal) {
+        modal.remove();
+        console.log('✅ Mandatory land modal removed successfully!');
+      }
+    }, 500);
+    
+    // Backup removal
+    setTimeout(() => {
+      console.log('🚪 Attempt 2: Cleanup any remaining modals...');
+      document.querySelectorAll('#mandatoryLandModal, [id*="landModal"]').forEach(modal => {
+        modal.remove();
+        console.log('✅ Modal cleaned up');
+      });
       
       // Clear any existing land check timers
       if (window.landCheckTimeout) {
@@ -1669,19 +1687,14 @@ async function purchaseMandatoryLand() {
         window.landCheckTimeout = null;
       }
       
-      // Mark land as verified for this wallet
-      const landVerifiedKey = `landVerified_${state.address}`;
-      sessionStorage.setItem(landVerifiedKey, 'true');
-      
-      // Force refresh user status to get updated land ownership
+      console.log('🎮 Game functionality enabled - user can now buy pickaxes');
+    }, 1000);
+    
+    // Background status refresh
+    setTimeout(async () => {
       await refreshStatus();
       await updateWalletBalance();
-      
-      // Enable game functionality
-      
-      console.log('🎮 Game functionality enabled - user can now buy pickaxes');
-      
-    }, 2000);
+    }, 1500);
     
   } catch (e) {
     console.error('Mandatory land purchase failed:', e);
