@@ -1293,54 +1293,11 @@ async function sellGold() {
   }
 }
 
-// Helper function for store messages
-function showStoreMessage(message, type = 'info') {
-  const storeMsg = document.getElementById('storeMsg');
-  if (storeMsg) {
-    storeMsg.textContent = message;
-    storeMsg.className = `store-message ${type}`;
-    
-    // Auto-hide success messages after 3 seconds
-    if (type === 'success') {
-      setTimeout(() => {
-        storeMsg.textContent = '';
-        storeMsg.className = 'store-message';
-      }, 3000);
-    }
-  }
-}
-
-// Helper functions for UI updates
-function updateGoldDisplay() {
-  const goldElement = document.querySelector('.stat-card .value');
-  if (goldElement && state.status?.gold !== undefined) {
-    goldElement.textContent = Math.floor(state.status.gold).toLocaleString();
-  }
-}
-
-function updateInventoryDisplay() {
-  if (!state.status?.inventory) return;
-  
-  const inventory = state.status.inventory;
-  Object.keys(inventory).forEach(pickaxeType => {
-    const countElement = document.querySelector(`[data-pickaxe="${pickaxeType}"] .pickaxe-count`);
-    if (countElement) {
-      countElement.textContent = inventory[pickaxeType] || 0;
-    }
-  });
-}
-
-function updateMiningPowerDisplay() {
-  const powerElement = document.querySelector('.total-mining-power');
-  if (powerElement && state.status?.total_mining_power !== undefined) {
-    powerElement.textContent = `${state.status.total_mining_power.toFixed(2)} gold/min`;
-  }
-}
-
 // Buy pickaxe with gold (for store section)
 async function buyPickaxeWithGold(pickaxeType, goldCost) {
   if (!state.address) {
-    showStoreMessage('Please connect your wallet first!', 'error');
+    $('#storeMsg').textContent = 'Please connect your wallet first!';
+    $('#storeMsg').className = 'msg error';
     return;
   }
   
@@ -1350,27 +1307,31 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
     const landData = await landResponse.json();
     
     if (!landData.hasLand) {
-      showStoreMessage('🏠 You need to purchase land first before buying pickaxes!', 'error');
+      $('#storeMsg').textContent = '🏠 You need to purchase land first before buying pickaxes!';
+      $('#storeMsg').className = 'msg error';
       showMandatoryLandPurchaseModal();
       return;
     }
   } catch (e) {
     console.error('Failed to check land status:', e);
-    showStoreMessage('Failed to verify land ownership. Please try again.', 'error');
+    $('#storeMsg').textContent = 'Failed to verify land ownership. Please try again.';
+    $('#storeMsg').className = 'msg error';
     return;
   }
   
   // Check if user has enough gold
   const currentGold = state.status?.gold || 0;
   if (currentGold < goldCost) {
-    showStoreMessage(`❌ Not enough gold! You need ${goldCost.toLocaleString()} gold but only have ${currentGold.toLocaleString()} gold.`, 'error');
+    $('#storeMsg').textContent = `Not enough gold! You need ${goldCost.toLocaleString()} gold but only have ${currentGold.toLocaleString()} gold.`;
+    $('#storeMsg').className = 'msg error';
     return;
   }
   
   try {
-    showStoreMessage(`🛒 Buying ${pickaxeType} pickaxe for ${goldCost.toLocaleString()} gold...`, 'loading');
+    $('#storeMsg').textContent = `Buying ${pickaxeType} pickaxe for ${goldCost.toLocaleString()} gold...`;
+    $('#storeMsg').className = 'msg';
     
-    const response = await fetch('/api/buy-with-gold', {
+    const response = await fetch('/buy-with-gold', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -1383,23 +1344,10 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
     const data = await response.json();
     if (data.error) throw new Error(data.error);
     
-    showStoreMessage(`✅ Successfully bought ${pickaxeType} pickaxe for ${goldCost.toLocaleString()} gold!`, 'success');
+    $('#storeMsg').textContent = `✅ Successfully bought ${pickaxeType} pickaxe for ${goldCost.toLocaleString()} gold!`;
+    $('#storeMsg').className = 'msg success';
     
-    // Update local state with server response
-    if (data.checkpoint) {
-      state.status.gold = data.newGold;
-      state.status.inventory = data.inventory;
-      state.status.total_mining_power = data.checkpoint.total_mining_power;
-      state.status.checkpoint_timestamp = data.checkpoint.checkpoint_timestamp;
-      state.status.last_checkpoint_gold = data.checkpoint.last_checkpoint_gold;
-    }
-    
-    // Update UI immediately
-    updateGoldDisplay();
-    updateInventoryDisplay();
-    updateMiningPowerDisplay();
-    
-    console.log(`✅ Purchased ${pickaxeType} pickaxe - New gold: ${data.newGold}, Inventory:`, data.inventory);
+    // Update checkpoint data from server response
     if (data.checkpoint) {
       state.checkpoint = data.checkpoint;
       console.log('📊 Updated checkpoint after gold purchase:', state.checkpoint);
@@ -2439,9 +2387,6 @@ window.showReferModal = showReferModal;
 window.showV2Modal = showV2Modal;
 window.closeReferModal = closeReferModal;
 window.copyReferLink = copyReferLink;
-window.showHowItWorksModal = showHowItWorksModal;
-window.hideHowItWorksModal = hideHowItWorksModal;
-window.closeV2Modal = closeV2Modal;
 
 // Add event listeners for modal close buttons
 document.addEventListener('DOMContentLoaded', () => {
@@ -2452,7 +2397,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('✅ Added close modal event listener');
   }
   
-  // Close modal when clicking outside of it - REFERRAL MODAL
+  // Close modal when clicking outside of it
   const referralModal = document.getElementById('referralModal');
   if (referralModal) {
     referralModal.addEventListener('click', (e) => {
@@ -2460,29 +2405,7 @@ document.addEventListener('DOMContentLoaded', () => {
         closeReferModal();
       }
     });
-    console.log('✅ Added click-outside-to-close functionality for Referral modal');
-  }
-  
-  // Close modal when clicking outside of it - HOW IT WORKS MODAL
-  const howItWorksModal = document.getElementById('howItWorksModal');
-  if (howItWorksModal) {
-    howItWorksModal.addEventListener('click', (e) => {
-      if (e.target === howItWorksModal) {
-        hideHowItWorksModal();
-      }
-    });
-    console.log('✅ Added click-outside-to-close functionality for How It Works modal');
-  }
-  
-  // Close modal when clicking outside of it - V2.0 MODAL
-  const v2ComingSoonModal = document.getElementById('v2ComingSoonModal');
-  if (v2ComingSoonModal) {
-    v2ComingSoonModal.addEventListener('click', (e) => {
-      if (e.target === v2ComingSoonModal) {
-        closeV2Modal();
-      }
-    });
-    console.log('✅ Added click-outside-to-close functionality for V2.0 modal');
+    console.log('✅ Added click-outside-to-close functionality');
   }
 });
 
