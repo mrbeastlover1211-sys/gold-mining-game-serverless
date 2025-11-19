@@ -200,9 +200,15 @@ async function autoReconnectWallet() {
           updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
         }
         
+        // 🔧 START WALLET SWITCH DETECTION
+        setupWalletSwitchDetection(provider);
+        
       } else {
-        console.log('⚠️ Connected wallet address differs from saved address');
-        localStorage.removeItem('gm_address'); // Clear outdated saved address
+        console.log('⚠️ Connected wallet address differs from saved address - wallet switched');
+        console.log('🔄 Wallet switched from', savedAddress.slice(0, 8), 'to', account?.toString().slice(0, 8));
+        
+        // Clear old data and prompt reconnection
+        handleWalletSwitch(account?.toString());
       }
     } else {
       console.log('ℹ️ Phantom wallet not connected, user needs to connect manually');
@@ -211,6 +217,151 @@ async function autoReconnectWallet() {
   } catch (error) {
     console.error('❌ Auto-reconnect failed:', error);
     // Don't show error to user, just let them connect manually
+  }
+}
+
+// 🔧 NEW: Setup wallet switch detection
+function setupWalletSwitchDetection(provider) {
+  console.log('🔍 Setting up wallet switch detection...');
+  
+  // Listen for account changes in Phantom
+  if (provider.on) {
+    provider.on('accountChanged', (publicKey) => {
+      console.log('🔄 Wallet switch detected!');
+      if (publicKey) {
+        const newAddress = publicKey.toString();
+        const currentAddress = state.address;
+        
+        if (newAddress !== currentAddress) {
+          console.log('👤 Wallet switched from', currentAddress?.slice(0, 8), 'to', newAddress.slice(0, 8));
+          handleWalletSwitch(newAddress);
+        }
+      } else {
+        console.log('👤 Wallet disconnected');
+        handleWalletDisconnect();
+      }
+    });
+    
+    console.log('✅ Wallet switch detection active');
+  }
+  
+  // Backup: Poll for wallet changes every 3 seconds
+  setInterval(() => {
+    if (provider.isConnected && provider.publicKey) {
+      const currentPhantomAddress = provider.publicKey.toString();
+      const gameAddress = state.address;
+      
+      if (gameAddress && currentPhantomAddress !== gameAddress) {
+        console.log('🔄 Polling detected wallet switch:', gameAddress?.slice(0, 8), '→', currentPhantomAddress.slice(0, 8));
+        handleWalletSwitch(currentPhantomAddress);
+      }
+    }
+  }, 3000);
+}
+
+// 🔧 NEW: Handle wallet switch
+function handleWalletSwitch(newAddress) {
+  console.log('🔄 Handling wallet switch to:', newAddress?.slice(0, 8) + '...');
+  
+  // Clear current game state
+  state.address = null;
+  state.wallet = null;
+  state.status = { gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } };
+  state.checkpoint = null;
+  
+  // Stop any mining loops
+  if (state.goldUpdateInterval) {
+    clearInterval(state.goldUpdateInterval);
+    state.goldUpdateInterval = null;
+  }
+  
+  // Clear localStorage
+  localStorage.removeItem('gm_address');
+  
+  // Reset UI to disconnected state
+  updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
+  
+  // Update connect button to show disconnected state
+  const connectBtn = $('#connectBtn');
+  if (connectBtn) {
+    connectBtn.textContent = 'Connect Wallet';
+    connectBtn.disabled = false;
+  }
+  
+  // Show wallet switch notification
+  const notification = document.createElement('div');
+  notification.id = 'walletSwitchNotification';
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(45deg, #ff6b35, #f7931e);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    text-align: center;
+    animation: slideDown 0.3s ease-out;
+  `;
+  
+  notification.innerHTML = `
+    <div>🔄 Wallet Switch Detected!</div>
+    <div style="font-size: 14px; margin-top: 5px;">
+      Please click "Connect Wallet" to load your data for the new wallet
+    </div>
+    <button onclick="this.parentElement.remove()" style="
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      margin-top: 10px;
+      cursor: pointer;
+    ">Got it!</button>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Auto-remove notification after 8 seconds
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.remove();
+    }
+  }, 8000);
+  
+  console.log('🔔 Wallet switch notification shown - user needs to reconnect');
+}
+
+// 🔧 NEW: Handle wallet disconnect
+function handleWalletDisconnect() {
+  console.log('👤 Wallet disconnected');
+  
+  // Clear all state
+  state.address = null;
+  state.wallet = null;
+  state.status = { gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } };
+  state.checkpoint = null;
+  
+  // Stop mining
+  if (state.goldUpdateInterval) {
+    clearInterval(state.goldUpdateInterval);
+    state.goldUpdateInterval = null;
+  }
+  
+  // Clear localStorage
+  localStorage.removeItem('gm_address');
+  
+  // Reset UI
+  updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
+  
+  const connectBtn = $('#connectBtn');
+  if (connectBtn) {
+    connectBtn.textContent = 'Connect Wallet';
+    connectBtn.disabled = false;
   }
 }
 
