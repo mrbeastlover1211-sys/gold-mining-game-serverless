@@ -1238,6 +1238,15 @@ async function purchaseMandatoryLand() {
   }
   
   try {
+    // Disable purchase button during transaction
+    const purchaseBtn = document.getElementById('mandatoryLandPurchaseBtn');
+    if (purchaseBtn) {
+      purchaseBtn.disabled = true;
+      purchaseBtn.style.opacity = '0.6';
+      purchaseBtn.style.cursor = 'not-allowed';
+      purchaseBtn.textContent = '⏳ Processing...';
+    }
+    
     showMandatoryLandMessage('Creating land purchase transaction...', 'info');
     
     // Create transaction
@@ -1300,6 +1309,9 @@ async function purchaseMandatoryLand() {
     // Enable game functionality immediately
     console.log('✅ Land purchase confirmed - enabling gameplay');
     
+    // Reset button state on success
+    resetPurchaseButton();
+    
     // Close modal after 3 seconds and refresh everything
     setTimeout(async () => {
       console.log('🕒 Closing land modal after successful purchase...');
@@ -1326,24 +1338,35 @@ async function purchaseMandatoryLand() {
   } catch (e) {
     console.error('Mandatory land purchase failed:', e);
     let errorMessage = 'Land purchase failed';
+    let messageType = 'error';
     
-    if (e.message.includes('User rejected')) {
-      errorMessage = 'Transaction was rejected in wallet';
-    } else if (e.message.includes('insufficient funds')) {
-      errorMessage = 'Insufficient SOL balance. You need at least 0.01 SOL.';
-    } else if (e.message.includes('Network Error') || e.message.includes('fetch')) {
-      errorMessage = 'Network error. Please check your connection and try again.';
+    if (e.message.includes('User rejected') || e.message.includes('User declined') || e.message.includes('cancelled')) {
+      errorMessage = '❌ Payment cancelled by user';
+      messageType = 'warning';
+    } else if (e.message.includes('insufficient funds') || e.message.includes('Insufficient')) {
+      errorMessage = '💰 Insufficient SOL balance. You need at least 0.01 SOL + gas fees.';
+    } else if (e.message.includes('Network Error') || e.message.includes('fetch') || e.message.includes('timeout')) {
+      errorMessage = '🌐 Network error. Please check your connection and try again.';
     } else if (e.message.includes('already owns land')) {
-      errorMessage = 'You already own land! Refreshing...';
+      errorMessage = '✅ You already own land! Refreshing game...';
+      messageType = 'success';
       setTimeout(() => {
         closeMandatoryLandModal();
         refreshStatus();
       }, 2000);
+    } else if (e.message.includes('Transaction failed') || e.message.includes('failed to confirm')) {
+      errorMessage = '⚠️ Transaction failed. Please try again.';
+    } else if (e.message.includes('Wallet not connected')) {
+      errorMessage = '🔗 Wallet not connected. Please reconnect and try again.';
     } else if (e.message) {
-      errorMessage = e.message;
+      errorMessage = `❌ ${e.message}`;
     }
     
-    showMandatoryLandMessage(`❌ ${errorMessage}`, 'error');
+    console.log(`🔔 Showing ${messageType} message: ${errorMessage}`);
+    showMandatoryLandMessage(errorMessage, messageType);
+    
+    // Reset purchase button after showing error
+    resetPurchaseButton();
   }
 }
 
@@ -1362,17 +1385,35 @@ function showMandatoryLandMessage(message, type = 'info') {
     msgEl.textContent = message;
     msgEl.className = `msg ${type}`;
     msgEl.style.display = 'block';
+    msgEl.style.padding = '15px';
+    msgEl.style.borderRadius = '10px';
+    msgEl.style.textAlign = 'center';
+    msgEl.style.fontWeight = 'bold';
+    msgEl.style.marginTop = '15px';
+    msgEl.style.border = '2px solid';
     
-    // Style based on type
+    // Style based on type with better colors and icons
     if (type === 'error') {
       msgEl.style.background = 'linear-gradient(135deg, #ff4757, #ff3742)';
       msgEl.style.color = 'white';
+      msgEl.style.borderColor = '#ff1744';
+      msgEl.style.boxShadow = '0 4px 15px rgba(255, 71, 87, 0.3)';
     } else if (type === 'success') {
       msgEl.style.background = 'linear-gradient(135deg, #2ed573, #1db954)';
       msgEl.style.color = 'white';
+      msgEl.style.borderColor = '#00c853';
+      msgEl.style.boxShadow = '0 4px 15px rgba(46, 213, 115, 0.3)';
+    } else if (type === 'warning') {
+      msgEl.style.background = 'linear-gradient(135deg, #ffa726, #ff9800)';
+      msgEl.style.color = 'white';
+      msgEl.style.borderColor = '#ff8f00';
+      msgEl.style.boxShadow = '0 4px 15px rgba(255, 167, 38, 0.3)';
     } else {
+      // info type
       msgEl.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
       msgEl.style.color = 'white';
+      msgEl.style.borderColor = '#536dfe';
+      msgEl.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.3)';
     }
     
     console.log('✅ Message displayed successfully');
@@ -1709,4 +1750,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (error) {
     console.error('❌ Failed to initialize:', error);
   }
-});
+});// Reset purchase button to original state
+function resetPurchaseButton() {
+  const purchaseBtn = document.getElementById("mandatoryLandPurchaseBtn");
+  if (purchaseBtn) {
+    purchaseBtn.disabled = false;
+    purchaseBtn.style.opacity = "1";
+    purchaseBtn.style.cursor = "pointer";
+    purchaseBtn.textContent = "🏠 Purchase Land (0.01 SOL)";
+    console.log("🔄 Purchase button reset to original state");
+  }
+}
