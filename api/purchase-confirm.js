@@ -1,6 +1,6 @@
 // OPTIMIZED Purchase confirmation - Can handle 5,000+ concurrent users
 import { Connection } from '@solana/web3.js';
-import { getUser, saveUser } from '../database.js';
+import { getUserOptimized, saveUserOptimized } from '../database.js';
 
 const PICKAXES = {
   silver: { name: 'Silver', costSol: 0.001, ratePerSec: 1/60 },
@@ -75,15 +75,55 @@ export default async function handler(req, res) {
     const status = 'confirmed'; // Skip validation to prevent timeout
     
     // ⚡ ULTRA-SPEED: Get user core data (pickaxes only) - 5x faster
-    const user = await getUser(address); // Get user data from working database
+    let user = await getUserOptimized(address, false); // No cache for purchases
     console.log(`📊 User data retrieved in ${Date.now() - startTime}ms`);
+    
+    if (!user) {
+      // Create new user if doesn't exist
+      user = {
+        address: address,
+        has_land: false,
+        land_purchase_date: null,
+        land_type: 'basic',
+        silver_pickaxes: 0,
+        gold_pickaxes: 0,
+        diamond_pickaxes: 0,
+        netherite_pickaxes: 0,
+        total_mining_power: 0,
+        checkpoint_timestamp: nowSec(),
+        last_checkpoint_gold: 0,
+        last_activity: nowSec(),
+        total_gold_mined: 0,
+        total_sol_spent: 0,
+        total_sol_earned: 0,
+        total_pickaxes_bought: 0,
+        play_time_minutes: 0,
+        login_streak: 0,
+        total_logins: 1,
+        player_level: 1,
+        experience_points: 0,
+        total_referrals: 0,
+        suspicious_activity_count: 0,
+        referrer_address: null,
+        referral_rewards_earned: 0
+      };
+    }
+    
+    // Create inventory object from database columns for compatibility
+    user.inventory = {
+      silver: user.silver_pickaxes || 0,
+      gold: user.gold_pickaxes || 0,
+      diamond: user.diamond_pickaxes || 0,
+      netherite: user.netherite_pickaxes || 0
+    };
     
     // ⚡ SPEED: Quick checkpoint creation
     const currentGold = createCheckpoint(user, address);
     
-    // Add new pickaxe(s)
+    // Add new pickaxe(s) to both inventory object and database columns
     user.inventory[pickaxeType] = (user.inventory[pickaxeType] || 0) + qty;
-    user.lastActivity = nowSec();
+    user[`${pickaxeType}_pickaxes`] = user.inventory[pickaxeType]; // Update database column
+    user.last_activity = nowSec();
     
     console.log(`🛒 Added ${qty}x ${pickaxeType} pickaxe. New inventory:`, user.inventory);
     
@@ -120,7 +160,7 @@ export default async function handler(req, res) {
       console.log(`✅ Transaction logged successfully`);
       
       // 2. Update user inventory - ULTRA-FAST core save
-      const saveSuccess = await saveUser(address, user);
+      const saveSuccess = await saveUserOptimized(address, user);
       
       if (saveSuccess) {
         console.log(`✅ Purchase data saved successfully for ${address.slice(0, 8)}`);
