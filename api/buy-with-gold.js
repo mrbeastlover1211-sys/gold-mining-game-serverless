@@ -1,36 +1,5 @@
-// Import database functions directly
-import { getDatabase } from '../database.js';
-
-// Constants for pickaxe rates
-const PICKAXES = {
-  silver: { name: 'Silver', ratePerSec: 1/60 },
-  gold: { name: 'Gold', ratePerSec: 10/60 },
-};
-
-function nowSec() { 
-  return Math.floor(Date.now() / 1000); 
-}
-
-function totalRate(inv) {
-  let r = 0;
-  for (const k of Object.keys(PICKAXES)) {
-    r += (inv[k] || 0) * PICKAXES[k].ratePerSec;
-  }
-  return r;
-}
-
-function calculateCurrentGold(user) {
-  if (!user.checkpoint_timestamp || !user.total_mining_power) {
-    return user.last_checkpoint_gold || 0;
-  }
-  
-  const currentTime = nowSec();
-  const timeSinceCheckpoint = currentTime - user.checkpoint_timestamp;
-  const goldPerSecond = user.total_mining_power / 60;
-  const goldMined = goldPerSecond * timeSinceCheckpoint;
-  
-  return user.last_checkpoint_gold + goldMined;
-}
+// Use same working pattern as status.js
+import { getUserOptimized, saveUserOptimized } from '../database.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -46,31 +15,53 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'address, pickaxeType, and goldCost required' });
     }
 
-    if (!PICKAXES[pickaxeType]) {
+    if (pickaxeType !== 'silver' && pickaxeType !== 'gold') {
       return res.status(400).json({ error: 'Invalid pickaxe type' });
     }
     
-    // Get database connection
-    const db = await getDatabase();
-    
-    // Get user data
-    const userResult = await db.query(
-      'SELECT * FROM users WHERE wallet = $1',
-      [address]
-    );
-    
-    if (userResult.rows.length === 0) {
-      return res.status(400).json({ error: 'User not found. Please connect wallet and refresh.' });
+    // Get user data using the same method as status.js
+    let user;
+    try {
+      user = await getUserOptimized(address);
+      console.log(`🔍 Buy API getUserOptimized result:`, {
+        found: !!user,
+        has_land: user?.has_land,
+        address: user?.address?.slice(0, 8)
+      });
+    } catch (dbError) {
+      console.error(`❌ Buy API database error:`, dbError.message);
+      return res.status(500).json({
+        error: 'Database error in buy API',
+        details: dbError.message
+      });
     }
     
-    const user = userResult.rows[0];
-    const currentGold = calculateCurrentGold({
-      checkpoint_timestamp: user.checkpoint_timestamp,
-      total_mining_power: user.total_mining_power,
-      last_checkpoint_gold: user.last_checkpoint_gold
-    });
+    if (!user) {
+      return res.status(400).json({ error: 'User not found. Please connect wallet and refresh.' });
+    }
+
+    if (!user.has_land) {
+      return res.status(400).json({ error: 'You need to purchase land first!' });
+    }
     
-    console.log(`💰 User gold: ${currentGold.toFixed(2)}, Required: ${goldCost}`);
+    // Calculate current gold using same method as status.js
+    const currentTime = Math.floor(Date.now() / 1000);
+    const checkpointTime = user.checkpoint_timestamp || currentTime;
+    const timeSinceCheckpoint = currentTime - checkpointTime;
+    const miningPower = user.total_mining_power || 0;
+    const goldPerSecond = miningPower / 60;
+    const goldMined = goldPerSecond * timeSinceCheckpoint;
+    const baseGold = parseFloat(user.last_checkpoint_gold || 0);
+    const currentGold = baseGold + goldMined;
+    
+    console.log(`💰 Gold calculation debug:`, {
+      baseGold,
+      goldMined,
+      currentGold,
+      timeSinceCheckpoint,
+      miningPower,
+      goldCost
+    });
     
     if (currentGold < goldCost) {
       return res.status(400).json({ 
@@ -78,33 +69,55 @@ export default async function handler(req, res) {
       });
     }
     
-    // Update inventory
-    const newInventory = { ...user.inventory };
-    newInventory[pickaxeType] = (newInventory[pickaxeType] || 0) + 1;
+    // Update inventory based on pickaxe type
+    const newGold = currentGold - goldCost;
+    if (pickaxeType === 'silver') {
+      user.silver_pickaxes = (user.silver_pickaxes || 0) + 1;
+    } else if (pickaxeType === 'gold') {
+      user.gold_pickaxes = (user.gold_pickaxes || 0) + 1;
+    }
     
     // Calculate new mining power
-    const newMiningPower = totalRate(newInventory) * 60;
-    const newGold = currentGold - goldCost;
-    const currentTime = nowSec();
+    const silverCount = user.silver_pickaxes || 0;
+    const goldCount = user.gold_pickaxes || 0;
+    const diamondCount = user.diamond_pickaxes || 0;
+    const netheriteCount = user.netherite_pickaxes || 0;
     
-    // Update database
-    await db.query(
-      `UPDATE users SET 
-       inventory = $1, 
-       total_mining_power = $2, 
-       checkpoint_timestamp = $3, 
-       last_checkpoint_gold = $4, 
-       last_activity = $5
-       WHERE wallet = $6`,
-      [newInventory, newMiningPower, currentTime, newGold, currentTime, address]
-    );
+    const newMiningPower = silverCount * 1 + 
+                          goldCount * 10 + 
+                          diamondCount * 100 + 
+                          netheriteCount * 10000;
+    
+    // Update user data
+    user.total_mining_power = newMiningPower;
+    user.checkpoint_timestamp = currentTime;
+    user.last_checkpoint_gold = newGold;
+    user.last_activity = currentTime;
+    
+    console.log(`🔄 Updating user after purchase:`, {
+      silver: user.silver_pickaxes,
+      gold: user.gold_pickaxes,
+      newGold: newGold.toFixed(2),
+      newMiningPower
+    });
+    
+    // Save user data using same method as status.js
+    await saveUserOptimized(address, user);
     
     console.log(`✅ ${address.slice(0, 8)}... bought ${pickaxeType} pickaxe for ${goldCost} gold`);
+    
+    // Create inventory object for response
+    const inventory = {
+      silver: user.silver_pickaxes || 0,
+      gold: user.gold_pickaxes || 0,
+      diamond: user.diamond_pickaxes || 0,
+      netherite: user.netherite_pickaxes || 0
+    };
     
     res.json({
       success: true,
       newGold: newGold,
-      inventory: newInventory,
+      inventory: inventory,
       checkpoint: {
         total_mining_power: newMiningPower,
         checkpoint_timestamp: currentTime,
@@ -114,7 +127,14 @@ export default async function handler(req, res) {
     });
     
   } catch (e) {
-    console.error('Buy with gold error:', e);
-    res.status(500).json({ error: 'Failed to buy pickaxe with gold: ' + (e?.message || 'unknown error') });
+    console.error('❌ Buy API main catch block error:', e.message);
+    console.error('❌ Full error:', e);
+    console.error('❌ Stack trace:', e.stack);
+    
+    res.status(500).json({
+      error: 'Buy API error',
+      details: e.message,
+      stack: e.stack?.split('\n').slice(0, 5)
+    });
   }
 }
