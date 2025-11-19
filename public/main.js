@@ -183,11 +183,8 @@ async function connectWallet() {
     if (userData) {
       console.log('✅ User data loaded:', userData);
       
-      // Initialize mining engine with correct method name
-      window.optimizedMiningEngine.init({
-        gold: userData.last_checkpoint_gold || 0,
-        inventory: userData.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 }
-      });
+      // Initialize mining with checkpoint system
+      console.log('⚡ Initializing mining with loaded data...');
       
       // CRITICAL: Update the display with loaded data
       updateDisplay({
@@ -217,7 +214,8 @@ async function connectWallet() {
         inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 }
       };
       
-      window.optimizedMiningEngine.init(emptyState);
+      // Initialize with empty state for new users
+      console.log('⚡ Initializing new user with empty state...');
       updateDisplay(emptyState);
     }
     
