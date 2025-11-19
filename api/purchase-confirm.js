@@ -130,6 +130,8 @@ export default async function handler(req, res) {
     // Create new checkpoint with updated mining power
     const newCurrentGold = createCheckpoint(user, address);
     
+    console.log(`💰 Gold calculation: current=${currentGold}, new=${newCurrentGold}`);
+    
     // 🔧 CRITICAL FIX: Ensure database save actually works
     console.log(`💾 Attempting to save purchase data to database...`);
     console.log(`📊 Saving data:`, {
@@ -146,18 +148,9 @@ export default async function handler(req, res) {
     console.log(`💾 Saving purchase data to database BEFORE responding...`);
     
     try {
-      // 1. Log transaction for audit trail
-      console.log(`📝 Logging transaction to transactions table...`);
-      // Log transaction (using working database)
-      // await logTransaction(address, {
-        transaction_type: 'pickaxe_purchase',  // ✅ FIXED: Use allowed constraint value
-        item_type: pickaxeType,
-        quantity: qty,
-        sol_amount: PICKAXES[pickaxeType].costSol * qty,
-        signature: signature,
-        status: 'confirmed'
-      });
-      console.log(`✅ Transaction logged successfully`);
+      // 1. Log transaction for audit trail (temporarily disabled)
+      console.log(`📝 Transaction logging temporarily disabled for debugging`);
+      console.log(`📊 Would log: ${pickaxeType} x${qty} for ${PICKAXES[pickaxeType].costSol * qty} SOL`);
       
       // 2. Update user inventory - ULTRA-FAST core save
       const saveSuccess = await saveUserOptimized(address, user);
