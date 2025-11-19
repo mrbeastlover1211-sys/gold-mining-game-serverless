@@ -96,8 +96,12 @@ export default async function handler(req, res) {
       checkpointTime: user.checkpoint_timestamp
     });
     
-    // Update last activity - ultra-fast core update
+    // Update checkpoint to current time and gold to prevent double-accumulation
+    user.checkpoint_timestamp = currentTime;
+    user.last_checkpoint_gold = currentGold;
     user.last_activity = currentTime;
+    
+    console.log(`🔄 Updating checkpoint: timestamp=${currentTime}, gold=${currentGold.toFixed(2)}`);
     await saveUserOptimized(address, user);
     
     const totalRate = inventory.silver * 1 + 
