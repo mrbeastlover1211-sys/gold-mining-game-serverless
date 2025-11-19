@@ -1073,6 +1073,22 @@ function createMandatoryLandPurchaseModal() {
       e.preventDefault();
     }
   });
+
+  // Add CSS animations
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+        transform: scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 // Create land purchase modal dynamically (legacy)
@@ -1269,22 +1285,35 @@ async function purchaseMandatoryLand() {
     }
     
     const confirmData = await confirmResponse.json();
-    if (confirmData.error) throw new Error(confirmData.error);
+    console.log('📋 Confirm response data:', confirmData);
+    
+    if (confirmData.error) {
+      console.error('❌ Server returned error:', confirmData.error);
+      throw new Error(confirmData.error);
+    }
 
+    console.log('✅ Land purchase confirmed by server, showing success message...');
     showMandatoryLandMessage('🎉 Land purchased successfully! Welcome to the game!', 'success');
     
-    // Close modal after 3 seconds and refresh everything
+    // Close modal after 2 seconds and refresh everything
     setTimeout(async () => {
-      closeMandatoryLandModal();
-      // Force refresh user status to get updated land ownership
+      console.log('🕒 Closing land modal after successful purchase...');
+      
+      // Force refresh user status first to get updated land ownership
       await refreshStatus();
       await updateWalletBalance();
+      
+      // Then close modal
+      closeMandatoryLandModal();
+      
       // Clear any existing land check timers
       if (window.landCheckTimeout) {
         clearTimeout(window.landCheckTimeout);
         window.landCheckTimeout = null;
       }
-    }, 3000);
+      
+      console.log('✅ Land purchase flow completed successfully');
+    }, 2000);
     
   } catch (e) {
     console.error('Mandatory land purchase failed:', e);
@@ -1317,8 +1346,11 @@ async function purchaseLand() {
 
 // Show message in mandatory land modal
 function showMandatoryLandMessage(message, type = 'info') {
+  console.log(`🔔 showMandatoryLandMessage called: "${message}" (type: ${type})`);
+  
   const msgEl = document.getElementById('mandatoryLandMsg');
   if (msgEl) {
+    console.log('✅ Found mandatoryLandMsg element, updating message...');
     msgEl.textContent = message;
     msgEl.className = `msg ${type}`;
     msgEl.style.display = 'block';
@@ -1334,18 +1366,35 @@ function showMandatoryLandMessage(message, type = 'info') {
       msgEl.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
       msgEl.style.color = 'white';
     }
+    
+    console.log('✅ Message displayed successfully');
+  } else {
+    console.error('❌ mandatoryLandMsg element not found!');
   }
 }
 
 // Close mandatory land modal
 function closeMandatoryLandModal() {
+  console.log('🔒 closeMandatoryLandModal called');
+  
   const modal = document.getElementById('mandatoryLandModal');
   if (modal) {
+    console.log('✅ Found modal element, starting fade out animation...');
+    // Add fade out animation
     modal.style.animation = 'fadeOut 0.3s ease-out';
     setTimeout(() => {
       modal.remove();
+      console.log('✅ Land purchase modal closed and removed from DOM');
     }, 300);
+  } else {
+    console.error('❌ mandatoryLandModal element not found when trying to close!');
   }
+}
+
+// Legacy close function for compatibility
+function closeLandModal() {
+  closeMandatoryLandModal();
+}
 }
 
 // Show message in land modal (legacy)

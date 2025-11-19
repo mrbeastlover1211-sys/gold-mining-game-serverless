@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Land Purchase Flow</title>
+</head>
+<body>
+    <h1>Testing Land Purchase Modal Close</h1>
+    <button onclick="testModalClose()">Test Modal Close Function</button>
+    <button onclick="testSuccessMessage()">Test Success Message</button>
+    
+    <script>
+        // Test if the functions work directly
+        function testModalClose() {
+            console.log('Testing closeMandatoryLandModal function...');
+            
+            // Create a test modal
+            const testModal = document.createElement('div');
+            testModal.id = 'mandatoryLandModal';
+            testModal.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 300px;
+                height: 200px;
+                background: red;
+                color: white;
+                padding: 20px;
+                z-index: 999999;
+            `;
+            testModal.innerHTML = '<h3>Test Modal</h3><p>This should close in 2 seconds</p>';
+            document.body.appendChild(testModal);
+            
+            // Test close function
+            setTimeout(() => {
+                console.log('Calling closeMandatoryLandModal...');
+                if (typeof closeMandatoryLandModal === 'function') {
+                    closeMandatoryLandModal();
+                } else {
+                    console.error('closeMandatoryLandModal function not found!');
+                    testModal.remove();
+                }
+            }, 2000);
+        }
+        
+        function testSuccessMessage() {
+            console.log('Testing showMandatoryLandMessage function...');
+            
+            // Create test message area
+            const testMsgArea = document.createElement('div');
+            testMsgArea.id = 'mandatoryLandMsg';
+            testMsgArea.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                width: 300px;
+                padding: 15px;
+                background: green;
+                color: white;
+                border-radius: 10px;
+                z-index: 999999;
+            `;
+            document.body.appendChild(testMsgArea);
+            
+            // Test message function
+            if (typeof showMandatoryLandMessage === 'function') {
+                showMandatoryLandMessage('🎉 Test success message!', 'success');
+            } else {
+                console.error('showMandatoryLandMessage function not found!');
+                testMsgArea.textContent = 'Function not found!';
+            }
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                testMsgArea.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
