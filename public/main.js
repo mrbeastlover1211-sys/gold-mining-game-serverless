@@ -2288,12 +2288,12 @@ console.log('🔧 Global function binding added');
 // Show Refer & Earn modal
 function showReferModal() {
   console.log('🎁 Showing Refer & Earn modal...');
-  const modal = document.getElementById('referModal');
+  const modal = document.getElementById('referralModal');
   if (modal) {
     modal.style.display = 'flex';
+    console.log('✅ Referral modal displayed');
   } else {
-    console.log('❌ Refer modal not found, creating it...');
-    createReferModal();
+    console.log('❌ Referral modal not found in DOM');
   }
 }
 
@@ -2312,9 +2312,10 @@ function showV2Modal() {
 // Close Refer modal
 function closeReferModal() {
   console.log('🎁 Closing Refer modal...');
-  const modal = document.getElementById('referModal');
+  const modal = document.getElementById('referralModal');
   if (modal) {
     modal.style.display = 'none';
+    console.log('✅ Referral modal closed');
   }
 }
 
@@ -2376,6 +2377,27 @@ window.showReferModal = showReferModal;
 window.showV2Modal = showV2Modal;
 window.closeReferModal = closeReferModal;
 window.copyReferLink = copyReferLink;
+
+// Add event listeners for modal close buttons
+document.addEventListener('DOMContentLoaded', () => {
+  // Close referral modal when close button is clicked
+  const closeModalBtn = document.getElementById('closeModal');
+  if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', closeReferModal);
+    console.log('✅ Added close modal event listener');
+  }
+  
+  // Close modal when clicking outside of it
+  const referralModal = document.getElementById('referralModal');
+  if (referralModal) {
+    referralModal.addEventListener('click', (e) => {
+      if (e.target === referralModal) {
+        closeReferModal();
+      }
+    });
+    console.log('✅ Added click-outside-to-close functionality');
+  }
+});
 
 console.log('🔧 Added modal functions for Refer & V2 popups');
 
