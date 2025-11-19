@@ -83,12 +83,14 @@ export async function saveUserOptimized(address, userData) {
     
     await client.query(`
       INSERT INTO users (
-        address, has_land, land_purchase_date,
+        address, has_land, land_purchase_date, land_type,
         silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes,
         total_mining_power, checkpoint_timestamp, last_checkpoint_gold, last_activity,
-        referrer_address, total_referrals, referral_rewards_earned,
-        validation_failures, last_cheat_attempt
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        total_gold_mined, total_sol_spent, total_sol_earned, total_pickaxes_bought, play_time_minutes,
+        login_streak, total_logins, player_level, experience_points,
+        total_referrals, suspicious_activity_count,
+        referrer_address, referral_rewards_earned
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
       ON CONFLICT (address) DO UPDATE SET
         has_land = EXCLUDED.has_land,
         land_purchase_date = EXCLUDED.land_purchase_date,
@@ -100,32 +102,50 @@ export async function saveUserOptimized(address, userData) {
         checkpoint_timestamp = EXCLUDED.checkpoint_timestamp,
         last_checkpoint_gold = EXCLUDED.last_checkpoint_gold,
         last_activity = EXCLUDED.last_activity,
-        referrer_address = EXCLUDED.referrer_address,
+        total_gold_mined = EXCLUDED.total_gold_mined,
+        total_sol_spent = EXCLUDED.total_sol_spent,
+        total_sol_earned = EXCLUDED.total_sol_earned,
+        total_pickaxes_bought = EXCLUDED.total_pickaxes_bought,
+        play_time_minutes = EXCLUDED.play_time_minutes,
+        login_streak = EXCLUDED.login_streak,
+        total_logins = EXCLUDED.total_logins,
+        player_level = EXCLUDED.player_level,
+        experience_points = EXCLUDED.experience_points,
         total_referrals = EXCLUDED.total_referrals,
+        suspicious_activity_count = EXCLUDED.suspicious_activity_count,
+        referrer_address = EXCLUDED.referrer_address,
         referral_rewards_earned = EXCLUDED.referral_rewards_earned,
-        validation_failures = EXCLUDED.validation_failures,
-        last_cheat_attempt = EXCLUDED.last_cheat_attempt,
         updated_at = NOW()
     `, [
-      address,
-      userData.has_land || false,
-      userData.land_purchase_date || null,
-      userData.silver_pickaxes || 0,
-      userData.gold_pickaxes || 0,
-      userData.diamond_pickaxes || 0,
-      userData.netherite_pickaxes || 0,
-      userData.total_mining_power || 0,
-      userData.checkpoint_timestamp || Math.floor(Date.now() / 1000),
-      userData.last_checkpoint_gold || 0,
-      userData.last_activity || Math.floor(Date.now() / 1000),
-      userData.referrer_address || null,
-      userData.total_referrals || 0,
-      userData.referral_rewards_earned || 0,
-      userData.validation_failures || 0,
-      userData.last_cheat_attempt || null
+      address,                                           // $1
+      userData.has_land || false,                        // $2
+      userData.land_purchase_date || null,               // $3
+      userData.land_type || 'basic',                     // $4
+      userData.silver_pickaxes || 0,                     // $5
+      userData.gold_pickaxes || 0,                       // $6
+      userData.diamond_pickaxes || 0,                    // $7
+      userData.netherite_pickaxes || 0,                  // $8
+      userData.total_mining_power || 0,                  // $9
+      userData.checkpoint_timestamp || Math.floor(Date.now() / 1000), // $10
+      userData.last_checkpoint_gold || 0,                // $11
+      userData.last_activity || Math.floor(Date.now() / 1000),        // $12
+      userData.total_gold_mined || 0,                    // $13
+      userData.total_sol_spent || 0,                     // $14
+      userData.total_sol_earned || 0,                    // $15
+      userData.total_pickaxes_bought || 0,               // $16
+      userData.play_time_minutes || 0,                   // $17
+      userData.login_streak || 0,                        // $18
+      userData.total_logins || 1,                        // $19
+      userData.player_level || 1,                        // $20
+      userData.experience_points || 0,                   // $21
+      userData.total_referrals || 0,                     // $22
+      userData.suspicious_activity_count || 0,           // $23
+      userData.referrer_address || null,                 // $24
+      userData.referral_rewards_earned || 0              // $25
     ]);
     
     console.timeEnd(`💾 Save user ${address.slice(0, 8)}...`);
+    console.log(`✅ User ${address.slice(0, 8)}... saved successfully`);
     
     // Update cache
     const cacheKey = `user_${address}`;
@@ -133,7 +153,8 @@ export async function saveUserOptimized(address, userData) {
     
     return true;
   } catch (error) {
-    console.error('❌ Error saving user:', error);
+    console.error(`❌ Error saving user ${address.slice(0, 8)}...:`, error.message);
+    console.error('📊 Error details:', error);
     return false;
   } finally {
     client.release();
