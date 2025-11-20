@@ -2525,6 +2525,37 @@ function copyReferLink() {
   }
 }
 
+// Christmas V2.0 Countdown Timer
+function startChristmasCountdown() {
+  const christmasDate = new Date('December 25, 2024 00:00:00').getTime();
+  
+  const countdownInterval = setInterval(() => {
+    const now = new Date().getTime();
+    const distance = christmasDate - now;
+    
+    if (distance < 0) {
+      // Christmas has passed, show "Available Now!" or update to next year
+      document.getElementById('days').textContent = '🎄';
+      document.getElementById('hours').textContent = '🎅';
+      document.getElementById('minutes').textContent = '🎁';
+      document.getElementById('seconds').textContent = '✨';
+      clearInterval(countdownInterval);
+      return;
+    }
+    
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+    
+    // Update countdown display
+    document.getElementById('days').textContent = days.toString().padStart(3, '0');
+    document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+    document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+    document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+  }, 1000);
+}
+
 // Bind these functions to global scope
 window.showReferModal = showReferModal;
 window.showV2Modal = showV2Modal;
@@ -2533,6 +2564,7 @@ window.copyReferLink = copyReferLink;
 window.showHowItWorksModal = showHowItWorksModal;
 window.hideHowItWorksModal = hideHowItWorksModal;
 window.closeV2Modal = closeV2Modal;
+window.startChristmasCountdown = startChristmasCountdown;
 
 // Add event listeners for modal close buttons
 document.addEventListener('DOMContentLoaded', () => {
@@ -2588,6 +2620,10 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     console.log('❌ Sell button not found in DOM');
   }
+  
+  // Start Christmas countdown timer
+  startChristmasCountdown();
+  console.log('✅ Started Christmas countdown timer');
 });
 
 console.log('🔧 Added modal functions for Refer & V2 popups');
