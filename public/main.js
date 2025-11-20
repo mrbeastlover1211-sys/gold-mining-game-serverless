@@ -1292,7 +1292,7 @@ async function sellGold() {
       sellMsgElement.className = 'msg';
     }
     
-    const response = await fetch('/api/sell-minimal', {
+    const response = await fetch('/api/sell-complete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ address: state.address, amountGold }),
