@@ -16,6 +16,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'treasury not configured; set TREASURY_PUBLIC_KEY in environment' });
     }
 
+    // 🔄 FORCE CLEAR MEMORY CACHE FIRST
+    if (typeof global !== 'undefined') {
+      global.users = {};
+      console.log('🔄 Cleared global.users memory cache');
+    }
+    
     // 🔧 FIX: Check if user already has land using DATABASE instead of memory cache
     console.log(`🔍 Checking land ownership for ${address.slice(0, 8)}... via database`);
     
@@ -25,7 +31,8 @@ export default async function handler(req, res) {
       
       console.log(`📊 Database land check result:`, {
         user_exists: !!userData,
-        has_land: userData?.has_land || false
+        has_land: userData?.has_land || false,
+        memory_cache_cleared: true
       });
       
       if (userData && userData.has_land) {
