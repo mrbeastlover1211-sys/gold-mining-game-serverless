@@ -2575,21 +2575,7 @@ function showReferModal() {
       referralLinkElement.value = referralLink;
       console.log('🔗 Generated referral link:', referralLink);
       
-      // Show success message
-      const linkContainer = referralLinkElement.parentElement;
-      let successMessage = linkContainer.querySelector('.referral-success-message');
-      if (!successMessage) {
-        successMessage = document.createElement('div');
-        successMessage.className = 'referral-success-message';
-        successMessage.style.cssText = `
-          color: #22c55e;
-          font-size: 12px;
-          margin-top: 5px;
-          text-align: center;
-        `;
-        linkContainer.appendChild(successMessage);
-      }
-      successMessage.textContent = '✅ Your unique referral link is ready!';
+      // Link is ready - no need for extra message since input shows the actual link
       
     } else if (referralLinkElement) {
       referralLinkElement.value = 'Please connect your wallet first to get your referral link';
