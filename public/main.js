@@ -2777,7 +2777,7 @@ function shareOnX() {
   const text = `🎮 Join me on this awesome Gold Mining Game! ⛏️\n\n💰 Mine gold and earn real SOL\n🚀 Start earning immediately\n🎁 Free to play!\n\nUse my referral link:`;
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(referralLink)}`;
   
-  window.open(url, '_blank', 'width=600,height=400');
+  window.open(url, '_blank');
   console.log('📱 Opened X share dialog');
 }
 
@@ -2841,7 +2841,7 @@ function shareOnTelegram() {
   
   const url = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(text)}`;
   
-  window.open(url, '_blank', 'width=600,height=400');
+  window.open(url, '_blank');
   console.log('📱 Opened Telegram share dialog');
 }
 window.showV2Modal = showV2Modal;
