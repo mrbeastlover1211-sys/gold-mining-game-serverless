@@ -2,7 +2,7 @@
 import { Pool } from 'pg';
 
 const MIN_SELL_GOLD = 10000;
-const GOLD_PRICE_SOL = 0.000001;
+const GOLD_PRICE_SOL = parseFloat(process.env.GOLD_PRICE_SOL || '0.000001');
 
 export default async function handler(req, res) {
   // CORS headers
