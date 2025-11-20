@@ -2586,6 +2586,9 @@ function showReferModal() {
     
     // 🔧 FIX: Set up copy button event listener
     setupCopyButton();
+    
+    // 🔧 FIX: Set up social media buttons
+    setupSocialButtons();
   } else {
     console.error('❌ Referral modal not found in DOM');
   }
@@ -2739,6 +2742,107 @@ async function loadReferralStats() {
       totalReferralsEl.textContent = '0';
     }
   }
+}
+
+// 🔧 FIX: Set up social media buttons
+function setupSocialButtons() {
+  const shareXBtn = document.getElementById('shareX');
+  const shareDiscordBtn = document.getElementById('shareDiscord');
+  const shareTelegramBtn = document.getElementById('shareTelegram');
+  
+  if (shareXBtn) {
+    shareXBtn.addEventListener('click', shareOnX);
+  }
+  
+  if (shareDiscordBtn) {
+    shareDiscordBtn.addEventListener('click', shareOnDiscord);
+  }
+  
+  if (shareTelegramBtn) {
+    shareTelegramBtn.addEventListener('click', shareOnTelegram);
+  }
+  
+  console.log('✅ Social media buttons set up');
+}
+
+// 🔧 FIX: Share on X (Twitter)
+function shareOnX() {
+  const referralLink = document.getElementById('referralLink').value;
+  
+  if (!referralLink || referralLink.includes('Please connect')) {
+    alert('Please connect your wallet first to get your referral link!');
+    return;
+  }
+  
+  const text = `🎮 Join me on this awesome Gold Mining Game! ⛏️\n\n💰 Mine gold and earn real SOL\n🚀 Start earning immediately\n🎁 Free to play!\n\nUse my referral link:`;
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(referralLink)}`;
+  
+  window.open(url, '_blank', 'width=600,height=400');
+  console.log('📱 Opened X share dialog');
+}
+
+// 🔧 FIX: Share on Discord
+function shareOnDiscord() {
+  const referralLink = document.getElementById('referralLink').value;
+  
+  if (!referralLink || referralLink.includes('Please connect')) {
+    alert('Please connect your wallet first to get your referral link!');
+    return;
+  }
+  
+  const message = `🎮 **Gold Mining Game - Earn Real SOL!** ⛏️\n\n💰 Mine gold and earn Solana cryptocurrency\n🚀 Start earning immediately - no investment needed\n🎁 Completely free to play!\n\n**Join using my referral link:**\n${referralLink}\n\n*Let's mine together and earn some SOL!* 💎`;
+  
+  // Copy to clipboard for Discord
+  navigator.clipboard.writeText(message).then(() => {
+    // Show success notification
+    const notification = document.createElement('div');
+    notification.textContent = '📋 Discord message copied! Paste it in any Discord channel or DM';
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(45deg, #5865F2, #4752C4);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 10001;
+      font-weight: bold;
+      max-width: 400px;
+      text-align: center;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      if (notification.parentElement) {
+        notification.remove();
+      }
+    }, 4000);
+    
+  }).catch(() => {
+    alert('Failed to copy to clipboard. Please copy the referral link manually.');
+  });
+  
+  console.log('💬 Discord message copied to clipboard');
+}
+
+// 🔧 FIX: Share on Telegram
+function shareOnTelegram() {
+  const referralLink = document.getElementById('referralLink').value;
+  
+  if (!referralLink || referralLink.includes('Please connect')) {
+    alert('Please connect your wallet first to get your referral link!');
+    return;
+  }
+  
+  const text = `🎮 *Gold Mining Game - Earn Real SOL!* ⛏️\n\n💰 Mine gold and earn Solana cryptocurrency\n🚀 Start earning immediately - no investment needed\n🎁 Completely free to play!\n\nJoin using my referral link:\n${referralLink}\n\n_Let's mine together and earn some SOL!_ 💎`;
+  
+  const url = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(text)}`;
+  
+  window.open(url, '_blank', 'width=600,height=400');
+  console.log('📱 Opened Telegram share dialog');
 }
 window.showV2Modal = showV2Modal;
 window.closeReferModal = closeReferModal;
