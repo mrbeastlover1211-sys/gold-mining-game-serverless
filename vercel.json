@@ -2,7 +2,9 @@
   "public": true,
   "functions": {
     "api/**/*.js": {
-      "maxDuration": 30
+      "runtime": "nodejs18.x",
+      "maxDuration": 30,
+      "memory": 1024
     }
   },
   "headers": [
@@ -14,16 +16,6 @@
           "value": "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; object-src 'none'; connect-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://api.devnet.solana.com https://api.mainnet-beta.solana.com;"
         }
       ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/public/$1"
     }
   ]
 }
