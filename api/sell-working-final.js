@@ -103,11 +103,11 @@ export default async function handler(req, res) {
       WHERE address = $3
     `, [newGoldAmount, currentTime, address]);
 
-    // Create gold_sales table if it doesn't exist
+    // Create gold_sales table if it doesn't exist (using correct column name)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS gold_sales (
         id SERIAL PRIMARY KEY,
-        wallet_address TEXT NOT NULL,
+        user_address TEXT NOT NULL REFERENCES users(address),
         gold_amount INTEGER NOT NULL,
         payout_sol NUMERIC NOT NULL,
         status TEXT DEFAULT 'pending',
@@ -120,7 +120,7 @@ export default async function handler(req, res) {
 
     // Record the sale for admin processing
     await pool.query(`
-      INSERT INTO gold_sales (wallet_address, gold_amount, payout_sol, status)
+      INSERT INTO gold_sales (user_address, gold_amount, payout_sol, status)
       VALUES ($1, $2, $3, 'pending')
     `, [address, amountGold, payoutSol]);
 
