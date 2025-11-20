@@ -1,0 +1,60 @@
+# Vercel ignore file for Gold Mining Game
+# These files will be excluded from deployment
+
+# Development files
+*.md
+README.md
+.env.example
+.env.local
+.env.development
+
+# Temporary files
+tmp_*
+temp_*
+.tmp/
+.temp/
+
+# Documentation
+DEPLOYMENT_GUIDE.md
+DATABASE_SETUP_GUIDE.md
+DEBUG_DATA_ISSUE.md
+MIGRATION_GUIDE.md
+OPTIMIZATION_STATUS.md
+PICKAXE_DEBUG_GUIDE.md
+PICKAXE_FIX_VERIFICATION.md
+SERVERLESS_DEBUG.md
+ULTRA_OPTIMIZATION_COMPLETE.md
+USER_DATA_NOTICE.md
+VERCEL_DEPLOYMENT.md
+manual-fix.md
+
+# Example and test files
+example/
+test-*.html
+test-*.js
+
+# Old/backup files
+*-old.*
+*-backup.*
+*_old.*
+*_backup.*
+database-old.js
+server.js
+server-optimized.js
+package-optimized.json
+
+# Migration files
+migrate-to-optimized.js
+
+# Fresh repo (duplicate)
+fresh-serverless-repo/
+
+# Image source files
+image/
+
+# Git files
+.git/
+.gitignore
+
+# Node modules are automatically ignored
+# Build outputs are automatically ignored
