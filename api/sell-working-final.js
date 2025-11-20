@@ -103,9 +103,10 @@ export default async function handler(req, res) {
       WHERE address = $3
     `, [newGoldAmount, currentTime, address]);
 
-    // Create gold_sales table if it doesn't exist (using correct column name)
+    // Drop and recreate gold_sales table with correct structure
+    await pool.query(`DROP TABLE IF EXISTS gold_sales`);
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS gold_sales (
+      CREATE TABLE gold_sales (
         id SERIAL PRIMARY KEY,
         user_address TEXT NOT NULL REFERENCES users(address),
         gold_amount INTEGER NOT NULL,
