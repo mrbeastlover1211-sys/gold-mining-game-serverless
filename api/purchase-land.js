@@ -16,18 +16,28 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'treasury not configured; set TREASURY_PUBLIC_KEY in environment' });
     }
 
-    // Check if user already has land
-    global.users = global.users || {};
-    if (!global.users[address]) {
-      global.users[address] = {
-        inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 },
-        hasLand: false,
-        landPurchaseDate: null
-      };
-    }
+    // 🔧 FIX: Check if user already has land using DATABASE instead of memory cache
+    console.log(`🔍 Checking land ownership for ${address.slice(0, 8)}... via database`);
     
-    if (global.users[address].hasLand) {
-      return res.status(400).json({ error: 'User already owns land' });
+    try {
+      const { getUserOptimized } = await import('../database.js');
+      const userData = await getUserOptimized(address);
+      
+      console.log(`📊 Database land check result:`, {
+        user_exists: !!userData,
+        has_land: userData?.has_land || false
+      });
+      
+      if (userData && userData.has_land) {
+        console.log(`❌ User already owns land according to database`);
+        return res.status(400).json({ error: 'User already owns land' });
+      }
+      
+      console.log(`✅ User can purchase land - no existing land ownership found`);
+    } catch (dbError) {
+      console.error('❌ Database error during land check:', dbError.message);
+      console.log('⚠️ Falling back to allow purchase due to database error');
+      // If database check fails, allow the purchase (better than blocking legitimate purchases)
     }
 
     let payer, treasury;
