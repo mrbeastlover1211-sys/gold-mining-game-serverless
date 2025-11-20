@@ -2558,6 +2558,202 @@ function startChristmasCountdown() {
 
 // Bind these functions to global scope
 window.showReferModal = showReferModal;
+
+// 🔧 FIX REFERRAL SYSTEM: Complete implementation
+function showReferModal() {
+  console.log('🎁 Showing referral modal');
+  const modal = document.getElementById('referralModal');
+  
+  if (modal) {
+    modal.style.display = 'flex';
+    
+    // Generate referral link with CORRECT domain
+    const referralLinkElement = document.getElementById('referralLink');
+    if (referralLinkElement && state.address) {
+      // 🔧 FIX: Use the actual live domain instead of wrong one from HTML
+      const referralLink = `https://gold-mining-game-serverless.vercel.app/?ref=${encodeURIComponent(state.address)}`;
+      referralLinkElement.value = referralLink;
+      console.log('🔗 Generated referral link:', referralLink);
+      
+      // Show success message
+      const linkContainer = referralLinkElement.parentElement;
+      let successMessage = linkContainer.querySelector('.referral-success-message');
+      if (!successMessage) {
+        successMessage = document.createElement('div');
+        successMessage.className = 'referral-success-message';
+        successMessage.style.cssText = `
+          color: #22c55e;
+          font-size: 12px;
+          margin-top: 5px;
+          text-align: center;
+        `;
+        linkContainer.appendChild(successMessage);
+      }
+      successMessage.textContent = '✅ Your unique referral link is ready!';
+      
+    } else if (referralLinkElement) {
+      referralLinkElement.value = 'Please connect your wallet first to get your referral link';
+    }
+    
+    // Load referral stats
+    loadReferralStats();
+    
+    // 🔧 FIX: Set up copy button event listener
+    setupCopyButton();
+  } else {
+    console.error('❌ Referral modal not found in DOM');
+  }
+}
+
+// 🔧 FIX: Set up copy button event listener
+function setupCopyButton() {
+  const copyBtn = document.getElementById('copyLinkBtn');
+  if (copyBtn) {
+    // Remove any existing listeners to avoid duplicates
+    const newCopyBtn = copyBtn.cloneNode(true);
+    copyBtn.parentNode.replaceChild(newCopyBtn, copyBtn);
+    
+    // Add fresh event listener
+    newCopyBtn.addEventListener('click', copyReferralLink);
+    console.log('✅ Copy button event listener set up');
+  } else {
+    console.error('❌ Copy button not found');
+  }
+}
+
+// 🔧 FIX: Copy referral link with proper error handling
+async function copyReferralLink() {
+  const referralLinkElement = document.getElementById('referralLink');
+  const copyBtn = document.getElementById('copyLinkBtn');
+  
+  if (!referralLinkElement || !referralLinkElement.value || referralLinkElement.value.includes('Please connect')) {
+    console.error('❌ No valid referral link to copy');
+    
+    // Show error message
+    if (copyBtn) {
+      const originalText = copyBtn.textContent;
+      copyBtn.textContent = '❌ No Link';
+      copyBtn.style.background = '#ef4444';
+      copyBtn.style.color = 'white';
+      
+      setTimeout(() => {
+        copyBtn.textContent = originalText;
+        copyBtn.style.background = '';
+        copyBtn.style.color = '';
+      }, 2000);
+    }
+    return;
+  }
+  
+  try {
+    await navigator.clipboard.writeText(referralLinkElement.value);
+    
+    // Show success feedback
+    const originalText = copyBtn.textContent;
+    copyBtn.textContent = '✅ Copied!';
+    copyBtn.style.background = '#22c55e';
+    copyBtn.style.color = 'white';
+    
+    // Create floating success message
+    const successMessage = document.createElement('div');
+    successMessage.textContent = '🎉 Referral link copied! Share it to earn rewards!';
+    successMessage.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(45deg, #22c55e, #16a34a);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 10001;
+      font-weight: bold;
+      animation: slideDown 0.3s ease-out;
+    `;
+    
+    document.body.appendChild(successMessage);
+    
+    // Remove success message after 3 seconds
+    setTimeout(() => {
+      if (successMessage.parentElement) {
+        successMessage.remove();
+      }
+    }, 3000);
+    
+    setTimeout(() => {
+      copyBtn.textContent = originalText;
+      copyBtn.style.background = '';
+      copyBtn.style.color = '';
+    }, 2000);
+    
+    console.log('✅ Referral link copied to clipboard:', referralLinkElement.value);
+  } catch (err) {
+    console.error('❌ Failed to copy referral link:', err);
+    
+    // Fallback for older browsers
+    try {
+      referralLinkElement.select();
+      referralLinkElement.setSelectionRange(0, 99999); // For mobile devices
+      document.execCommand('copy');
+      
+      copyBtn.textContent = '✅ Copied!';
+      copyBtn.style.background = '#22c55e';
+      copyBtn.style.color = 'white';
+      
+      setTimeout(() => {
+        copyBtn.textContent = '📋 Copy';
+        copyBtn.style.background = '';
+        copyBtn.style.color = '';
+      }, 2000);
+      
+      console.log('✅ Referral link copied using fallback method');
+    } catch (fallbackErr) {
+      console.error('❌ Fallback copy method also failed:', fallbackErr);
+      
+      copyBtn.textContent = '❌ Failed';
+      copyBtn.style.background = '#ef4444';
+      
+      setTimeout(() => {
+        copyBtn.textContent = '📋 Copy';
+        copyBtn.style.background = '';
+      }, 2000);
+    }
+  }
+}
+
+// 🔧 FIX: Load referral stats
+async function loadReferralStats() {
+  if (!state.address) {
+    console.log('⚠️ Cannot load referral stats - no wallet connected');
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/referrals?address=${encodeURIComponent(state.address)}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('📊 Referral stats loaded:', data);
+    
+    // Update total referrals display
+    const totalReferralsEl = document.getElementById('totalReferrals');
+    if (totalReferralsEl) {
+      totalReferralsEl.textContent = data.total_referrals || 0;
+    }
+    
+  } catch (error) {
+    console.error('❌ Failed to load referral stats:', error);
+    
+    // Set default values on error
+    const totalReferralsEl = document.getElementById('totalReferrals');
+    if (totalReferralsEl) {
+      totalReferralsEl.textContent = '0';
+    }
+  }
+}
 window.showV2Modal = showV2Modal;
 window.closeReferModal = closeReferModal;
 window.copyReferLink = copyReferLink;
