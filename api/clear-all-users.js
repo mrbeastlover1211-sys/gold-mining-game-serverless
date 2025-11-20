@@ -13,40 +13,108 @@ export default async function handler(req, res) {
     
     const client = await pool.connect();
     
-    // Step 1: Clear referrals first (foreign key dependency)
+    // Step 1: Show current data before clearing
+    console.log('📊 Checking current data...');
+    let beforeCount = {};
+    
+    try {
+      const usersBefore = await client.query('SELECT COUNT(*) as count FROM users');
+      beforeCount.users = parseInt(usersBefore.rows[0].count);
+      console.log(`👥 Users before clearing: ${beforeCount.users}`);
+    } catch (error) {
+      beforeCount.users = 0;
+      console.log('⚠️ Could not count users:', error.message);
+    }
+    
+    try {
+      const txBefore = await client.query('SELECT COUNT(*) as count FROM transactions');
+      beforeCount.transactions = parseInt(txBefore.rows[0].count);
+      console.log(`💰 Transactions before clearing: ${beforeCount.transactions}`);
+    } catch (error) {
+      beforeCount.transactions = 0;
+    }
+    
+    try {
+      const refBefore = await client.query('SELECT COUNT(*) as count FROM referrals');
+      beforeCount.referrals = parseInt(refBefore.rows[0].count);
+      console.log(`🤝 Referrals before clearing: ${beforeCount.referrals}`);
+    } catch (error) {
+      beforeCount.referrals = 0;
+    }
+
+    // Step 2: Clear referrals first (foreign key dependency)
     console.log('🗑️ Clearing referrals table...');
     
     let clearedReferrals = 0;
     try {
-      const refResult = await client.query(`DELETE FROM referrals`);
+      const refResult = await client.query(`DELETE FROM referrals WHERE true`);
       console.log(`✅ Cleared ${refResult.rowCount} referral records`);
       clearedReferrals = refResult.rowCount;
     } catch (error) {
-      console.log(`ℹ️ Referrals table doesn't exist or already empty: ${error.message}`);
+      console.log(`❌ Error clearing referrals: ${error.message}`);
     }
     
-    // Step 2: Clear transactions (foreign key dependency)
+    // Step 3: Clear transactions (foreign key dependency)
     console.log('🗑️ Clearing transactions table...');
     
     let clearedTransactions = 0;
     try {
-      const txResult = await client.query(`DELETE FROM transactions`);
+      const txResult = await client.query(`DELETE FROM transactions WHERE true`);
       console.log(`✅ Cleared ${txResult.rowCount} transaction records`);
       clearedTransactions = txResult.rowCount;
     } catch (error) {
-      console.log(`ℹ️ Transactions table doesn't exist or already empty: ${error.message}`);
+      console.log(`❌ Error clearing transactions: ${error.message}`);
     }
     
-    // Step 3: Clear users table (main table)
-    console.log('🗑️ Clearing users table...');
+    // Step 4: Clear gold_sales table if it exists
+    console.log('🗑️ Clearing gold_sales table...');
+    
+    let clearedGoldSales = 0;
+    try {
+      const gsResult = await client.query(`DELETE FROM gold_sales WHERE true`);
+      console.log(`✅ Cleared ${gsResult.rowCount} gold sale records`);
+      clearedGoldSales = gsResult.rowCount;
+    } catch (error) {
+      console.log(`ℹ️ Gold sales table doesn't exist or error: ${error.message}`);
+    }
+    
+    // Step 5: Clear users table (main table) - FORCE DELETE
+    console.log('🗑️ FORCE CLEARING users table...');
     
     let clearedUsers = 0;
     try {
-      const userResult = await client.query(`DELETE FROM users`);
-      console.log(`✅ Cleared ${userResult.rowCount} user records`);
-      clearedUsers = userResult.rowCount;
+      // Try different deletion approaches
+      console.log('🔄 Attempting forced user deletion...');
+      
+      // First, try to disable foreign key checks temporarily
+      try {
+        await client.query('SET foreign_key_checks = 0');
+      } catch (e) {
+        // PostgreSQL doesn't use this syntax, continue
+      }
+      
+      // Force delete all users
+      const userResult = await client.query(`TRUNCATE users CASCADE`);
+      console.log(`✅ TRUNCATED users table successfully`);
+      clearedUsers = beforeCount.users; // Use before count since TRUNCATE doesn't return rowCount
     } catch (error) {
-      console.log(`ℹ️ Users table doesn't exist or already empty: ${error.message}`);
+      console.log(`⚠️ TRUNCATE failed, trying DELETE: ${error.message}`);
+      try {
+        const userResult = await client.query(`DELETE FROM users WHERE true`);
+        console.log(`✅ Cleared ${userResult.rowCount} user records with DELETE`);
+        clearedUsers = userResult.rowCount;
+      } catch (deleteError) {
+        console.log(`❌ Both TRUNCATE and DELETE failed: ${deleteError.message}`);
+        
+        // Try deleting specific users by address
+        try {
+          const specificResult = await client.query(`DELETE FROM users WHERE address IS NOT NULL`);
+          console.log(`✅ Cleared ${specificResult.rowCount} user records with specific WHERE clause`);
+          clearedUsers = specificResult.rowCount;
+        } catch (specificError) {
+          console.log(`❌ All deletion methods failed: ${specificError.message}`);
+        }
+      }
     }
     
     // Step 4: Reset auto-increment sequences
