@@ -55,7 +55,7 @@ export default async function handler(req, res) {
     await pool.query('BEGIN');
 
     // Get current user data
-    const userResult = await pool.query('SELECT * FROM users WHERE wallet = $1', [address]);
+    const userResult = await pool.query('SELECT * FROM users WHERE address = $1', [address]);
     
     if (userResult.rows.length === 0) {
       await pool.query('ROLLBACK');
@@ -100,7 +100,7 @@ export default async function handler(req, res) {
         last_checkpoint_gold = $1,
         checkpoint_timestamp = $2,
         last_activity = $2
-      WHERE wallet = $3
+      WHERE address = $3
     `, [newGoldAmount, currentTime, address]);
 
     // Create gold_sales table if it doesn't exist
