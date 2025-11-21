@@ -104,10 +104,13 @@ export default async function handler(req, res) {
         });
       }
       
-      // Mark as pending conversion (don't convert until land + pickaxe purchased)
+      // Mark as wallet connected and update converted status
       await client.query(`
         UPDATE referral_visits 
-        SET converted_address = $1, converted_timestamp = CURRENT_TIMESTAMP
+        SET 
+          converted_address = $1, 
+          converted = true,
+          converted_timestamp = CURRENT_TIMESTAMP
         WHERE session_id = $2
       `, [address, sessionId]);
       

@@ -599,8 +599,19 @@ async function connectWallet() {
     console.log('🔍 Checking land ownership immediately after wallet connection...');
     await checkLandStatusAndShowPopup();
     
-    // 🎯 NEW SESSION TRACKING: Check for referral session when wallet connects
+    // 🎯 FIXED SESSION TRACKING: Check and update referral session when wallet connects
     await checkReferralSession();
+    
+    // 🔧 FORCE UPDATE SESSION STATUS: Ensure session gets linked to wallet
+    try {
+      const updateResponse = await fetch(`/api/update-session-status?address=${encodeURIComponent(state.address)}`);
+      if (updateResponse.ok) {
+        const updateData = await updateResponse.json();
+        console.log('🔄 Session status update result:', updateData.message);
+      }
+    } catch (updateError) {
+      console.log('⚠️ Session status update failed:', updateError.message);
+    }
     
   } catch (e) {
     console.error('❌ Wallet connection failed:', e);
