@@ -37,12 +37,12 @@ export default async function handler(req, res) {
     };
     
     try {
-      // Method 1: Try TRUNCATE CASCADE (most powerful)
-      console.log('🔥 Trying TRUNCATE CASCADE...');
-      await client.query('TRUNCATE TABLE users, transactions, referrals, gold_sales RESTART IDENTITY CASCADE');
+      // Method 1: Try TRUNCATE CASCADE (most powerful) - INCLUDING REFERRAL TABLES
+      console.log('🔥 Trying TRUNCATE CASCADE with referral tables...');
+      await client.query('TRUNCATE TABLE users, transactions, referrals, referral_visits, gold_sales RESTART IDENTITY CASCADE');
       results.users_cleared = beforeCounts.users;
-      results.method_used = 'TRUNCATE CASCADE';
-      console.log('✅ TRUNCATE CASCADE successful!');
+      results.method_used = 'TRUNCATE CASCADE WITH REFERRALS';
+      console.log('✅ TRUNCATE CASCADE with referrals successful!');
     } catch (truncateError) {
       console.log('❌ TRUNCATE CASCADE failed:', truncateError.message);
       results.errors.push(`TRUNCATE failed: ${truncateError.message}`);
@@ -52,6 +52,7 @@ export default async function handler(req, res) {
         console.log('💥 Trying DROP and RECREATE...');
         
         await client.query('DROP TABLE IF EXISTS referrals CASCADE');
+        await client.query('DROP TABLE IF EXISTS referral_visits CASCADE');
         await client.query('DROP TABLE IF EXISTS transactions CASCADE');  
         await client.query('DROP TABLE IF EXISTS gold_sales CASCADE');
         await client.query('DROP TABLE IF EXISTS users CASCADE');
