@@ -73,7 +73,7 @@ export default async function handler(req, res) {
         RETURNING *
       `, [
         sessionId,
-        ref,
+        ref, // FULL ADDRESS - no truncation
         visitorIP,
         userAgent,
         timestamp,

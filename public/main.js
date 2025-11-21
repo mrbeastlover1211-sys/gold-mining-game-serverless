@@ -1253,8 +1253,30 @@ async function buyPickaxe(pickaxeType) {
     // Update wallet balance 
     await updateWalletBalance();
     
-    // 🎯 NEW SESSION TRACKING: Check for referral completion after pickaxe purchase
-    await checkReferralCompletion();
+    // 🎯 FIXED AUTO REFERRAL: Force check completion after ANY purchase
+    console.log('🎁 Checking for referral completion after purchase...');
+    
+    try {
+      // Method 1: Try completion API directly
+      const completionResponse = await fetch('/api/complete-referral', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: state.address })
+      });
+      
+      if (completionResponse.ok) {
+        const completionData = await completionResponse.json();
+        if (completionData.referral_completed) {
+          console.log('🎉 Automatic referral completed!', completionData.reward_details);
+        }
+      }
+      
+      // Method 2: Force session update as backup
+      await fetch(`/api/update-session-status?address=${encodeURIComponent(state.address)}`);
+      
+    } catch (referralError) {
+      console.log('⚠️ Referral completion check failed:', referralError.message);
+    }
     
     console.log('🎉 Purchase complete! Mining engine handles everything locally now.')
     
