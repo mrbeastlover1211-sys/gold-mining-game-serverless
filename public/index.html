@@ -474,5 +474,31 @@
 
   <script src="mining-engine.js"></script>
   <script src="main.js"></script>
+  
+  <!-- 🎯 SESSION TRACKING REFERRAL SYSTEM -->
+  <script>
+    // Track referral visit on page load
+    (function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const ref = urlParams.get('ref');
+      
+      if (ref && ref.length > 20) { // Valid wallet address length
+        console.log('🔗 Referral detected, tracking visit...', ref.slice(0, 8) + '...');
+        
+        // Load tracking pixel to log the visit
+        const trackingPixel = new Image();
+        trackingPixel.src = `/api/track-referral?ref=${encodeURIComponent(ref)}&t=${Date.now()}`;
+        
+        // Clean URL after tracking (optional, preserves user experience)
+        if (window.history && window.history.replaceState) {
+          setTimeout(() => {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }, 1000);
+        }
+        
+        console.log('✅ Referral tracking initiated');
+      }
+    })();
+  </script>
 </body>
 </html>

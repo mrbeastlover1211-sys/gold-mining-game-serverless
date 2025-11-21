@@ -599,8 +599,8 @@ async function connectWallet() {
     console.log('🔍 Checking land ownership immediately after wallet connection...');
     await checkLandStatusAndShowPopup();
     
-    // 🎁 CHECK FOR REFERRAL: Store referral info when new user connects via referral link
-    await storeReferralInfo();
+    // 🎯 NEW SESSION TRACKING: Check for referral session when wallet connects
+    await checkReferralSession();
     
   } catch (e) {
     console.error('❌ Wallet connection failed:', e);
@@ -1242,7 +1242,7 @@ async function buyPickaxe(pickaxeType) {
     // Update wallet balance 
     await updateWalletBalance();
     
-    // 🎁 CHECK FOR REFERRAL COMPLETION: User just bought their first pickaxe
+    // 🎯 NEW SESSION TRACKING: Check for referral completion after pickaxe purchase
     await checkReferralCompletion();
     
     console.log('🎉 Purchase complete! Mining engine handles everything locally now.')
@@ -2851,51 +2851,51 @@ function shareOnTelegram() {
   console.log('📱 Opened Telegram share dialog');
 }
 
-// 🎁 FIXED REFERRAL SYSTEM: Store referral info when user connects via referral link
-async function storeReferralInfo() {
+// 🎯 NEW SESSION TRACKING: Check for referral session when wallet connects
+async function checkReferralSession() {
   try {
-    // Check if user came via referral link
-    const urlParams = new URLSearchParams(window.location.search);
-    const referrerAddress = urlParams.get('ref');
-    
-    if (!referrerAddress || !state.address) {
-      console.log('ℹ️ No referral detected or wallet not connected');
+    if (!state.address) {
+      console.log('⚠️ No wallet connected for referral session check');
       return;
     }
     
-    if (referrerAddress === state.address) {
-      console.log('⚠️ Cannot refer yourself');
-      return;
+    console.log('🔍 Checking for referral session...', state.address.slice(0, 8) + '...');
+    
+    const response = await fetch(`/api/check-referral-session?address=${encodeURIComponent(state.address)}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     
-    // Store referral info in localStorage for later completion check
-    const referralInfo = {
-      referrerAddress: referrerAddress,
-      referredAddress: state.address,
-      timestamp: Date.now(),
-      landPurchased: false,
-      pickaxePurchased: false,
-      completed: false
-    };
+    const data = await response.json();
     
-    localStorage.setItem(`referral_${state.address}`, JSON.stringify(referralInfo));
-    
-    console.log('🎁 Referral info stored for completion tracking:', {
-      referrer: referrerAddress.slice(0, 8) + '...',
-      referred: state.address.slice(0, 8) + '...'
-    });
-    
-    // Clean up URL after storing referral info
-    if (window.history && window.history.replaceState) {
-      window.history.replaceState({}, document.title, window.location.pathname);
+    if (data.referrer_found) {
+      console.log('🎁 Referral session found!', {
+        referrer: data.referrer_address?.slice(0, 8) + '...',
+        sessionId: data.session_id?.slice(0, 20) + '...',
+        visitTime: data.visit_timestamp
+      });
+      
+      // Store referral info globally for later use
+      window.currentReferral = {
+        referrerAddress: data.referrer_address,
+        sessionId: data.session_id,
+        visitTimestamp: data.visit_timestamp
+      };
+      
+      console.log('✅ Referral session linked to wallet - will complete when requirements met');
+    } else {
+      console.log('ℹ️ No referral session found:', data.message);
+      window.currentReferral = null;
     }
     
   } catch (error) {
-    console.error('❌ Failed to store referral info:', error);
+    console.error('❌ Failed to check referral session:', error);
+    window.currentReferral = null;
   }
 }
 
-// 🎁 FIXED REFERRAL SYSTEM: Check if user completed both land + pickaxe purchase
+// 🎯 NEW SESSION TRACKING: Check if user completed both land + pickaxe purchase
 async function checkReferralCompletion() {
   try {
     if (!state.address) {
@@ -2903,54 +2903,77 @@ async function checkReferralCompletion() {
       return;
     }
     
-    // Get stored referral info
-    const referralInfoStr = localStorage.getItem(`referral_${state.address}`);
-    if (!referralInfoStr) {
-      console.log('ℹ️ No pending referral for this user');
+    // Check if there's a pending referral session
+    if (!window.currentReferral) {
+      console.log('ℹ️ No pending referral session for this user');
       return;
     }
     
-    const referralInfo = JSON.parse(referralInfoStr);
-    
-    if (referralInfo.completed) {
-      console.log('ℹ️ Referral already completed');
-      return;
-    }
-    
-    console.log('🔍 Checking referral completion requirements...', referralInfo);
-    
-    // Check if user has land
-    const landResponse = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
-    const landData = await landResponse.json();
-    const hasLand = landData.hasLand;
-    
-    // Check if user has any pickaxes (just purchased one)
-    const totalPickaxes = Object.values(state.status.inventory || {}).reduce((sum, count) => sum + count, 0);
-    const hasPickaxe = totalPickaxes > 0;
-    
-    console.log('📊 Referral completion status:', {
-      hasLand: hasLand,
-      hasPickaxe: hasPickaxe,
-      requiredBoth: hasLand && hasPickaxe
+    console.log('🔍 Checking referral completion requirements...', {
+      referrer: window.currentReferral.referrerAddress?.slice(0, 8) + '...',
+      sessionId: window.currentReferral.sessionId?.slice(0, 20) + '...'
     });
     
-    // ✅ BOTH REQUIREMENTS MET - Complete the referral!
-    if (hasLand && hasPickaxe) {
-      console.log('🎉 REFERRAL COMPLETION DETECTED! Processing reward...');
+    // Use the new API to check completion and trigger rewards
+    const response = await fetch('/api/complete-referral', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        address: state.address
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.referral_completed) {
+      console.log('🎉 REFERRAL COMPLETED!', {
+        referrer: data.referrer_address?.slice(0, 8) + '...',
+        reward: data.reward_details
+      });
       
-      // Mark as completed immediately to prevent double-processing
-      referralInfo.landPurchased = true;
-      referralInfo.pickaxePurchased = true;
-      referralInfo.completed = true;
-      referralInfo.completedAt = Date.now();
-      localStorage.setItem(`referral_${state.address}`, JSON.stringify(referralInfo));
+      // Clear the referral session since it's completed
+      window.currentReferral = null;
       
-      // Process the referral reward with tiered system
-      await processReferralReward(referralInfo);
+      // Show success notification
+      const notification = document.createElement('div');
+      notification.textContent = `🎉 Referral completed! Your referrer earned a ${data.reward_details.pickaxe_type} pickaxe + ${data.reward_details.gold_reward} gold!`;
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(45deg, #f59e0b, #d97706);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 10001;
+        font-weight: bold;
+        max-width: 400px;
+        text-align: center;
+        animation: slideDown 0.3s ease-out;
+      `;
+      
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        if (notification.parentElement) {
+          notification.remove();
+        }
+      }, 5000);
       
       console.log('✅ Referral completion processed successfully!');
     } else {
-      console.log('⏳ Referral pending - user needs both land and pickaxe');
+      console.log('⏳ Referral pending:', data.message);
+      if (data.requirements) {
+        console.log('📋 Missing requirements:', data.requirements);
+      }
     }
     
   } catch (error) {
