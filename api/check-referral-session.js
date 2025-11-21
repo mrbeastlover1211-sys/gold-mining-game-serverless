@@ -48,13 +48,29 @@ export default async function handler(req, res) {
     const client = await pool.connect();
     
     try {
-      // Find referral visit by session
-      const visitQuery = await client.query(`
+      // Find referral visit by session OR by converted address
+      let visitQuery = await client.query(`
         SELECT * FROM referral_visits 
         WHERE session_id = $1 
         AND expires_at > CURRENT_TIMESTAMP 
         AND converted = false
       `, [sessionId]);
+      
+      // If no session found, check if this address was already linked
+      if (visitQuery.rows.length === 0) {
+        visitQuery = await client.query(`
+          SELECT * FROM referral_visits 
+          WHERE converted_address = $1 
+          AND expires_at > CURRENT_TIMESTAMP 
+          AND converted = true
+          ORDER BY converted_timestamp DESC
+          LIMIT 1
+        `, [address]);
+        
+        if (visitQuery.rows.length > 0) {
+          console.log('✅ Found existing referral session for this address');
+        }
+      }
       
       if (visitQuery.rows.length === 0) {
         console.log('❌ No valid referral visit found');
