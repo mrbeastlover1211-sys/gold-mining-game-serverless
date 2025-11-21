@@ -2851,7 +2851,7 @@ function shareOnTelegram() {
   console.log('📱 Opened Telegram share dialog');
 }
 
-// 🎯 NEW SESSION TRACKING: Check for referral session when wallet connects
+// 🎯 ENHANCED REFERRAL SESSION: Check and link wallet to referral
 async function checkReferralSession() {
   try {
     if (!state.address) {
@@ -2861,31 +2861,80 @@ async function checkReferralSession() {
     
     console.log('🔍 Checking for referral session...', state.address.slice(0, 8) + '...');
     
-    const response = await fetch(`/api/check-referral-session?address=${encodeURIComponent(state.address)}`);
+    // Check both server session and localStorage backup
+    let referralFound = false;
     
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    // Method 1: Check server session via cookie
+    try {
+      const response = await fetch(`/api/check-referral-session?address=${encodeURIComponent(state.address)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.referrer_found) {
+          console.log('🎁 Server referral session found!', {
+            referrer: data.referrer_address?.slice(0, 8) + '...',
+            sessionId: data.session_id?.slice(0, 20) + '...'
+          });
+          
+          window.currentReferral = {
+            referrerAddress: data.referrer_address,
+            sessionId: data.session_id,
+            method: 'server_session'
+          };
+          referralFound = true;
+        }
+      }
+    } catch (serverError) {
+      console.log('⚠️ Server session check failed:', serverError.message);
     }
     
-    const data = await response.json();
+    // Method 2: Check localStorage backup if server failed
+    if (!referralFound && window.pendingReferral) {
+      console.log('🔍 Using localStorage referral backup');
+      
+      const storedReferrer = window.pendingReferral.referrerAddress;
+      const timestamp = window.pendingReferral.timestamp;
+      
+      // Prevent self-referral
+      if (storedReferrer !== state.address) {
+        // Create/link session via API
+        try {
+          const linkResponse = await fetch('/api/link-referral-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              referrerAddress: storedReferrer,
+              referredAddress: state.address,
+              timestamp: timestamp
+            })
+          });
+          
+          if (linkResponse.ok) {
+            console.log('🎁 Successfully linked localStorage referral!');
+            window.currentReferral = {
+              referrerAddress: storedReferrer,
+              sessionId: 'localStorage_' + timestamp,
+              method: 'localStorage_backup'
+            };
+            referralFound = true;
+          }
+        } catch (linkError) {
+          console.log('⚠️ Failed to link localStorage referral:', linkError.message);
+        }
+      } else {
+        console.log('⚠️ Prevented self-referral from localStorage');
+        // Clear invalid referral data
+        localStorage.removeItem('referrer_address');
+        localStorage.removeItem('referral_timestamp');
+        window.pendingReferral = null;
+      }
+    }
     
-    if (data.referrer_found) {
-      console.log('🎁 Referral session found!', {
-        referrer: data.referrer_address?.slice(0, 8) + '...',
-        sessionId: data.session_id?.slice(0, 20) + '...',
-        visitTime: data.visit_timestamp
-      });
-      
-      // Store referral info globally for later use
-      window.currentReferral = {
-        referrerAddress: data.referrer_address,
-        sessionId: data.session_id,
-        visitTimestamp: data.visit_timestamp
-      };
-      
-      console.log('✅ Referral session linked to wallet - will complete when requirements met');
+    if (referralFound) {
+      console.log('✅ Referral session established - will complete when requirements met');
     } else {
-      console.log('ℹ️ No referral session found:', data.message);
+      console.log('ℹ️ No valid referral session found');
       window.currentReferral = null;
     }
     

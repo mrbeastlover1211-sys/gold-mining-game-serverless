@@ -475,9 +475,9 @@
   <script src="mining-engine.js"></script>
   <script src="main.js"></script>
   
-  <!-- 🎯 SESSION TRACKING REFERRAL SYSTEM -->
+  <!-- 🎯 FIXED SESSION TRACKING REFERRAL SYSTEM -->
   <script>
-    // Track referral visit on page load
+    // Enhanced referral tracking with proper session management
     (function() {
       const urlParams = new URLSearchParams(window.location.search);
       const ref = urlParams.get('ref');
@@ -485,18 +485,55 @@
       if (ref && ref.length > 20) { // Valid wallet address length
         console.log('🔗 Referral detected, tracking visit...', ref.slice(0, 8) + '...');
         
+        // Store referrer in localStorage as backup
+        localStorage.setItem('referrer_address', ref);
+        localStorage.setItem('referral_timestamp', Date.now().toString());
+        
         // Load tracking pixel to log the visit
         const trackingPixel = new Image();
         trackingPixel.src = `/api/track-referral?ref=${encodeURIComponent(ref)}&t=${Date.now()}`;
         
-        // Clean URL after tracking (optional, preserves user experience)
+        // Enhanced tracking with session persistence
+        trackingPixel.onload = function() {
+          console.log('✅ Referral visit tracked successfully');
+          localStorage.setItem('referral_tracked', 'true');
+        };
+        
+        trackingPixel.onerror = function() {
+          console.log('⚠️ Referral tracking failed, stored locally');
+        };
+        
+        // Clean URL after tracking but preserve session data
         if (window.history && window.history.replaceState) {
           setTimeout(() => {
             window.history.replaceState({}, document.title, window.location.pathname);
-          }, 1000);
+          }, 2000); // Longer delay for tracking to complete
         }
         
-        console.log('✅ Referral tracking initiated');
+        console.log('✅ Enhanced referral tracking initiated');
+      }
+      
+      // Check for existing referral data on page load
+      const storedReferrer = localStorage.getItem('referrer_address');
+      const trackingTime = localStorage.getItem('referral_timestamp');
+      
+      if (storedReferrer && trackingTime) {
+        const hoursAgo = (Date.now() - parseInt(trackingTime)) / (1000 * 60 * 60);
+        if (hoursAgo < 48) { // Within 48 hours
+          console.log('🔍 Found stored referral data:', {
+            referrer: storedReferrer.slice(0, 8) + '...',
+            hoursAgo: hoursAgo.toFixed(1)
+          });
+          window.pendingReferral = {
+            referrerAddress: storedReferrer,
+            timestamp: trackingTime
+          };
+        } else {
+          // Clean expired referral data
+          localStorage.removeItem('referrer_address');
+          localStorage.removeItem('referral_timestamp');
+          localStorage.removeItem('referral_tracked');
+        }
       }
     })();
   </script>
