@@ -11,5 +11,5 @@ export const PICKAXES = {
   silver: { name: 'Silver', costSol: 0.001, ratePerSec: 1/60 },
   gold: { name: 'Gold', costSol: 0.001, ratePerSec: 10/60 },
   diamond: { name: 'Diamond', costSol: 0.001, ratePerSec: 100/60 },
-  netherite: { name: 'Netherite', costSol: 0.001, ratePerSec: 10000/60 },
+  netherite: { name: 'Netherite', costSol: 0.001, ratePerSec: 1000/60 },
 };

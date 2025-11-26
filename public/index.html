@@ -19,12 +19,12 @@
           <h1>GOLD MINING</h1>
         </div>
         <nav class="header-nav">
-          <a href="#dashboard" class="nav-link active">🏠 Dashboard</a>
           <button class="nav-link how-it-works-btn" onclick="showHowItWorksModal()">❓ How it Works?</button>
         </nav>
       </div>
       <div class="header-buttons">
         <button id="promotersBtn" class="promoters-btn" onclick="showPromotersModal()">📈 Promoters</button>
+        <button id="battlezoneBtn" class="battlezone-btn" onclick="showBattlezoneModal()">⚔️ V2.0 Battlezone</button>
         <button id="v2ComingSoonBtn" class="v2-coming-soon-btn">🎄 Christmas Edition</button>
         <button id="referBtn" class="refer-btn">🎁 Refer & Earn</button>
         <button id="connectBtn" class="connect-btn">🔗 Connect Wallet</button>
@@ -310,6 +310,125 @@
         <div class="how-it-works-cta">
           <button class="start-mining-btn" onclick="hideHowItWorksModal()">🚀 Start Mining Now!</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V2.0 Battlezone Edition Modal -->
+  <div id="battlezoneModal" class="modal-overlay">
+    <div class="modal-content battlezone-modal">
+      <div class="modal-header battlezone-header">
+        <h2>⚔️ V2.0 BATTLEZONE EDITION 💀</h2>
+        <button class="modal-close" onclick="closeBattlezoneModal()">×</button>
+      </div>
+      
+      <div class="modal-body battlezone-body">
+        <div class="battlezone-hero">
+          <div class="battlezone-icon">⚔️💀⚔️</div>
+          <h3>ULTIMATE 1v1 BATTLEFIELD COMBAT</h3>
+          <p class="battlezone-tagline">Kill or Be Killed - Winner Takes All!</p>
+        </div>
+        
+        <!-- Countdown Timer -->
+        <div class="countdown-section">
+          <h3>🚀 LAUNCHING IN:</h3>
+          <div class="countdown-timer" id="battlezoneCountdown">
+            <div class="time-block">
+              <span class="time-number" id="days">000</span>
+              <span class="time-label">DAYS</span>
+            </div>
+            <div class="time-block">
+              <span class="time-number" id="hours">00</span>
+              <span class="time-label">HOURS</span>
+            </div>
+            <div class="time-block">
+              <span class="time-number" id="minutes">00</span>
+              <span class="time-label">MINUTES</span>
+            </div>
+            <div class="time-block">
+              <span class="time-number" id="seconds">00</span>
+              <span class="time-label">SECONDS</span>
+            </div>
+          </div>
+          <div class="launch-date">December 10, 2025</div>
+        </div>
+        
+        <!-- Game Features -->
+        <div class="battlezone-features">
+          <div class="feature-row danger">
+            <div class="feature-icon">💀</div>
+            <div class="feature-content">
+              <h4>HIGH RISK - HIGH REWARD</h4>
+              <p>Lose everything or win everything. No middle ground!</p>
+            </div>
+          </div>
+          
+          <div class="feature-row combat">
+            <div class="feature-icon">⚔️</div>
+            <div class="feature-content">
+              <h4>1v1 BATTLEFIELD COMBAT</h4>
+              <p>Face your opponent in intense one-on-one battles</p>
+            </div>
+          </div>
+          
+          <div class="feature-row stakes">
+            <div class="feature-icon">💰</div>
+            <div class="feature-content">
+              <h4>ALL-OR-NOTHING STAKES</h4>
+              <p>Winner takes ALL gold and pickaxes from the loser</p>
+            </div>
+          </div>
+          
+          <div class="feature-row victory">
+            <div class="feature-icon">👑</div>
+            <div class="feature-content">
+              <h4>ULTIMATE VICTORY</h4>
+              <p>Dominate the battlefield and claim your rewards</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Warning Section -->
+        <div class="battlezone-warning">
+          <div class="warning-icon">⚠️</div>
+          <div class="warning-content">
+            <h4>DANGER ZONE WARNING</h4>
+            <p><strong>This is NOT for the weak!</strong></p>
+            <p>• Lose ALL your gold and pickaxes if defeated</p>
+            <p>• Only the strongest miners survive</p>
+            <p>• Enter at your own risk - no refunds</p>
+          </div>
+        </div>
+        
+        <!-- Battle Stats Preview -->
+        <div class="battle-stats">
+          <h3>⚡ BATTLE STATISTICS</h3>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number">0</div>
+              <div class="stat-label">Battles Fought</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">0</div>
+              <div class="stat-label">Victories</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">0</div>
+              <div class="stat-label">SOL Won</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">0</div>
+              <div class="stat-label">Rank</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer battlezone-footer">
+        <button class="battlezone-cta-btn" onclick="joinWaitlistBattlezone()">
+          🔥 JOIN BATTLEZONE WAITLIST 🔥
+        </button>
+        <p class="footer-warning">Prepare for war. Only the strongest will survive.</p>
       </div>
     </div>
   </div>

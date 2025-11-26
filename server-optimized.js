@@ -58,7 +58,7 @@ const PICKAXES = {
   silver: { name: 'Silver', costSol: 0.01, ratePerSec: 1/60 },      // $2 - 1 gold/min
   gold: { name: 'Gold', costSol: 0.05, ratePerSec: 10/60 },         // $10 - 10 gold/min
   diamond: { name: 'Diamond', costSol: 0.25, ratePerSec: 100/60 },  // $50 - 100 gold/min
-  netherite: { name: 'Netherite', costSol: 1.0, ratePerSec: 10000/60 }, // $200 - 10,000 gold/min
+  netherite: { name: 'Netherite', costSol: 1.0, ratePerSec: 1000/60 }, // $200 - 1,000 gold/min
 };
 
 const GOLD_PRICE_SOL = 0.0001; // $0.02 per gold

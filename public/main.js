@@ -62,7 +62,7 @@ function renderShop() {
     { key: 'silver', name: 'Silver Pickaxe', rate: 1, cost: state.config.pickaxes.silver.costSol },
     { key: 'gold', name: 'Gold Pickaxe', rate: 10, cost: state.config.pickaxes.gold.costSol },
     { key: 'diamond', name: 'Diamond Pickaxe', rate: 100, cost: state.config.pickaxes.diamond.costSol },
-    { key: 'netherite', name: 'Netherite Pickaxe', rate: 10000, cost: state.config.pickaxes.netherite.costSol }
+    { key: 'netherite', name: 'Netherite Pickaxe', rate: 1000, cost: state.config.pickaxes.netherite.costSol }
   ];
   
   console.log('🔧 renderShop: Creating pickaxe items...');
@@ -781,13 +781,13 @@ function updateDisplay(data) {
   totalRate += (serverInventory.silver || 0) * 1;
   totalRate += (serverInventory.gold || 0) * 10;
   totalRate += (serverInventory.diamond || 0) * 100;
-  totalRate += (serverInventory.netherite || 0) * 10000;
+  totalRate += (serverInventory.netherite || 0) * 1000;
   
   console.log('📊 Calculated mining rate:', totalRate, '/min from inventory breakdown:',
     'Silver:', (serverInventory.silver || 0), '* 1 =', (serverInventory.silver || 0) * 1,
     'Gold:', (serverInventory.gold || 0), '* 10 =', (serverInventory.gold || 0) * 10,
     'Diamond:', (serverInventory.diamond || 0), '* 100 =', (serverInventory.diamond || 0) * 100,
-    'Netherite:', (serverInventory.netherite || 0), '* 10000 =', (serverInventory.netherite || 0) * 10000);
+    'Netherite:', (serverInventory.netherite || 0), '* 1000 =', (serverInventory.netherite || 0) * 1000);
   
   const miningRateEl = $('#miningRate');
   if (miningRateEl) {
@@ -3857,4 +3857,161 @@ document.addEventListener('keydown', function(event) {
 });
 
 console.log('⌨️ Escape key functionality added to promoters modal');
+
+
+
+// Battlezone Modal Functions
+function showBattlezoneModal() {
+  console.log('⚔️ Opening Battlezone modal...');
+  const modal = document.getElementById('battlezoneModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    startBattlezoneCountdown();
+  }
+}
+
+function closeBattlezoneModal() {
+  console.log('⚔️ Closing Battlezone modal...');
+  const modal = document.getElementById('battlezoneModal');
+  if (modal) {
+    modal.style.display = 'none';
+    stopBattlezoneCountdown();
+  }
+}
+
+// Countdown Timer for December 10, 2025
+let battlezoneCountdownInterval = null;
+
+function startBattlezoneCountdown() {
+  // Target date: December 10, 2025 at 00:00:00 UTC
+  const targetDate = new Date('2025-12-10T00:00:00Z').getTime();
+  
+  function updateCountdown() {
+    const now = new Date().getTime();
+    const distance = targetDate - now;
+    
+    if (distance < 0) {
+      // Countdown finished
+      document.getElementById('days').textContent = '000';
+      document.getElementById('hours').textContent = '00';
+      document.getElementById('minutes').textContent = '00';
+      document.getElementById('seconds').textContent = '00';
+      clearInterval(battlezoneCountdownInterval);
+      
+      // Show launch message
+      const countdownSection = document.querySelector('.countdown-section h3');
+      if (countdownSection) {
+        countdownSection.textContent = '🔥 BATTLEZONE IS LIVE! 🔥';
+        countdownSection.style.color = '#dc143c';
+        countdownSection.style.animation = 'battlePulse 1s ease-in-out infinite';
+      }
+      return;
+    }
+    
+    // Calculate time units
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+    
+    // Update display with leading zeros
+    document.getElementById('days').textContent = days.toString().padStart(3, '0');
+    document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+    document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+    document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+  }
+  
+  // Update immediately
+  updateCountdown();
+  
+  // Update every second
+  battlezoneCountdownInterval = setInterval(updateCountdown, 1000);
+  
+  console.log('⏰ Battlezone countdown started');
+}
+
+function stopBattlezoneCountdown() {
+  if (battlezoneCountdownInterval) {
+    clearInterval(battlezoneCountdownInterval);
+    battlezoneCountdownInterval = null;
+    console.log('⏹️ Battlezone countdown stopped');
+  }
+}
+
+// Join Battlezone waitlist
+function joinWaitlistBattlezone() {
+  console.log('🔥 Joining Battlezone waitlist...');
+  
+  // Create waitlist notification
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #dc143c 0%, #8b0000 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 30000;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(220, 20, 60, 0.4);
+    animation: slideInRight 0.3s ease-out;
+    max-width: 300px;
+  `;
+  
+  notification.innerHTML = `
+    ⚔️ <strong>BATTLEZONE WAITLIST</strong><br>
+    <div style="margin-top: 8px; font-size: 14px;">
+      You'll be notified when the ultimate 1v1 battlefield launches!<br>
+      <small style="opacity: 0.8;">December 10, 2025 - Prepare for war!</small>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Auto remove after 5 seconds
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.style.animation = 'slideOutRight 0.3s ease-out';
+      setTimeout(() => {
+        notification.remove();
+      }, 300);
+    }
+  }, 5000);
+  
+  // Close the modal
+  closeBattlezoneModal();
+}
+
+// Outside click and escape key functionality
+document.addEventListener('DOMContentLoaded', function() {
+  // Outside click to close battlezone modal
+  const battlezoneModal = document.getElementById('battlezoneModal');
+  if (battlezoneModal) {
+    battlezoneModal.addEventListener('click', function(event) {
+      if (event.target === battlezoneModal) {
+        closeBattlezoneModal();
+      }
+    });
+  }
+  
+  console.log('⚔️ Battlezone modal functionality initialized');
+});
+
+// Escape key to close
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    const battlezoneModal = document.getElementById('battlezoneModal');
+    if (battlezoneModal && battlezoneModal.style.display === 'flex') {
+      closeBattlezoneModal();
+    }
+  }
+});
+
+// Bind functions to global scope
+window.showBattlezoneModal = showBattlezoneModal;
+window.closeBattlezoneModal = closeBattlezoneModal;
+window.joinWaitlistBattlezone = joinWaitlistBattlezone;
+
+console.log('⚔️ Battlezone Edition system initialized - December 10, 2025 launch!');
 

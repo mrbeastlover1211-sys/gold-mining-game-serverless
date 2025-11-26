@@ -144,7 +144,7 @@ const PICKAXES = {
   silver: { name: 'Silver', costSol: 0.001, ratePerSec: 1/60 },     // 1 gold/min = 1/60 gold/sec
   gold: { name: 'Gold', costSol: 0.001, ratePerSec: 10/60 },        // 10 gold/min = 10/60 gold/sec
   diamond: { name: 'Diamond', costSol: 0.001, ratePerSec: 100/60 }, // 100 gold/min = 100/60 gold/sec
-  netherite: { name: 'Netherite', costSol: 0.001, ratePerSec: 10000/60 }, // 10,000 gold/min = 10,000/60 gold/sec
+  netherite: { name: 'Netherite', costSol: 0.001, ratePerSec: 1000/60 }, // 1,000 gold/min = 1,000/60 gold/sec
 };
 
 function nowSec() { return Math.floor(Date.now() / 1000); }
