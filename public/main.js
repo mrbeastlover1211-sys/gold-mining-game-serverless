@@ -2791,11 +2791,109 @@ function showReferralModal() {
   if (modal) {
     modal.style.display = 'flex';
     
-    // CRITICAL: Setup social buttons every time modal opens
+    // CRITICAL: Setup ALL buttons every time modal opens
     setTimeout(() => {
       setupSocialButtons();
+      setupCopyButton();
+      setupModalCloseButton();
     }, 100); // Small delay to ensure DOM is ready
   }
+}
+
+// Setup copy button functionality
+function setupCopyButton() {
+  console.log('📋 Setting up copy button...');
+  
+  const copyBtn = document.getElementById('copyLinkBtn');
+  const referralInput = document.getElementById('referralLink');
+  
+  console.log('🔍 Copy button elements found:', {
+    copyBtn: !!copyBtn,
+    referralInput: !!referralInput
+  });
+  
+  if (copyBtn) {
+    copyBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log('📋 Copy button clicked!');
+      copyReferralLink();
+    };
+    console.log('✅ Copy button connected');
+  } else {
+    console.error('❌ copyLinkBtn button not found!');
+  }
+}
+
+// Setup modal close button
+function setupModalCloseButton() {
+  console.log('❌ Setting up modal close button...');
+  
+  const closeBtn = document.getElementById('closeModal');
+  const modal = document.getElementById('referralModal');
+  
+  if (closeBtn && modal) {
+    closeBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log('❌ Close button clicked!');
+      modal.style.display = 'none';
+    };
+    console.log('✅ Modal close button connected');
+  } else {
+    console.error('❌ Close button or modal not found!');
+  }
+}
+
+// Copy referral link function
+function copyReferralLink() {
+  console.log('📋 Copying referral link...');
+  
+  if (!state.address) {
+    alert('Please connect your wallet first to get your referral link!');
+    return;
+  }
+
+  const gameUrl = window.location.origin;
+  const referralLink = `${gameUrl}?ref=${encodeURIComponent(state.address)}`;
+  
+  // Copy to clipboard
+  navigator.clipboard.writeText(referralLink).then(() => {
+    // Show success notification
+    const notification = document.createElement('div');
+    notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 15px 20px; border-radius: 10px; z-index: 10000; font-weight: bold; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); max-width: 300px;';
+    notification.textContent = '✅ Referral link copied to clipboard!';
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+    
+    // Update the input field to show the link
+    const referralInput = document.getElementById('referralLink');
+    if (referralInput) {
+      referralInput.value = referralLink;
+    }
+    
+    console.log('✅ Referral link copied to clipboard');
+  }).catch(() => {
+    // Fallback for older browsers
+    const textArea = document.createElement('textarea');
+    textArea.value = referralLink;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    
+    const notification = document.createElement('div');
+    notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 15px 20px; border-radius: 10px; z-index: 10000; font-weight: bold; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); max-width: 300px;';
+    notification.textContent = '✅ Referral link copied to clipboard!';
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+    
+    // Update the input field to show the link
+    const referralInput = document.getElementById('referralLink');
+    if (referralInput) {
+      referralInput.value = referralLink;
+    }
+    
+    console.log('✅ Referral link copied to clipboard (fallback method)');
+  });
 }
 
 // 🔧 FIX: Set up social media buttons
