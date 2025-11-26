@@ -2783,9 +2783,23 @@ async function loadReferralStats() {
   }
 }
 
+// Show referral modal and setup social buttons
+function showReferralModal() {
+  console.log('🎁 Opening referral modal...');
+  
+  const modal = document.getElementById('referralModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    
+    // CRITICAL: Setup social buttons every time modal opens
+    setTimeout(() => {
+      setupSocialButtons();
+    }, 100); // Small delay to ensure DOM is ready
+  }
+}
+
 // 🔧 FIX: Set up social media buttons
 function setupSocialButtons() {
-  // Fix social media sharing button event listeners
   console.log('🔧 Setting up social media button event listeners...');
   
   const shareXBtn = document.getElementById('shareX');
