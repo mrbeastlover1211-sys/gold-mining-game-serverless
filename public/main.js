@@ -3446,3 +3446,45 @@ window.onLandPurchased = onLandPurchased;
 
 console.log('🏠 Land purchase hook ready');
 
+
+
+// Manual debug function to check land status
+window.debugPromotersStatus = function() {
+  console.log('🔍 DEBUG: Checking promoters land status...');
+  console.log('State object:', state);
+  console.log('state.address:', state.address);
+  console.log('state.wallet:', !!state.wallet);
+  console.log('state.status:', state.status);
+  console.log('state.userData:', state.userData);
+  console.log('state.status?.hasLand:', state.status?.hasLand);
+  console.log('state.userData?.hasLand:', state.userData?.hasLand);
+  
+  // Check DOM elements
+  console.log('Wallet status element:', document.getElementById('walletStatusPromoters'));
+  console.log('Land status element:', document.getElementById('landStatusPromoters'));
+  
+  // Force update
+  updatePromotersStatus();
+  
+  console.log('✅ Debug complete');
+};
+
+// Also add a force refresh function
+window.forceUpdatePromotersStatus = function() {
+  console.log('🔄 Force updating promoters status...');
+  
+  // Try to get fresh status
+  if (typeof refreshStatus === 'function') {
+    refreshStatus().then(() => {
+      setTimeout(() => {
+        updatePromotersStatus();
+        console.log('✅ Force update complete');
+      }, 1000);
+    });
+  } else {
+    updatePromotersStatus();
+  }
+};
+
+console.log('🔧 Promoters debug functions added - call debugPromotersStatus() or forceUpdatePromotersStatus() in console');
+
