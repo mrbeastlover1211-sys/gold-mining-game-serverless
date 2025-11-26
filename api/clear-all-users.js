@@ -152,6 +152,12 @@ export default async function handler(req, res) {
       }
     }
     
+    // Step 6: Clear memory cache completely to prevent cached land ownership
+    if (typeof global !== 'undefined') {
+      global.users = {};
+      console.log('✅ Cleared global.users memory cache');
+    }
+    
     client.release();
     await pool.end();
     
