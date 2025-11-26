@@ -3003,7 +3003,7 @@ function shareOnX() {
   const text = `🎮 Join me on this awesome Gold Mining Game! ⛏️\n\n💰 Mine gold and earn real SOL\n🚀 Start earning immediately\n🎁 Free to play!\n\nUse my referral link:`;
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(referralLink)}`;
   
-  window.open(url, '_blank', 'width=550,height=420');
+  window.open(url, '_blank');
   
   // Show success notification
   const notification = document.createElement('div');
