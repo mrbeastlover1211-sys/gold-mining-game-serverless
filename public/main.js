@@ -3970,6 +3970,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const referBtn = document.getElementById('referBtn');
   if (referBtn) {
     referBtn.addEventListener('click', function() {
+      showReferralModal(); // CRITICAL FIX: Call our modal function that sets up buttons
       showReferModal();
     });
   }
