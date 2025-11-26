@@ -1,25 +1,7 @@
 {
   "version": 2,
-  "name": "gold-mining-serverless",
-  "builds": [
-    {
-      "src": "server-optimized.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/.*",
-      "dest": "/server-optimized.js"
-    }
-  ],
-  "env": {
-    "DATABASE_URL": "postgresql://neondb_owner:npg_2OmoVZ9uDnqA@ep-jolly-breeze-a4icmodb-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
-    "NODE_ENV": "production",
-    "SOLANA_NETWORK": "devnet"
-  },
   "functions": {
-    "server-optimized.js": {
+    "api/*.js": {
       "maxDuration": 30
     }
   }
