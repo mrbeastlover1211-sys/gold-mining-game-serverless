@@ -3566,3 +3566,118 @@ updatePromotersStatus = function() {
 
 console.log('🏠 Enhanced land detection system activated');
 
+
+
+// Banner download functionality
+function downloadBanner(type) {
+  console.log('🎨 Downloading banner:', type);
+  
+  const bannerUrls = {
+    square: 'assets/banners/banner-square.png',
+    wide: 'assets/banners/banner-wide.png', 
+    story: 'assets/banners/banner-vertical.png',
+    youtube: 'assets/banners/banner-youtube.png'
+  };
+  
+  const bannerNames = {
+    square: 'Gold-Mining-Game-Square-Banner',
+    wide: 'Gold-Mining-Game-Wide-Banner',
+    story: 'Gold-Mining-Game-Story-Banner', 
+    youtube: 'Gold-Mining-Game-YouTube-Thumbnail'
+  };
+  
+  const url = bannerUrls[type];
+  const fileName = bannerNames[type] || 'banner';
+  
+  if (url) {
+    // Create download link
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName + '.png';
+    link.target = '_blank';
+    
+    // Try to download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Show success message
+    showBannerDownloadSuccess(type);
+  } else {
+    alert('❌ Banner not available yet. Please contact support.');
+  }
+}
+
+// Show download success message
+function showBannerDownloadSuccess(type) {
+  const message = document.createElement('div');
+  message.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    z-index: 20000;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    animation: slideInRight 0.3s ease-out;
+  `;
+  
+  message.innerHTML = `
+    ✅ ${type.charAt(0).toUpperCase() + type.slice(1)} Banner Downloaded!<br>
+    <small>Post it on social media with your promoter link!</small>
+  `;
+  
+  document.body.appendChild(message);
+  
+  // Add slide animation
+  if (!document.getElementById('slideAnimationCSS')) {
+    const style = document.createElement('style');
+    style.id = 'slideAnimationCSS';
+    style.textContent = `
+      @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      @keyframes slideOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  // Auto remove after 4 seconds
+  setTimeout(() => {
+    message.style.animation = 'slideOutRight 0.3s ease-out';
+    setTimeout(() => {
+      if (message.parentElement) {
+        message.remove();
+      }
+    }, 300);
+  }, 4000);
+}
+
+// Create sample banners if they don't exist (placeholder functionality)
+function createSampleBanners() {
+  console.log('🎨 Creating sample promotional banners...');
+  
+  // This would typically be done server-side or with a design tool
+  // For now, we'll provide fallback placeholder banners
+  const banners = [
+    { type: 'square', size: '1080x1080', platform: 'Instagram/Facebook' },
+    { type: 'wide', size: '1200x628', platform: 'Twitter/LinkedIn' },
+    { type: 'story', size: '1080x1920', platform: 'Instagram Stories' },
+    { type: 'youtube', size: '1280x720', platform: 'YouTube' }
+  ];
+  
+  console.log('📝 Banner specifications created:', banners);
+}
+
+// Initialize banner system
+createSampleBanners();
+
+console.log('🎨 Banner download system initialized');
+
