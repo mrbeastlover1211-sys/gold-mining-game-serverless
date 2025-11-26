@@ -2785,31 +2785,50 @@ async function loadReferralStats() {
 
 // 🔧 FIX: Set up social media buttons
 function setupSocialButtons() {
+  // Fix social media sharing button event listeners
+  console.log('🔧 Setting up social media button event listeners...');
+  
   const shareXBtn = document.getElementById('shareX');
   const shareDiscordBtn = document.getElementById('shareDiscord');
   const shareTelegramBtn = document.getElementById('shareTelegram');
   
-  // Fix social media sharing button event listeners
+  console.log('🔍 Button elements found:', {
+    shareX: !!shareXBtn,
+    shareDiscord: !!shareDiscordBtn, 
+    shareTelegram: !!shareTelegramBtn
+  });
+  
   if (shareXBtn) {
-    shareXBtn.removeEventListener('click', shareOnX); // Remove any existing
-    shareXBtn.addEventListener('click', shareOnX);
+    shareXBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log('🐦 X button clicked!');
+      shareOnX();
+    };
     console.log('✅ X/Twitter share button connected');
+  } else {
+    console.error('❌ shareX button not found!');
   }
   
   if (shareDiscordBtn) {
-    shareDiscordBtn.removeEventListener('click', shareOnDiscord); // Remove any existing
-    shareDiscordBtn.addEventListener('click', shareOnDiscord);
+    shareDiscordBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log('💬 Discord button clicked!');
+      shareOnDiscord();
+    };
     console.log('✅ Discord share button connected');
+  } else {
+    console.error('❌ shareDiscord button not found!');
   }
   
   if (shareTelegramBtn) {
-    shareTelegramBtn.removeEventListener('click', shareOnTelegram); // Remove any existing
-    shareTelegramBtn.addEventListener('click', shareOnTelegram);
+    shareTelegramBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log('📱 Telegram button clicked!');
+      shareOnTelegram();
+    };
     console.log('✅ Telegram share button connected');
-  }
-  
-  if (shareXBtn) {
-    shareXBtn.addEventListener('click', shareOnX);
+  } else {
+    console.error('❌ shareTelegram button not found!');
   }
   
   if (shareDiscordBtn) {
