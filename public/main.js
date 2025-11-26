@@ -3215,7 +3215,10 @@ function showPromotersModal() {
   const modal = document.getElementById('promotersModal');
   if (modal) {
     modal.style.display = 'flex';
-    updatePromotersStatus();
+    // Always update status when opening modal
+    setTimeout(() => {
+      updatePromotersStatus();
+    }, 100);
   }
 }
 
@@ -3229,6 +3232,8 @@ function closePromotersModal() {
 
 // Update promoters status based on wallet and land
 function updatePromotersStatus() {
+  console.log('📈 Updating promoters status...');
+  
   const walletStatus = document.getElementById('walletStatusPromoters');
   const landStatus = document.getElementById('landStatusPromoters');
   const linkSection = document.getElementById('promotersLinkSection');
@@ -3236,7 +3241,23 @@ function updatePromotersStatus() {
   const promotersLink = document.getElementById('promotersLink');
   
   const isConnected = state.address && state.wallet;
-  const hasLand = state.status && state.status.hasLand;
+  
+  // Check land status from multiple sources
+  let hasLand = false;
+  if (state.status && state.status.hasLand) {
+    hasLand = true;
+  }
+  // Also check if user data indicates land ownership
+  if (state.userData && state.userData.hasLand) {
+    hasLand = true;
+  }
+  
+  console.log('📊 Promoters status check:', {
+    isConnected,
+    hasLand,
+    stateStatus: state.status?.hasLand,
+    userData: state.userData?.hasLand
+  });
   
   // Update wallet status
   if (walletStatus) {
@@ -3370,4 +3391,58 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 console.log('📈 Promoters system initialized');
+
+
+
+// Call updatePromotersStatus when wallet connects or land is purchased
+function refreshPromotersStatus() {
+  console.log('🔄 Refreshing promoters status...');
+  setTimeout(() => {
+    updatePromotersStatus();
+  }, 500);
+}
+
+// Hook into existing functions to update promoters status
+const originalRefreshStatus = refreshStatus;
+refreshStatus = async function() {
+  const result = await originalRefreshStatus.apply(this, arguments);
+  refreshPromotersStatus();
+  return result;
+};
+
+// Hook into wallet connection
+const originalUpdateConnectButtonDisplay = updateConnectButtonDisplay;
+updateConnectButtonDisplay = function() {
+  const result = originalUpdateConnectButtonDisplay.apply(this, arguments);
+  refreshPromotersStatus();
+  return result;
+};
+
+console.log('🔗 Promoters status hooks installed');
+
+
+
+// Force update promoters status when land is purchased
+function onLandPurchased() {
+  console.log('🏠 Land purchased! Updating promoters status...');
+  
+  // Update state to reflect land ownership
+  if (state.status) {
+    state.status.hasLand = true;
+  }
+  if (state.userData) {
+    state.userData.hasLand = true;
+  }
+  
+  // Update promoters status
+  setTimeout(() => {
+    updatePromotersStatus();
+    console.log('✅ Promoters status updated after land purchase');
+  }, 1000);
+}
+
+// Make this function globally available
+window.onLandPurchased = onLandPurchased;
+
+console.log('🏠 Land purchase hook ready');
 
