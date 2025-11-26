@@ -25,6 +25,7 @@
       </div>
       <div class="header-buttons">
         <button id="v2ComingSoonBtn" class="v2-coming-soon-btn">🎄 Christmas Edition</button>
+        <button id="promotersBtn" class="promoters-btn" onclick="showPromotersModal()">📈 Promoters</button>
         <button id="referBtn" class="refer-btn">🎁 Refer & Earn</button>
         <button id="connectBtn" class="connect-btn">🔗 Connect Wallet</button>
       </div>
@@ -309,6 +310,153 @@
         <div class="how-it-works-cta">
           <button class="start-mining-btn" onclick="hideHowItWorksModal()">🚀 Start Mining Now!</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Promoters Modal -->
+  <div id="promotersModal" class="modal-overlay">
+    <div class="modal-content promoters-modal">
+      <div class="modal-header promoters-header">
+        <h2>📈 Become a Promoter & Earn SOL Daily! 💰</h2>
+        <button class="modal-close" onclick="closePromotersModal()">×</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="promoters-hero">
+          <div class="promoters-icon">💰📈</div>
+          <h3>Earn 5-50 SOL Daily by Promoting Our Game!</h3>
+          <p>Share our banners on social media and get paid every 24 hours! 🚀</p>
+        </div>
+        
+        <div class="promoters-features">
+          <div class="feature-grid">
+            <div class="feature-item">
+              <div class="feature-icon">💰</div>
+              <h4>Daily Payouts</h4>
+              <p>Earn 5-50 SOL per day based on traffic you generate</p>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon">📊</div>
+              <h4>Performance Based</h4>
+              <p>More traffic = Higher rewards. Top promoters earn the most!</p>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon">⏰</div>
+              <h4>24 Hour Payouts</h4>
+              <p>Get paid every 24 hours after your posts are verified</p>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon">🎯</div>
+              <h4>Easy Process</h4>
+              <p>Post banner → Create ticket → Get paid!</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="promoters-process">
+          <h3>🎯 How It Works</h3>
+          <div class="process-steps">
+            <div class="step">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <h4>📱 Post on Social Media</h4>
+                <p>Share our banners on X, Instagram, TikTok, Facebook, LinkedIn</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <h4>🎫 Create Support Ticket</h4>
+                <p>Message us on Telegram and email promoters@thegoldmining.com</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <h4>⏰ Keep Post Active</h4>
+                <p>Post must stay live for 24 hours for verification</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">4</div>
+              <div class="step-content">
+                <h4>💰 Get Paid</h4>
+                <p>Receive 5-50 SOL based on traffic generated</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div id="promotersLinkSection" class="promoters-link-section" style="display: none;">
+          <div class="promoters-link-container">
+            <h3>🔗 Your Promoter Link</h3>
+            <div class="link-copy-container">
+              <input type="text" id="promotersLink" readonly placeholder="Your promoter link will appear here..." />
+              <button id="copyPromotersLinkBtn" class="copy-btn">📋 Copy</button>
+            </div>
+            <p class="link-info">✅ Share this link in your social media posts to track your referrals!</p>
+          </div>
+          
+          <div class="social-share-section">
+            <h3>📱 Quick Share</h3>
+            <p>Click to post directly on your social media platforms:</p>
+            <div class="social-buttons">
+              <button class="social-btn twitter-btn" onclick="sharePromotersOnTwitter()">
+                <span class="social-icon">🐦</span> Post on X
+              </button>
+              <button class="social-btn facebook-btn" onclick="sharePromotersOnFacebook()">
+                <span class="social-icon">📘</span> Facebook
+              </button>
+              <button class="social-btn linkedin-btn" onclick="sharePromotersOnLinkedIn()">
+                <span class="social-icon">💼</span> LinkedIn
+              </button>
+              <button class="social-btn instagram-btn" onclick="copyPromotersForInstagram()">
+                <span class="social-icon">📸</span> Copy for Instagram
+              </button>
+              <button class="social-btn tiktok-btn" onclick="copyPromotersForTikTok()">
+                <span class="social-icon">🎵</span> Copy for TikTok
+              </button>
+            </div>
+          </div>
+          
+          <div class="contact-section">
+            <h3>📞 Submit Your Posts</h3>
+            <div class="contact-buttons">
+              <a href="https://t.me/goldmininggame" target="_blank" class="contact-btn telegram-btn">
+                📱 Create Telegram Ticket
+              </a>
+              <a href="mailto:promoters@thegoldmining.com?subject=Promoter Application&body=Hi! I've posted your banner on social media. Here are my post links and details." target="_blank" class="contact-btn email-btn">
+                📧 Email Application
+              </a>
+            </div>
+          </div>
+        </div>
+        
+        <div id="promotersRequirement" class="promoters-requirement">
+          <div class="requirement-box">
+            <h3>🔒 Requirements to Become a Promoter</h3>
+            <div class="requirement-steps">
+              <div class="requirement-step">
+                <span class="req-icon">💳</span>
+                <span class="req-text">Connect Your Wallet</span>
+                <span class="req-status" id="walletStatusPromoters">❌ Not Connected</span>
+              </div>
+              <div class="requirement-step">
+                <span class="req-icon">🏠</span>
+                <span class="req-text">Purchase Land (0.01 SOL)</span>
+                <span class="req-status" id="landStatusPromoters">❌ No Land</span>
+              </div>
+            </div>
+            <p class="requirement-note">Complete these steps to unlock your promoter link and start earning 5-50 SOL daily!</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="promoters-cta-btn" onclick="closePromotersModal()">
+          🚀 Start Promoting & Earning SOL!
+        </button>
       </div>
     </div>
   </div>

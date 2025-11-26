@@ -3207,3 +3207,167 @@ document.addEventListener('DOMContentLoaded', () => {
 
 console.log('🔧 Added modal functions for Refer & V2 popups');
 
+
+
+// Promoters Modal Functions
+function showPromotersModal() {
+  console.log('📈 Opening Promoters modal...');
+  const modal = document.getElementById('promotersModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    updatePromotersStatus();
+  }
+}
+
+function closePromotersModal() {
+  console.log('📈 Closing Promoters modal...');
+  const modal = document.getElementById('promotersModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+// Update promoters status based on wallet and land
+function updatePromotersStatus() {
+  const walletStatus = document.getElementById('walletStatusPromoters');
+  const landStatus = document.getElementById('landStatusPromoters');
+  const linkSection = document.getElementById('promotersLinkSection');
+  const requirement = document.getElementById('promotersRequirement');
+  const promotersLink = document.getElementById('promotersLink');
+  
+  const isConnected = state.address && state.wallet;
+  const hasLand = state.status && state.status.hasLand;
+  
+  // Update wallet status
+  if (walletStatus) {
+    if (isConnected) {
+      walletStatus.textContent = '✅ Connected';
+      walletStatus.style.color = '#28a745';
+    } else {
+      walletStatus.textContent = '❌ Not Connected';
+      walletStatus.style.color = '#dc3545';
+    }
+  }
+  
+  // Update land status
+  if (landStatus) {
+    if (hasLand) {
+      landStatus.textContent = '✅ Land Owned';
+      landStatus.style.color = '#28a745';
+    } else {
+      landStatus.textContent = '❌ No Land';
+      landStatus.style.color = '#dc3545';
+    }
+  }
+  
+  // Show/hide promoter link section
+  if (isConnected && hasLand) {
+    if (linkSection) linkSection.style.display = 'block';
+    if (requirement) requirement.style.display = 'none';
+    
+    // Generate promoter link
+    if (promotersLink && state.address) {
+      const baseUrl = window.location.origin;
+      const promoterLink = `${baseUrl}/?promoters=${state.address}`;
+      promotersLink.value = promoterLink;
+    }
+  } else {
+    if (linkSection) linkSection.style.display = 'none';
+    if (requirement) requirement.style.display = 'block';
+  }
+}
+
+// Copy promoters link
+function copyPromotersLink() {
+  const linkInput = document.getElementById('promotersLink');
+  const copyBtn = document.getElementById('copyPromotersLinkBtn');
+  
+  if (linkInput && copyBtn) {
+    linkInput.select();
+    linkInput.setSelectionRange(0, 99999);
+    
+    try {
+      document.execCommand('copy');
+      
+      // Visual feedback
+      const originalText = copyBtn.textContent;
+      copyBtn.textContent = '✅ Copied!';
+      copyBtn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+      
+      setTimeout(() => {
+        copyBtn.textContent = originalText;
+        copyBtn.style.background = 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)';
+      }, 2000);
+      
+    } catch (err) {
+      console.error('Copy failed:', err);
+      alert('📋 Please manually copy the promoter link!');
+    }
+  }
+}
+
+// Social sharing functions for promoters
+function sharePromotersOnTwitter() {
+  const link = document.getElementById('promotersLink').value;
+  const text = '🚀 Join the most exciting Gold Mining Game on Solana! ⛏️💰 Earn real SOL by mining digital gold! Start your mining empire today! 🎮';
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
+  window.open(twitterUrl, '_blank');
+}
+
+function sharePromotersOnFacebook() {
+  const link = document.getElementById('promotersLink').value;
+  const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
+  window.open(facebookUrl, '_blank');
+}
+
+function sharePromotersOnLinkedIn() {
+  const link = document.getElementById('promotersLink').value;
+  const title = 'Gold Mining Game - Earn SOL by Mining!';
+  const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(link)}&title=${encodeURIComponent(title)}`;
+  window.open(linkedinUrl, '_blank');
+}
+
+function copyPromotersForInstagram() {
+  const link = document.getElementById('promotersLink').value;
+  const text = `🚀 Check out this amazing Gold Mining Game on Solana! ⛏️💰
+
+Earn real SOL by mining digital gold! Start building your mining empire today! 🎮
+
+${link}
+
+#Solana #GoldMining #Crypto #Gaming #EarnSOL #Blockchain`;
+  
+  navigator.clipboard.writeText(text).then(() => {
+    alert('📸 Instagram post text copied! Paste it in Instagram and add an image!');
+  }).catch(() => {
+    prompt('📸 Copy this text for Instagram:', text);
+  });
+}
+
+function copyPromotersForTikTok() {
+  const link = document.getElementById('promotersLink').value;
+  const text = `🚀 Mining gold and earning real SOL! ⛏️💰
+
+This Solana game is crazy addictive! Who else is mining? 🎮
+
+Link in bio: ${link}
+
+#Solana #GoldMining #Crypto #Gaming #SOL #Blockchain #Mining`;
+  
+  navigator.clipboard.writeText(text).then(() => {
+    alert('🎵 TikTok caption copied! Create your video and paste this as caption!');
+  }).catch(() => {
+    prompt('🎵 Copy this text for TikTok:', text);
+  });
+}
+
+// Initialize copy button event listener
+document.addEventListener('DOMContentLoaded', function() {
+  const copyBtn = document.getElementById('copyPromotersLinkBtn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', copyPromotersLink);
+  }
+});
+
+console.log('📈 Promoters system initialized');
+
