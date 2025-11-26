@@ -107,7 +107,7 @@ export default async function handler(req, res) {
     const totalRate = inventory.silver * 1 + 
                      inventory.gold * 10 + 
                      inventory.diamond * 100 + 
-                     inventory.netherite * 10000;
+                     inventory.netherite * 1000;
     
     // Ensure currentGold is a valid number for toFixed
     const safeGold = isFinite(currentGold) ? currentGold : 0;

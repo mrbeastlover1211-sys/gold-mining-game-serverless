@@ -18,7 +18,7 @@ class MiningEngine {
       silver: 1/60,     // 1 gold/min = 1/60 gold/sec
       gold: 10/60,      // 10 gold/min = 10/60 gold/sec  
       diamond: 100/60,  // 100 gold/min = 100/60 gold/sec
-      netherite: 10000/60 // 10,000 gold/min = 10,000/60 gold/sec
+      netherite: 1000/60 // 1,000 gold/min = 1,000/60 gold/sec
     };
     
     // Setup activity tracking

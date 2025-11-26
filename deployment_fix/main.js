@@ -62,7 +62,7 @@ function renderShop() {
     { key: 'silver', name: 'Silver Pickaxe', rate: 1, cost: state.config.pickaxes.silver.costSol },
     { key: 'gold', name: 'Gold Pickaxe', rate: 10, cost: state.config.pickaxes.gold.costSol },
     { key: 'diamond', name: 'Diamond Pickaxe', rate: 100, cost: state.config.pickaxes.diamond.costSol },
-    { key: 'netherite', name: 'Netherite Pickaxe', rate: 10000, cost: state.config.pickaxes.netherite.costSol }
+    { key: 'netherite', name: 'Netherite Pickaxe', rate: 1000, cost: state.config.pickaxes.netherite.costSol }
   ];
   
   console.log('🔧 renderShop: Creating pickaxe items...');
@@ -767,13 +767,13 @@ function updateDisplay(data) {
   totalRate += (serverInventory.silver || 0) * 1;
   totalRate += (serverInventory.gold || 0) * 10;
   totalRate += (serverInventory.diamond || 0) * 100;
-  totalRate += (serverInventory.netherite || 0) * 10000;
+  totalRate += (serverInventory.netherite || 0) * 1000;
   
   console.log('📊 Calculated mining rate:', totalRate, '/min from inventory breakdown:',
     'Silver:', (serverInventory.silver || 0), '* 1 =', (serverInventory.silver || 0) * 1,
     'Gold:', (serverInventory.gold || 0), '* 10 =', (serverInventory.gold || 0) * 10,
     'Diamond:', (serverInventory.diamond || 0), '* 100 =', (serverInventory.diamond || 0) * 100,
-    'Netherite:', (serverInventory.netherite || 0), '* 10000 =', (serverInventory.netherite || 0) * 10000);
+    'Netherite:', (serverInventory.netherite || 0), '* 1000 =', (serverInventory.netherite || 0) * 1000);
   
   const miningRateEl = $('#miningRate');
   if (miningRateEl) {

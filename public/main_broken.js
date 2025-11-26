@@ -2018,7 +2018,7 @@ function getTotalMiningRatePerMinute() {
     silver: 1,       // 1 gold per minute
     gold: 10,        // 10 gold per minute  
     diamond: 100,    // 100 gold per minute
-    netherite: 10000 // 10,000 gold per minute
+    netherite: 1000 // 1,000 gold per minute
   };
   
   return (inv.silver * rates.silver) + 

@@ -12,7 +12,7 @@ class OptimizedMiningEngine {
       silver: 1,      // 1 gold/min
       gold: 10,       // 10 gold/min  
       diamond: 100,   // 100 gold/min
-      netherite: 10000 // 10,000 gold/min
+      netherite: 1000 // 1,000 gold/min
     };
   }
   

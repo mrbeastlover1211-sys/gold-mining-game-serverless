@@ -86,7 +86,7 @@ export default async function handler(req, res) {
     const newMiningPower = silverCount * 1 + 
                           goldCount * 10 + 
                           diamondCount * 100 + 
-                          netheriteCount * 10000;
+                          netheriteCount * 1000;
     
     // Update user data
     user.total_mining_power = newMiningPower;
