@@ -2791,16 +2791,19 @@ function setupSocialButtons() {
   
   // Fix social media sharing button event listeners
   if (shareXBtn) {
+    shareXBtn.removeEventListener('click', shareOnX); // Remove any existing
     shareXBtn.addEventListener('click', shareOnX);
     console.log('✅ X/Twitter share button connected');
   }
   
   if (shareDiscordBtn) {
+    shareDiscordBtn.removeEventListener('click', shareOnDiscord); // Remove any existing
     shareDiscordBtn.addEventListener('click', shareOnDiscord);
     console.log('✅ Discord share button connected');
   }
   
   if (shareTelegramBtn) {
+    shareTelegramBtn.removeEventListener('click', shareOnTelegram); // Remove any existing
     shareTelegramBtn.addEventListener('click', shareOnTelegram);
     console.log('✅ Telegram share button connected');
   }
@@ -2821,8 +2824,45 @@ function setupSocialButtons() {
 }
 
 // 🔧 FIX: Share on X (Twitter)
+// Add social sharing notification helper function
+function showShareNotification(message, type = 'success') {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: ${type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #ef4444, #dc2626)'};
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    z-index: 10000;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    max-width: 300px;
+    word-wrap: break-word;
+  `;
+  
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  // Auto-remove after 4 seconds
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.remove();
+    }
+  }, 4000);
+}
+
 function shareOnX() {
-  const referralLink = document.getElementById('referralLink').value;
+  console.log('🐦 Share on X clicked!');
+  
+  if (!state.address) {
+    alert('Please connect your wallet first to get your referral link!');
+    return;
+  }
+
+  const gameUrl = window.location.origin;
+  const referralLink = `${gameUrl}?ref=${encodeURIComponent(state.address)}`;
   
   if (!referralLink || referralLink.includes('Please connect')) {
     alert('Please connect your wallet first to get your referral link!');
@@ -2832,7 +2872,14 @@ function shareOnX() {
   const text = `🎮 Join me on this awesome Gold Mining Game! ⛏️\n\n💰 Mine gold and earn real SOL\n🚀 Start earning immediately\n🎁 Free to play!\n\nUse my referral link:`;
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(referralLink)}`;
   
-  window.open(url, '_blank');
+  window.open(url, '_blank', 'width=550,height=420');
+  
+  // Show success notification
+  const notification = document.createElement('div');
+  notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 15px 20px; border-radius: 10px; z-index: 10000; font-weight: bold; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);';
+  notification.textContent = '🐦 X sharing window opened!';
+  document.body.appendChild(notification);
+  setTimeout(() => notification.remove(), 3000);
   console.log('📱 Opened X share dialog');
 }
 
