@@ -2952,35 +2952,42 @@ h6 { font-size: 12px; }
   box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
 }
 
-/* Promoters Button Styling */
+/* Promoters Button Styling - Match other buttons */
 .promoters-btn {
   background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
   border: none;
   color: white;
-  padding: 12px 20px;
-  border-radius: 25px;
+  padding: 10px 16px;
+  border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
   font-size: 14px;
+  height: 40px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 120px;
+  justify-content: center;
 }
 
 .promoters-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
   background: linear-gradient(135deg, #ff7849 0%, #fa9f32 100%);
 }
 
-/* Promoters Modal Styling */
+/* Promoters Modal Styling - Dark Theme */
 .promoters-modal {
   max-width: 600px;
   width: 95%;
   max-height: 90vh;
   overflow-y: auto;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #eee;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
 }
 
 .promoters-header {
@@ -2998,13 +3005,13 @@ h6 { font-size: 12px; }
 }
 
 .promoters-hero h3 {
-  color: #ff6b35;
+  color: #fff;
   margin: 0 0 10px 0;
   font-size: 24px;
 }
 
 .promoters-hero p {
-  color: #666;
+  color: #ccc;
   margin: 0;
   font-size: 16px;
 }
@@ -3018,17 +3025,19 @@ h6 { font-size: 12px; }
 }
 
 .feature-item {
-  background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
-  border: 2px solid #e1e8ff;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   padding: 20px;
   text-align: center;
   transition: transform 0.3s ease;
+  backdrop-filter: blur(10px);
 }
 
 .feature-item:hover {
   transform: translateY(-5px);
   border-color: #ff6b35;
+  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.2);
 }
 
 .feature-icon {
@@ -3037,13 +3046,13 @@ h6 { font-size: 12px; }
 }
 
 .feature-item h4 {
-  color: #333;
+  color: #fff;
   margin: 0 0 8px 0;
   font-size: 18px;
 }
 
 .feature-item p {
-  color: #666;
+  color: #ccc;
   margin: 0;
   font-size: 14px;
   line-height: 1.4;
@@ -3071,9 +3080,11 @@ h6 { font-size: 12px; }
   align-items: flex-start;
   gap: 15px;
   padding: 20px;
-  background: #f8f9ff;
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   border-left: 4px solid #ff6b35;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .step-number {
@@ -3091,13 +3102,13 @@ h6 { font-size: 12px; }
 }
 
 .step-content h4 {
-  color: #333;
+  color: #fff;
   margin: 0 0 5px 0;
   font-size: 16px;
 }
 
 .step-content p {
-  color: #666;
+  color: #ccc;
   margin: 0;
   font-size: 14px;
   line-height: 1.4;
@@ -3105,15 +3116,16 @@ h6 { font-size: 12px; }
 
 /* Promoters Link Section */
 .promoters-link-section {
-  background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%);
-  border: 2px solid #c8e6c9;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(76, 175, 80, 0.05) 100%);
+  border: 2px solid rgba(76, 175, 80, 0.3);
   border-radius: 15px;
   padding: 25px;
   margin: 25px 0;
+  backdrop-filter: blur(10px);
 }
 
 .promoters-link-container h3 {
-  color: #2e7d32;
+  color: #4caf50;
   margin: 0 0 15px 0;
   text-align: center;
 }
@@ -3127,10 +3139,12 @@ h6 { font-size: 12px; }
 .link-copy-container input {
   flex: 1;
   padding: 12px 15px;
-  border: 2px solid #c8e6c9;
+  border: 2px solid rgba(76, 175, 80, 0.3);
   border-radius: 8px;
   font-size: 14px;
   font-family: monospace;
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
 }
 
 .copy-btn {
