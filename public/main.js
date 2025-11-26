@@ -3488,3 +3488,81 @@ window.forceUpdatePromotersStatus = function() {
 
 console.log('🔧 Promoters debug functions added - call debugPromotersStatus() or forceUpdatePromotersStatus() in console');
 
+
+
+// Fix land detection by checking the correct data source
+function checkActualLandStatus() {
+  console.log('🏠 Checking actual land status...');
+  
+  // Check if there's a land status API call we can make
+  if (state.address) {
+    fetch('/api/land-status?address=' + state.address)
+      .then(response => response.json())
+      .then(data => {
+        console.log('🏠 Land API response:', data);
+        if (data.hasLand) {
+          // Update the state with land info
+          if (!state.status) state.status = {};
+          state.status.hasLand = true;
+          console.log('✅ Land detected via API, updating promoters...');
+          updatePromotersStatus();
+        }
+      })
+      .catch(error => {
+        console.log('⚠️ Land API check failed:', error);
+      });
+  }
+}
+
+// Also check if user has any pickaxes (which would indicate they have land)
+function checkLandViaInventory() {
+  console.log('📦 Checking land status via inventory...');
+  
+  if (state.status && state.status.inventory) {
+    const inv = state.status.inventory;
+    const hasPickaxes = (inv.silver > 0) || (inv.gold > 0) || (inv.diamond > 0) || (inv.netherite > 0);
+    
+    console.log('📦 Inventory check:', {
+      inventory: inv,
+      hasPickaxes: hasPickaxes
+    });
+    
+    if (hasPickaxes) {
+      // If user has pickaxes, they must have land
+      if (!state.status) state.status = {};
+      state.status.hasLand = true;
+      console.log('✅ Land detected via pickaxes, updating promoters...');
+      updatePromotersStatus();
+      return true;
+    }
+  }
+  return false;
+}
+
+// Enhanced land detection function
+window.detectLandStatus = function() {
+  console.log('🔍 Running comprehensive land detection...');
+  
+  // Method 1: Check via inventory
+  if (checkLandViaInventory()) {
+    return;
+  }
+  
+  // Method 2: Check via API
+  checkActualLandStatus();
+};
+
+// Update the promoters status function to use better detection
+const originalUpdatePromotersStatus = updatePromotersStatus;
+updatePromotersStatus = function() {
+  // First try to detect land status
+  detectLandStatus();
+  
+  // Wait a bit then run original function
+  setTimeout(() => {
+    originalUpdatePromotersStatus();
+  }, 500);
+};
+
+console.log('🏠 Enhanced land detection system activated');
+
