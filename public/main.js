@@ -2789,6 +2789,22 @@ function setupSocialButtons() {
   const shareDiscordBtn = document.getElementById('shareDiscord');
   const shareTelegramBtn = document.getElementById('shareTelegram');
   
+  // Fix social media sharing button event listeners
+  if (shareXBtn) {
+    shareXBtn.addEventListener('click', shareOnX);
+    console.log('✅ X/Twitter share button connected');
+  }
+  
+  if (shareDiscordBtn) {
+    shareDiscordBtn.addEventListener('click', shareOnDiscord);
+    console.log('✅ Discord share button connected');
+  }
+  
+  if (shareTelegramBtn) {
+    shareTelegramBtn.addEventListener('click', shareOnTelegram);
+    console.log('✅ Telegram share button connected');
+  }
+  
   if (shareXBtn) {
     shareXBtn.addEventListener('click', shareOnX);
   }
