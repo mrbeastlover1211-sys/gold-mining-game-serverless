@@ -650,27 +650,49 @@
         </div>
         
 
-        <div class="referral-link-section">
-          <label for="referralLink">Your Referral Link:</label>
+        <!-- Referral Link Section - Show only after requirements met -->
+        <div id="referralLinkSection" class="referral-link-section" style="display: none;">
+          <label for="referralLink">🔗 Your Referral Link:</label>
           <div class="link-container">
-            <input type="text" id="referralLink" readonly value="Connect wallet to get your referral link..." />
+            <input type="text" id="referralLink" readonly placeholder="Your referral link will appear here..." />
             <button id="copyLinkBtn" class="copy-btn">📋 Copy</button>
           </div>
-        </div>
+          <p class="link-info">✅ Share this link to earn free pickaxes when friends join!</p>
+          
+          <div class="referral-stats" style="display: flex; justify-content: center; margin: 20px 0;">
+            <div class="stat-box">
+              <div class="stat-number" id="totalReferrals">0</div>
+              <div class="stat-label">Total Referrals</div>
+            </div>
+          </div>
 
-        <div class="referral-stats" style="display: flex; justify-content: center;">
-          <div class="stat-box">
-            <div class="stat-number" id="totalReferrals">0</div>
-            <div class="stat-label">Total Referrals</div>
+          <div class="social-share">
+            <p>📱 Share on social media:</p>
+            <div class="social-buttons">
+              <button class="social-btn x" id="shareX">𝕏 X</button>
+              <button class="social-btn discord" id="shareDiscord">💬 Discord</button>
+              <button class="social-btn telegram" id="shareTelegram">📱 Telegram</button>
+            </div>
           </div>
         </div>
-
-        <div class="social-share">
-          <p>Share on social media:</p>
-          <div class="social-buttons">
-            <button class="social-btn x" id="shareX">𝕏 X</button>
-            <button class="social-btn discord" id="shareDiscord">💬 Discord</button>
-            <button class="social-btn telegram" id="shareTelegram">📱 Telegram</button>
+        
+        <!-- Requirements Section - Show until both requirements met -->
+        <div id="referralRequirement" class="promoters-requirement">
+          <div class="requirement-box">
+            <h3>🔒 Requirements to Access Referral System</h3>
+            <div class="requirement-steps">
+              <div class="requirement-step">
+                <span class="req-icon">💳</span>
+                <span class="req-text">Connect Your Wallet</span>
+                <span class="req-status" id="walletStatusReferral">❌ Not Connected</span>
+              </div>
+              <div class="requirement-step">
+                <span class="req-icon">🏠</span>
+                <span class="req-text">Purchase Land (0.01 SOL)</span>
+                <span class="req-status" id="landStatusReferral">❌ No Land</span>
+              </div>
+            </div>
+            <p class="requirement-note">Complete these steps to unlock your referral link and start earning free pickaxes!</p>
           </div>
         </div>
       </div>

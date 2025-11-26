@@ -3681,3 +3681,150 @@ createSampleBanners();
 
 console.log('🎨 Banner download system initialized');
 
+
+
+// Refer & Earn Modal Functions with Requirements
+function showReferModal() {
+  console.log('🎁 Opening Refer & Earn modal...');
+  const modal = document.getElementById('referralModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    // Always update status when opening modal
+    setTimeout(() => {
+      updateReferralStatus();
+    }, 100);
+  }
+}
+
+function closeReferModal() {
+  console.log('🎁 Closing Refer & Earn modal...');
+  const modal = document.getElementById('referralModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+// Update referral status based on wallet and land
+function updateReferralStatus() {
+  console.log('🎁 Updating referral status...');
+  
+  const walletStatus = document.getElementById('walletStatusReferral');
+  const landStatus = document.getElementById('landStatusReferral');
+  const linkSection = document.getElementById('referralLinkSection');
+  const requirement = document.getElementById('referralRequirement');
+  const referralLink = document.getElementById('referralLink');
+  
+  const isConnected = state.address && state.wallet;
+  
+  // Check land status from multiple sources
+  let hasLand = false;
+  if (state.status && state.status.hasLand) {
+    hasLand = true;
+  }
+  if (state.userData && state.userData.hasLand) {
+    hasLand = true;
+  }
+  
+  console.log('📊 Referral status check:', {
+    isConnected,
+    hasLand,
+    stateStatus: state.status?.hasLand,
+    userData: state.userData?.hasLand
+  });
+  
+  // Update wallet status
+  if (walletStatus) {
+    if (isConnected) {
+      walletStatus.textContent = '✅ Connected';
+      walletStatus.style.color = '#28a745';
+    } else {
+      walletStatus.textContent = '❌ Not Connected';
+      walletStatus.style.color = '#dc3545';
+    }
+  }
+  
+  // Update land status
+  if (landStatus) {
+    if (hasLand) {
+      landStatus.textContent = '✅ Land Owned';
+      landStatus.style.color = '#28a745';
+    } else {
+      landStatus.textContent = '❌ No Land';
+      landStatus.style.color = '#dc3545';
+    }
+  }
+  
+  // Show/hide referral link section
+  if (isConnected && hasLand) {
+    if (linkSection) linkSection.style.display = 'block';
+    if (requirement) requirement.style.display = 'none';
+    
+    // Generate referral link
+    if (referralLink && state.address) {
+      const baseUrl = window.location.origin;
+      const referLink = `${baseUrl}/?ref=${state.address}`;
+      referralLink.value = referLink;
+    }
+  } else {
+    if (linkSection) linkSection.style.display = 'none';
+    if (requirement) requirement.style.display = 'block';
+  }
+}
+
+// Hook into existing referral button
+document.addEventListener('DOMContentLoaded', function() {
+  const referBtn = document.getElementById('referBtn');
+  if (referBtn) {
+    referBtn.addEventListener('click', function() {
+      showReferModal();
+    });
+  }
+  
+  // Hook close button
+  const closeModal = document.getElementById('closeModal');
+  if (closeModal) {
+    closeModal.addEventListener('click', function() {
+      closeReferModal();
+    });
+  }
+});
+
+// Refresh referral status when wallet/land changes
+function refreshReferralStatus() {
+  console.log('🔄 Refreshing referral status...');
+  setTimeout(() => {
+    updateReferralStatus();
+  }, 500);
+}
+
+// Hook into existing status refresh functions
+const originalRefreshStatusForReferral = refreshStatus;
+if (typeof refreshStatus === 'function') {
+  refreshStatus = async function() {
+    const result = await originalRefreshStatusForReferral.apply(this, arguments);
+    refreshReferralStatus();
+    return result;
+  };
+}
+
+// Update referral status when land is purchased
+function onLandPurchasedForReferral() {
+  console.log('🏠 Land purchased! Updating referral status...');
+  
+  // Update state to reflect land ownership
+  if (state.status) {
+    state.status.hasLand = true;
+  }
+  if (state.userData) {
+    state.userData.hasLand = true;
+  }
+  
+  // Update referral status
+  setTimeout(() => {
+    updateReferralStatus();
+    console.log('✅ Referral status updated after land purchase');
+  }, 1000);
+}
+
+console.log('🎁 Refer & Earn requirement system initialized');
+
