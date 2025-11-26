@@ -2952,23 +2952,23 @@ h6 { font-size: 12px; }
   box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
 }
 
-/* Promoters Button Styling - Match other buttons */
+/* Promoters Button Styling - Match other buttons exactly */
 .promoters-btn {
   background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
   border: none;
   color: white;
-  padding: 10px 16px;
+  padding: 8px 12px;
   border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
-  font-size: 14px;
-  height: 40px;
+  font-size: 12px;
+  height: 36px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  min-width: 120px;
+  gap: 4px;
+  min-width: auto;
   justify-content: center;
 }
 
