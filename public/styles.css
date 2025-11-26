@@ -2957,19 +2957,20 @@ h6 { font-size: 12px; }
   background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
   border: none;
   color: white;
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
-  font-size: 12px;
-  height: 36px;
+  box-shadow: 0 2px 4px rgba(255, 107, 53, 0.3);
+  font-size: 11px;
+  height: 32px;
   display: flex;
   align-items: center;
   gap: 4px;
   min-width: auto;
   justify-content: center;
+  line-height: 1;
 }
 
 .promoters-btn:hover {
@@ -2978,7 +2979,7 @@ h6 { font-size: 12px; }
   background: linear-gradient(135deg, #ff7849 0%, #fa9f32 100%);
 }
 
-/* Promoters Modal Styling - Dark Theme */
+/* Promoters Modal Styling - Dark Theme with Glowing Border */
 .promoters-modal {
   max-width: 600px;
   width: 95%;
@@ -2986,8 +2987,28 @@ h6 { font-size: 12px; }
   overflow-y: auto;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   color: #eee;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  border: 2px solid #ff6b35;
+  border-radius: 15px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.8),
+    0 0 30px rgba(255, 107, 53, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: modalGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes modalGlow {
+  from { 
+    box-shadow: 
+      0 20px 60px rgba(0, 0, 0, 0.8),
+      0 0 30px rgba(255, 107, 53, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  to { 
+    box-shadow: 
+      0 20px 60px rgba(0, 0, 0, 0.8),
+      0 0 50px rgba(255, 107, 53, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
 }
 
 .promoters-header {

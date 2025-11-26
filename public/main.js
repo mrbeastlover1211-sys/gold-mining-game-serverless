@@ -3828,3 +3828,33 @@ function onLandPurchasedForReferral() {
 
 console.log('🎁 Refer & Earn requirement system initialized');
 
+
+
+// Add outside click functionality to promoters modal
+document.addEventListener('DOMContentLoaded', function() {
+  // Outside click to close promoters modal
+  const promotersModal = document.getElementById('promotersModal');
+  if (promotersModal) {
+    promotersModal.addEventListener('click', function(event) {
+      // If clicked on the overlay (not the modal content), close the modal
+      if (event.target === promotersModal) {
+        closePromotersModal();
+      }
+    });
+  }
+  
+  console.log('🔗 Promoters modal outside click functionality added');
+});
+
+// Also add escape key to close promoters modal
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    const promotersModal = document.getElementById('promotersModal');
+    if (promotersModal && promotersModal.style.display === 'flex') {
+      closePromotersModal();
+    }
+  }
+});
+
+console.log('⌨️ Escape key functionality added to promoters modal');
+
