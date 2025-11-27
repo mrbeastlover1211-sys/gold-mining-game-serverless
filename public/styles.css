@@ -29,8 +29,9 @@ body {
   background-position: center;
   background-attachment: fixed;
   color: var(--text-primary);
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Animated Background */
@@ -60,14 +61,17 @@ body::before {
   grid-template-areas: 
     "header header header"
     "stats shop mining"
-    "wallet shop selling"
+    "wallet selling selling"
     "footer footer footer";
-  grid-template-columns: 250px 1fr 250px;
-  grid-template-rows: 60px 1fr 150px 50px;
-  gap: 10px;
-  padding: 10px;
-  height: 100vh;
-  overflow: hidden;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 60px 1fr 1fr 50px;
+  gap: 8px;
+  min-height: 100vh;
+  padding: 8px;
+  box-sizing: border-box;
+  max-width: 1920px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 /* Header */
@@ -2278,6 +2282,39 @@ h6 { font-size: 12px; }
   }
 }
 
+/* Large Desktop (1400px+) - Enhanced Layout */
+@media (min-width: 1400px) {
+  .game-dashboard {
+    grid-template-columns: 1.2fr 1fr 1.2fr;
+    max-width: 1600px;
+    padding: 12px;
+    gap: 12px;
+  }
+}
+
+/* Standard Desktop (1200px - 1399px) - Default Layout */
+@media (min-width: 1200px) and (max-width: 1399px) {
+  .game-dashboard {
+    grid-template-columns: 1fr 1fr 1fr;
+    max-width: 1200px;
+  }
+}
+
+/* Compact Desktop (1024px - 1199px) */
+@media (min-width: 1025px) and (max-width: 1199px) {
+  .game-dashboard {
+    grid-template-areas: 
+      "header header header"
+      "stats shop mining"
+      "wallet selling selling"
+      "footer footer footer";
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 55px 1fr 1fr 45px;
+    gap: 6px;
+    padding: 6px;
+  }
+}
+
 /* Tablet and Mobile adjustments */
 @media (max-width: 1024px) {
   .game-dashboard {
@@ -2291,6 +2328,8 @@ h6 { font-size: 12px; }
       "footer footer";
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 60px auto auto auto auto auto 50px;
+    min-height: auto;
+    height: auto;
   }
 }
 
