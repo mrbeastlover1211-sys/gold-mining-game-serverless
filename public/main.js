@@ -863,6 +863,9 @@ function updateDisplay(data) {
       console.error(`❌ .inventory-item[data-type="${type}"] element not found!`);
     }
   });
+  
+  // 🏪 UPDATE EXPANDABLE GOLD STORE: Update expanded details with real data
+  updateExpandableGoldStore(serverGold, serverInventory, totalRate);
 }
 
 function startStatusPolling() {
@@ -1018,6 +1021,100 @@ function calculateGoldFromCheckpoint(checkpoint) {
   });
   
   return totalGold;
+}
+
+// 🏪 NEW: Update expandable Gold Store with real user data
+function updateExpandableGoldStore(currentGold, inventory, totalMiningRate) {
+  console.log('🏪 Updating expandable Gold Store with:', {
+    currentGold,
+    inventory,
+    totalMiningRate
+  });
+  
+  // Update ownership counts in expanded details
+  const silverCount = inventory.silver || 0;
+  const goldCount = inventory.gold || 0;
+  
+  const silverOwnedEl = $('#silver-owned-count');
+  if (silverOwnedEl) {
+    silverOwnedEl.textContent = `${silverCount} pickaxe${silverCount === 1 ? '' : 's'}`;
+  }
+  
+  const goldOwnedEl = $('#gold-owned-count');
+  if (goldOwnedEl) {
+    goldOwnedEl.textContent = `${goldCount} pickaxe${goldCount === 1 ? '' : 's'}`;
+  }
+  
+  // Update store summary with current data
+  const currentGoldEl = $('#current-gold-display');
+  if (currentGoldEl) {
+    const safeGold = parseFloat(currentGold) || 0;
+    currentGoldEl.textContent = safeGold.toLocaleString('en-US', { 
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: 0 
+    });
+  }
+  
+  const totalMiningEl = $('#total-mining-display');
+  if (totalMiningEl) {
+    totalMiningEl.textContent = `${totalMiningRate || 0} gold/min`;
+  }
+  
+  // Generate smart recommendation
+  const recommendationEl = $('#purchase-recommendation');
+  if (recommendationEl) {
+    const recommendation = generatePurchaseRecommendation(currentGold, inventory);
+    recommendationEl.textContent = recommendation;
+  }
+  
+  console.log('✅ Expandable Gold Store updated successfully');
+}
+
+// 💡 Generate smart purchase recommendations
+function generatePurchaseRecommendation(currentGold, inventory) {
+  const safeGold = parseFloat(currentGold) || 0;
+  const silverCount = inventory.silver || 0;
+  const goldCount = inventory.gold || 0;
+  
+  console.log('🎯 Generating recommendation for:', {
+    gold: safeGold,
+    silver: silverCount,
+    goldPickaxes: goldCount
+  });
+  
+  // No wallet connected
+  if (!state.address) {
+    return 'Connect wallet to see recommendations';
+  }
+  
+  // Can afford gold pickaxe (best value)
+  if (safeGold >= 20000) {
+    return 'Buy Gold Pickaxe! (Best value - 10x power)';
+  }
+  
+  // Can afford multiple silver pickaxes
+  if (safeGold >= 15000) {
+    return 'Buy 3 Silver Pickaxes for steady income';
+  }
+  
+  // Can afford silver pickaxe
+  if (safeGold >= 5000) {
+    return 'Buy Silver Pickaxe to start mining!';
+  }
+  
+  // Need more gold
+  if (silverCount === 0 && goldCount === 0) {
+    return 'Mine more gold first, then buy Silver!';
+  }
+  
+  // Has pickaxes but not enough gold
+  const goldNeeded = 5000 - safeGold;
+  if (goldNeeded > 0) {
+    return `Mine ${goldNeeded.toLocaleString()} more gold for Silver`;
+  }
+  
+  // Default
+  return 'Keep mining to afford better pickaxes!';
 }
 
 // Sync mining progress to server (prevents data loss on refresh)
