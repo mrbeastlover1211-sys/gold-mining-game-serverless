@@ -2202,13 +2202,33 @@ h6 { font-size: 12px; }
 
 .expandable-gold-store:hover {
   z-index: 1000;
-  transform: scale(1.05);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 -15px 35px rgba(0, 0, 0, 0.4);
   border: 2px solid var(--primary);
   background: linear-gradient(135deg, rgba(0, 123, 255, 0.1), rgba(40, 167, 69, 0.1));
-  min-height: 400px;
-  width: 120%;
-  margin-left: -10%;
+  
+  /* Expand upward above footer */
+  position: absolute;
+  bottom: 0;
+  left: -50%;
+  width: 200%;
+  min-height: 300px;
+  transform: translateY(-100%);
+}
+
+/* Store items side by side layout on hover */
+.expandable-gold-store:hover .store-items {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  width: 100%;
+}
+
+.expandable-gold-store:hover .store-item {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Store item details (hidden by default) */
@@ -2216,19 +2236,16 @@ h6 { font-size: 12px; }
   opacity: 0;
   max-height: 0;
   overflow: hidden;
-  margin-top: 10px;
+  margin-top: 0;
   padding: 0;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
 }
 
 .expandable-gold-store:hover .store-item-details {
   opacity: 1;
-  max-height: 200px;
-  padding: 12px;
-  margin-top: 12px;
+  max-height: 300px;
+  padding: 12px 0;
+  margin-top: 15px;
 }
 
 .detail-row {
@@ -2236,22 +2253,22 @@ h6 { font-size: 12px; }
   justify-content: space-between;
   align-items: center;
   margin: 8px 0;
-  padding: 6px;
-  font-size: 13px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 5px;
+  padding: 8px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
 }
 
 .detail-label {
   color: var(--text-secondary);
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .detail-value {
   color: var(--text-primary);
   font-weight: bold;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 /* Store summary (hidden by default) */
@@ -2259,17 +2276,18 @@ h6 { font-size: 12px; }
   opacity: 0;
   max-height: 0;
   overflow: hidden;
-  margin-top: 15px;
+  margin-top: 0;
   padding: 0;
   background: linear-gradient(135deg, rgba(40, 167, 69, 0.3), rgba(0, 123, 255, 0.3));
   border-radius: 10px;
   border: 2px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
+  clear: both;
 }
 
 .expandable-gold-store:hover .store-summary {
   opacity: 1;
-  max-height: 150px;
+  max-height: 120px;
   padding: 15px;
   margin-top: 20px;
 }
@@ -2278,9 +2296,9 @@ h6 { font-size: 12px; }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 10px 0;
-  padding: 8px;
-  font-size: 14px;
+  margin: 6px 0;
+  padding: 6px 10px;
+  font-size: 13px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 6px;
 }
@@ -2288,13 +2306,29 @@ h6 { font-size: 12px; }
 .summary-label {
   color: var(--text-secondary);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .summary-value {
   color: var(--text-primary);
   font-weight: bold;
-  font-size: 14px;
+  font-size: 13px;
+}
+
+/* Enhanced Christmas theme for expanded state */
+.expandable-gold-store:hover {
+  background: linear-gradient(135deg, 
+    rgba(220, 53, 69, 0.1), 
+    rgba(40, 167, 69, 0.1), 
+    rgba(255, 193, 7, 0.1));
+  animation: christmas-glow 2s infinite;
+}
+
+@keyframes christmas-glow {
+  0% { border-color: #dc3545; }
+  33% { border-color: #28a745; }
+  66% { border-color: #ffc107; }
+  100% { border-color: #dc3545; }
 }
 
 .summary-row.recommendation {
