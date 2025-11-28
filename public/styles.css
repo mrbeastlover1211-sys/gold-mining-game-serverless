@@ -2208,27 +2208,30 @@ h6 { font-size: 12px; }
   
   /* Expand upward above footer */
   position: absolute;
-  bottom: 0;
-  left: -50%;
-  width: 200%;
-  min-height: 300px;
-  transform: translateY(-100%);
+  bottom: 100%;
+  left: -25%;
+  width: 150%;
+  min-height: 250px;
+  transform: none;
+  margin-bottom: 10px;
 }
 
 /* Store items side by side layout on hover */
 .expandable-gold-store:hover .store-items {
   display: flex;
   flex-direction: row;
-  gap: 20px;
+  gap: 15px;
   width: 100%;
+  margin: 10px 0;
 }
 
 .expandable-gold-store:hover .store-item {
   flex: 1;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 15px;
+  border-radius: 8px;
+  padding: 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  min-height: 180px;
 }
 
 /* Store item details (hidden by default) */
@@ -2243,9 +2246,9 @@ h6 { font-size: 12px; }
 
 .expandable-gold-store:hover .store-item-details {
   opacity: 1;
-  max-height: 300px;
-  padding: 12px 0;
-  margin-top: 15px;
+  max-height: 200px;
+  padding: 8px 0;
+  margin-top: 10px;
 }
 
 .detail-row {
