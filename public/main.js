@@ -1023,7 +1023,109 @@ function calculateGoldFromCheckpoint(checkpoint) {
   return totalGold;
 }
 
-// 🏪 NEW: Update expandable Gold Store with real user data
+// 🏪 GOLD STORE MODAL FUNCTIONS
+
+// Open Gold Store Modal
+function openGoldStoreModal() {
+  console.log('🏪 Opening Gold Store Modal');
+  
+  const modal = document.getElementById('goldStoreModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    
+    // Update modal with current data
+    updateGoldStoreModal();
+    
+    // Prevent background scrolling
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+// Close Gold Store Modal
+function closeGoldStoreModal(event) {
+  // If event is passed and it's not a direct click on the backdrop, ignore
+  if (event && event.target !== event.currentTarget) {
+    return;
+  }
+  
+  console.log('🏪 Closing Gold Store Modal');
+  
+  const modal = document.getElementById('goldStoreModal');
+  if (modal) {
+    modal.style.display = 'none';
+    
+    // Restore background scrolling
+    document.body.style.overflow = 'auto';
+  }
+}
+
+// Update Gold Store Modal with current user data
+function updateGoldStoreModal() {
+  console.log('🏪 Updating Gold Store Modal with current data');
+  
+  // Get current user data
+  const currentGold = parseFloat(state.gold) || 0;
+  const inventory = state.inventory || {};
+  const totalMiningRate = calculateTotalMiningRate(inventory);
+  
+  // Update ownership counts in modal
+  const silverCount = inventory.silver || 0;
+  const goldCount = inventory.gold || 0;
+  
+  const modalSilverOwnedEl = $('#modal-silver-owned-count');
+  if (modalSilverOwnedEl) {
+    modalSilverOwnedEl.textContent = `${silverCount} pickaxe${silverCount === 1 ? '' : 's'}`;
+  }
+  
+  const modalGoldOwnedEl = $('#modal-gold-owned-count');
+  if (modalGoldOwnedEl) {
+    modalGoldOwnedEl.textContent = `${goldCount} pickaxe${goldCount === 1 ? '' : 's'}`;
+  }
+  
+  // Update modal summary
+  const modalCurrentGoldEl = $('#modal-current-gold-display');
+  if (modalCurrentGoldEl) {
+    modalCurrentGoldEl.textContent = currentGold.toLocaleString('en-US', { 
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: 0 
+    });
+  }
+  
+  const modalTotalMiningEl = $('#modal-total-mining-display');
+  if (modalTotalMiningEl) {
+    modalTotalMiningEl.textContent = `${totalMiningRate} gold/min`;
+  }
+  
+  // Generate smart recommendation for modal
+  const modalRecommendationEl = $('#modal-purchase-recommendation');
+  if (modalRecommendationEl) {
+    const recommendation = generatePurchaseRecommendation(currentGold, inventory);
+    modalRecommendationEl.textContent = recommendation;
+  }
+  
+  console.log('✅ Gold Store Modal updated successfully');
+}
+
+// Helper function to calculate total mining rate
+function calculateTotalMiningRate(inventory) {
+  const rates = { silver: 1, gold: 10, diamond: 100, netherite: 1000 };
+  let total = 0;
+  
+  for (const [type, rate] of Object.entries(rates)) {
+    total += (inventory[type] || 0) * rate;
+  }
+  
+  return total;
+}
+
+// Close modal when pressing Escape key
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    closeGoldStoreModal();
+  }
+});
+
+// 🏪 LEGACY: Update expandable Gold Store with real user data (keep for compatibility)
 function updateExpandableGoldStore(currentGold, inventory, totalMiningRate) {
   console.log('🏪 Updating expandable Gold Store with:', {
     currentGold,

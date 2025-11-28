@@ -61,94 +61,116 @@
       </div>
     </div>
 
-    <!-- Store Panel -->
-    <div class="wallet-panel expandable-gold-store">
+    <!-- Store Panel (Now Clickable Button) -->
+    <div class="wallet-panel gold-store-button" onclick="openGoldStoreModal()">
       <div class="panel-title">🏪 Gold Store</div>
-      
-      <div class="store-items">
-        <div class="store-item">
-          <div class="store-item-header">
-            <div class="store-pickaxe-icon silver">
-              <img src="assets/pickaxes/pickaxe-silver.png" alt="Silver Pickaxe" style="width: 20px; height: 20px; object-fit: contain;">
+      <div class="store-button-content">
+        <div class="store-button-text">💰 Buy More Pickaxes Using Gold</div>
+        <div class="store-button-subtitle">Click to view available pickaxes</div>
+        <div class="store-button-icon">🛒</div>
+      </div>
+    </div>
+    
+    <!-- Gold Store Modal (Hidden by default) -->
+    <div id="goldStoreModal" class="gold-store-modal" onclick="closeGoldStoreModal(event)">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title">🏪 Gold Store - Buy Pickaxes with Gold</div>
+          <button class="modal-close-btn" onclick="closeGoldStoreModal()">✖</button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="store-items-modal">
+            <!-- Silver Pickaxe -->
+            <div class="store-item-modal">
+              <div class="store-item-header">
+                <div class="store-pickaxe-icon silver">
+                  <img src="assets/pickaxes/pickaxe-silver.png" alt="Silver Pickaxe" style="width: 30px; height: 30px; object-fit: contain;">
+                </div>
+                <div class="store-item-info">
+                  <div class="store-item-name">Silver Pickaxe</div>
+                  <div class="store-item-rate">+1 gold/min</div>
+                </div>
+              </div>
+              <div class="store-price">5,000 Gold</div>
+              
+              <!-- Detailed information -->
+              <div class="store-item-details-modal">
+                <div class="detail-row">
+                  <span class="detail-label">⚡ Mining Power:</span>
+                  <span class="detail-value">+1 gold per minute</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">📊 You Own:</span>
+                  <span class="detail-value" id="modal-silver-owned-count">0 pickaxes</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">💡 Tip:</span>
+                  <span class="detail-value">Perfect for steady income growth!</span>
+                </div>
+              </div>
+              
+              <button class="store-buy-btn-modal" onclick="buyPickaxeWithGold('silver', 5000)">
+                🛒 Buy Silver Pickaxe
+              </button>
             </div>
-            <div class="store-item-info">
-              <div class="store-item-name">Silver Pickaxe</div>
-              <div class="store-item-rate">+1 gold/min</div>
+            
+            <!-- Gold Pickaxe -->
+            <div class="store-item-modal">
+              <div class="store-item-header">
+                <div class="store-pickaxe-icon gold">
+                  <img src="assets/pickaxes/pickaxe-gold.png" alt="Gold Pickaxe" style="width: 30px; height: 30px; object-fit: contain;">
+                </div>
+                <div class="store-item-info">
+                  <div class="store-item-name">Gold Pickaxe</div>
+                  <div class="store-item-rate">+10 gold/min</div>
+                </div>
+              </div>
+              <div class="store-price">20,000 Gold</div>
+              
+              <!-- Detailed information -->
+              <div class="store-item-details-modal">
+                <div class="detail-row">
+                  <span class="detail-label">⚡ Mining Power:</span>
+                  <span class="detail-value">+10 gold per minute</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">📊 You Own:</span>
+                  <span class="detail-value" id="modal-gold-owned-count">0 pickaxes</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">💡 Tip:</span>
+                  <span class="detail-value">10x more powerful than Silver!</span>
+                </div>
+              </div>
+              
+              <button class="store-buy-btn-modal" onclick="buyPickaxeWithGold('gold', 20000)">
+                🛒 Buy Gold Pickaxe
+              </button>
             </div>
           </div>
-          <div class="store-price">5,000 Gold</div>
-          <button class="store-buy-btn" onclick="buyPickaxeWithGold('silver', 5000)">
-            🛒 Buy Silver
-          </button>
           
-          <!-- Expanded details (hidden by default) -->
-          <div class="store-item-details">
-            <div class="detail-row">
-              <span class="detail-label">⚡ Mining Power:</span>
-              <span class="detail-value">+1 gold per minute</span>
+          <!-- Store Summary in Modal -->
+          <div class="store-summary-modal">
+            <div class="summary-title">📊 Your Mining Summary</div>
+            <div class="summary-row">
+              <span class="summary-label">💰 Your Gold:</span>
+              <span class="summary-value" id="modal-current-gold-display">0</span>
             </div>
-            <div class="detail-row">
-              <span class="detail-label">📊 You Own:</span>
-              <span class="detail-value" id="silver-owned-count">0 pickaxes</span>
+            <div class="summary-row">
+              <span class="summary-label">⛏️ Total Mining:</span>
+              <span class="summary-value" id="modal-total-mining-display">0 gold/min</span>
             </div>
-            <div class="detail-row">
-              <span class="detail-label">💡 Tip:</span>
-              <span class="detail-value">Great starter choice!</span>
+            <div class="summary-row recommendation">
+              <span class="summary-label">🎯 Recommendation:</span>
+              <span class="summary-value" id="modal-purchase-recommendation">Connect wallet to see recommendations</span>
             </div>
           </div>
         </div>
         
-        <div class="store-item">
-          <div class="store-item-header">
-            <div class="store-pickaxe-icon gold">
-              <img src="assets/pickaxes/pickaxe-gold.png" alt="Gold Pickaxe" style="width: 20px; height: 20px; object-fit: contain;">
-            </div>
-            <div class="store-item-info">
-              <div class="store-item-name">Gold Pickaxe</div>
-              <div class="store-item-rate">+10 gold/min</div>
-            </div>
-          </div>
-          <div class="store-price">20,000 Gold</div>
-          <button class="store-buy-btn" onclick="buyPickaxeWithGold('gold', 20000)">
-            🛒 Buy Gold
-          </button>
-          
-          <!-- Expanded details (hidden by default) -->
-          <div class="store-item-details">
-            <div class="detail-row">
-              <span class="detail-label">⚡ Mining Power:</span>
-              <span class="detail-value">+10 gold per minute</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">📊 You Own:</span>
-              <span class="detail-value" id="gold-owned-count">0 pickaxes</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">💡 Tip:</span>
-              <span class="detail-value">10x more powerful than Silver!</span>
-            </div>
-          </div>
-        </div>
+        <!-- Store Status Message -->
+        <div id="modalStoreMsg" class="store-message-modal"></div>
       </div>
-      
-      <!-- Expanded store summary (hidden by default) -->
-      <div class="store-summary">
-        <div class="summary-row">
-          <span class="summary-label">💰 Your Gold:</span>
-          <span class="summary-value" id="current-gold-display">0</span>
-        </div>
-        <div class="summary-row">
-          <span class="summary-label">⛏️ Total Mining:</span>
-          <span class="summary-value" id="total-mining-display">0 gold/min</span>
-        </div>
-        <div class="summary-row recommendation">
-          <span class="summary-label">🎯 Recommendation:</span>
-          <span class="summary-value" id="purchase-recommendation">Connect wallet to see recommendations</span>
-        </div>
-      </div>
-      
-      <!-- Store Status Message -->
-      <div id="storeMsg" class="store-message"></div>
     </div>
 
     <!-- Shop Panel -->
