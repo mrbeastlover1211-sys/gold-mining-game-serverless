@@ -26,8 +26,7 @@ async function loadConfig() {
     updateStaticInfo();
     renderShop();
     
-    // 🎯 CRITICAL FIX: Track referral link IMMEDIATELY when page loads
-    await trackReferralLinkOnPageLoad();
+    // 🎯 FIXED: Use existing referral system (inline script handles tracking)
     
     // 🔄 AUTO-RECONNECT: Check for saved wallet and reconnect automatically
     await autoReconnectWallet();
@@ -602,8 +601,8 @@ async function connectWallet() {
     console.log('🔍 Checking land ownership immediately after wallet connection...');
     await checkLandStatusAndShowPopup();
     
-    // 🎯 FIXED SESSION TRACKING: Check and update referral session when wallet connects
-    await checkReferralSession();
+    // 🎯 FIXED SESSION TRACKING: Use existing localStorage referral system
+    await checkExistingReferralSession();
     
     // 🔧 FORCE UPDATE SESSION STATUS: Ensure session gets linked to wallet
     try {
@@ -3284,47 +3283,7 @@ function shareOnTelegram() {
 }
 
 // 🎯 ENHANCED REFERRAL SESSION: Check and link wallet to referral
-// 🎯 NEW: Track referral link when page loads
-async function trackReferralLinkOnPageLoad() {
-  try {
-    // Check URL for referral parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    const referralCode = urlParams.get('ref');
-    
-    if (!referralCode) {
-      console.log('ℹ️ No referral code in URL');
-      return;
-    }
-    
-    console.log('🔗 Referral link detected! Tracking visit for:', referralCode.slice(0, 8) + '...');
-    
-    // Call track-referral API to create session (it returns a tracking pixel, not JSON)
-    const trackResponse = await fetch(`/api/track-referral?ref=${encodeURIComponent(referralCode)}`);
-    
-    // Check if tracking pixel was returned (any 200 response means success)
-    if (trackResponse.ok) {
-      console.log('✅ Referral visit tracked successfully - tracking pixel received');
-      
-      // Clean URL to remove ?ref= parameter
-      const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-      if (window.history && window.history.replaceState) {
-        window.history.replaceState({}, document.title, cleanUrl);
-      }
-      
-      // Store referral info temporarily
-      localStorage.setItem('pending_referral', referralCode);
-      
-      // Show referral welcome message
-      showReferralWelcomeMessage(referralCode);
-      
-    } else {
-      console.log('⚠️ Failed to track referral visit');
-    }
-    
-  } catch (error) {
-    console.error('❌ Referral tracking failed:', error);
-  }
-}
+// 🎯 REMOVED: Conflicting referral tracking (inline script handles this)
 
 // 🎯 NEW: Show referral welcome message
 function showReferralWelcomeMessage(referrerAddress) {
@@ -3373,6 +3332,85 @@ function getCookieValue(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+// 🎯 SIMPLE REFERRAL SYSTEM: Use existing localStorage integration
+async function checkExistingReferralSession() {
+  if (!state.address) {
+    console.log('⚠️ No wallet connected for referral check');
+    return;
+  }
+  
+  try {
+    // Check for referral data from the working inline script system
+    const referrerAddress = localStorage.getItem('referrer_address');
+    const referralTracked = localStorage.getItem('referral_tracked');
+    
+    if (referrerAddress && referralTracked) {
+      console.log('🎁 Found stored referral data for:', referrerAddress.slice(0, 8) + '...');
+      
+      // Call the session update API to link this wallet to the referral
+      const response = await fetch('/api/update-session-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address: state.address,
+          referrer_address: referrerAddress
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Referral session linked successfully:', data.message);
+        
+        // Show user notification
+        showSimpleReferralNotification(referrerAddress);
+        
+        // Clear the localStorage data since it's now linked
+        localStorage.removeItem('referrer_address');
+        localStorage.removeItem('referral_timestamp');
+        localStorage.removeItem('referral_tracked');
+        
+      } else {
+        console.log('⚠️ Failed to link referral session');
+      }
+    } else {
+      console.log('ℹ️ No pending referral data found');
+    }
+    
+  } catch (error) {
+    console.log('❌ Referral session check failed:', error.message);
+  }
+}
+
+// Simple notification function
+function showSimpleReferralNotification(referrerAddress) {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(45deg, #8b5cf6, #a855f7); color: white;
+    padding: 15px 25px; border-radius: 12px; z-index: 10000;
+    font-family: Arial, sans-serif; text-align: center; max-width: 400px;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
+  `;
+  
+  notification.innerHTML = `
+    <div style="font-size: 16px; font-weight: bold; margin-bottom: 8px;">
+      🎁 Referral Active!
+    </div>
+    <div style="font-size: 14px; opacity: 0.9;">
+      Referred by: ${referrerAddress.slice(0, 8)}...${referrerAddress.slice(-8)}
+    </div>
+    <div style="font-size: 12px; margin-top: 8px; opacity: 0.8;">
+      Buy land + pickaxe to earn both of you rewards!
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    if (notification.parentElement) notification.remove();
+  }, 6000);
 }
 
 // 🎁 NEW: Check and complete referral after purchases
