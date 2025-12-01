@@ -62,10 +62,12 @@ export default async function handler(req, res) {
       `, [address]);
       
       if (userCheck.rows.length === 0) {
-        console.log('❌ Referred user not found in database');
+        console.log('ℹ️ Referred user has not purchased land yet');
         return res.json({
-          success: false,
-          error: 'User not found in database'
+          success: true,
+          referral_completed: false,
+          message: 'Referral pending - user needs to purchase land and pickaxe first',
+          requirements_met: false
         });
       }
       
@@ -172,10 +174,10 @@ export default async function handler(req, res) {
       
       console.log('✅ Referrer updated:', updateReferrerResult.rows[0]);
       
-      // 6. Mark referral as completed
+      // 6. Mark referral as completed (set completed flag)
       await client.query(`
         UPDATE referral_visits 
-        SET converted = true, converted_timestamp = CURRENT_TIMESTAMP
+        SET completed = true, completed_timestamp = CURRENT_TIMESTAMP
         WHERE session_id = $1
       `, [referralVisit.session_id]);
       
