@@ -1,4 +1,4 @@
-// ✅ COMPLETE REFERRAL - Trigger reward when land + pickaxe purchased
+// ✅ COMPLETE REFERRAL - Trigger reward when land + pickaxe purchased (Fixed DB schema v2)
 export default async function handler(req, res) {
   try {
     console.log('🎁 Processing referral completion...');
