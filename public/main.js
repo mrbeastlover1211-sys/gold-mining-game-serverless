@@ -4184,8 +4184,7 @@ function checkLandViaInventory() {
       // If user has pickaxes, they must have land
       if (!state.status) state.status = {};
       state.status.hasLand = true;
-      console.log('✅ Land detected via pickaxes, updating promoters...');
-      updatePromotersStatus();
+      console.log('✅ Land detected via pickaxes, land ownership confirmed...');
       return true;
     }
   }
