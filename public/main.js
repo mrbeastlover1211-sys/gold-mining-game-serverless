@@ -3298,11 +3298,12 @@ async function trackReferralLinkOnPageLoad() {
     
     console.log('🔗 Referral link detected! Tracking visit for:', referralCode.slice(0, 8) + '...');
     
-    // Call track-referral API to create session
+    // Call track-referral API to create session (it returns a tracking pixel, not JSON)
     const trackResponse = await fetch(`/api/track-referral?ref=${encodeURIComponent(referralCode)}`);
     
+    // Check if tracking pixel was returned (any 200 response means success)
     if (trackResponse.ok) {
-      console.log('✅ Referral visit tracked successfully');
+      console.log('✅ Referral visit tracked successfully - tracking pixel received');
       
       // Clean URL to remove ?ref= parameter
       const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
