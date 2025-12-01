@@ -26,9 +26,23 @@ export default async function handler(req, res) {
       };
     }
     
-    // Check if user already has land
-    if (global.users[address].hasLand) {
-      return res.status(400).json({ error: 'User already owns land' });
+    // 🔧 FIX: Check database instead of unreliable in-memory cache
+    try {
+      const { getUserOptimized } = await import('../database.js');
+      const existingUser = await getUserOptimized(address, false);
+      
+      if (existingUser && existingUser.has_land) {
+        console.log(`❌ Land purchase blocked: ${address} already owns land in database`);
+        return res.status(400).json({ error: 'User already owns land' });
+      }
+      
+      console.log(`✅ Land purchase allowed: ${address} does not own land in database`);
+    } catch (dbError) {
+      console.error('❌ Could not check land ownership in database:', dbError.message);
+      // Fallback to in-memory check if database fails
+      if (global.users[address] && global.users[address].hasLand) {
+        return res.status(400).json({ error: 'User already owns land' });
+      }
     }
 
     // Validate signature format
