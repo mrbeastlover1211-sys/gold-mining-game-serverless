@@ -112,32 +112,41 @@ export default async function handler(req, res) {
         });
       }
       
-      // 3. Check if referrer exists and get their current stats
-      const referrerCheck = await client.query(`
-        SELECT 
-          address, 
-          total_referrals, 
-          referral_rewards_earned, 
-          silver_pickaxes, 
-          gold_pickaxes, 
-          diamond_pickaxes, 
-          netherite_pickaxes,
-          last_checkpoint_gold,
-          checkpoint_timestamp,
-          total_mining_power
-        FROM users 
-        WHERE address = $1
-      `, [referrerAddress]);
+      // 3. Check if referrer exists using same system as status API
+      console.log('🔍 Looking for referrer in database:', referrerAddress.slice(0, 8) + '...');
       
-      if (referrerCheck.rows.length === 0) {
-        console.log('❌ Referrer not found in database');
+      let referrerData;
+      try {
+        const { getUserOptimized } = await import('../database.js');
+        referrerData = await getUserOptimized(referrerAddress, false);
+        
+        console.log('📊 Referrer lookup result:', {
+          found: !!referrerData,
+          address: referrerData?.address?.slice(0, 8),
+          has_land: referrerData?.has_land,
+          pickaxes: {
+            silver: referrerData?.silver_pickaxes,
+            gold: referrerData?.gold_pickaxes,
+            diamond: referrerData?.diamond_pickaxes,
+            netherite: referrerData?.netherite_pickaxes
+          }
+        });
+      } catch (dbError) {
+        console.error('❌ Error looking up referrer:', dbError.message);
+        return res.json({
+          success: false,
+          error: 'Database error finding referrer'
+        });
+      }
+      
+      if (!referrerData) {
+        console.log('❌ Referrer not found in optimized database');
         return res.json({
           success: false,
           error: 'Referrer not found in database'
         });
       }
       
-      const referrerData = referrerCheck.rows[0];
       const currentReferrals = referrerData.total_referrals || 0;
       const newReferralCount = currentReferrals + 1;
       
@@ -178,25 +187,25 @@ export default async function handler(req, res) {
       };
       const additionalMiningPower = pickaxeMiningPower[rewardPickaxeType] || 0;
       
-      const updateReferrerResult = await client.query(`
-        UPDATE users 
-        SET 
-          total_referrals = COALESCE(total_referrals, 0) + 1,
-          referral_rewards_earned = COALESCE(referral_rewards_earned, 0) + $1,
-          ${rewardPickaxeType}_pickaxes = COALESCE(${rewardPickaxeType}_pickaxes, 0) + $2,
-          last_checkpoint_gold = COALESCE(last_checkpoint_gold, 0) + $3,
-          total_mining_power = COALESCE(total_mining_power, 0) + $4
-        WHERE address = $5
-        RETURNING total_referrals, referral_rewards_earned, last_checkpoint_gold, total_mining_power
-      `, [
-        0.01, // SOL reward amount
-        rewardPickaxeCount, // Number of pickaxes to add
-        goldReward, // Gold reward amount
-        additionalMiningPower, // Mining power from new pickaxes
-        referrerAddress
-      ]);
+      // Update referrer using same system as status API
+      console.log('🎁 Distributing rewards to referrer...');
       
-      console.log('✅ Referrer updated:', updateReferrerResult.rows[0]);
+      // Update referrer data
+      referrerData.total_referrals = currentReferrals + 1;
+      referrerData.referral_rewards_earned = (referrerData.referral_rewards_earned || 0) + 0.01;
+      referrerData[`${rewardPickaxeType}_pickaxes`] = (referrerData[`${rewardPickaxeType}_pickaxes`] || 0) + rewardPickaxeCount;
+      referrerData.last_checkpoint_gold = (referrerData.last_checkpoint_gold || 0) + goldReward;
+      referrerData.total_mining_power = (referrerData.total_mining_power || 0) + additionalMiningPower;
+      
+      // Save updated referrer data
+      try {
+        const { saveUserOptimized } = await import('../database.js');
+        await saveUserOptimized(referrerAddress, referrerData);
+        console.log('✅ Referrer rewards distributed successfully');
+      } catch (saveError) {
+        console.error('❌ Error saving referrer rewards:', saveError.message);
+        throw saveError;
+      }
       
       // 6. Mark referral as completed (set completed flag)
       await client.query(`
@@ -230,7 +239,7 @@ export default async function handler(req, res) {
           pickaxe_count: rewardPickaxeCount,
           gold_reward: goldReward,
           sol_reward: 0.01,
-          new_referral_count: newReferralCount
+          new_referral_count: referrerData.total_referrals
         },
         session_id: referralVisit.session_id
       });
