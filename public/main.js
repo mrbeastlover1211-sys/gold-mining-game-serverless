@@ -26,6 +26,9 @@ async function loadConfig() {
     updateStaticInfo();
     renderShop();
     
+    // 🎯 CRITICAL FIX: Track referral link IMMEDIATELY when page loads
+    await trackReferralLinkOnPageLoad();
+    
     // 🔄 AUTO-RECONNECT: Check for saved wallet and reconnect automatically
     await autoReconnectWallet();
     
@@ -2501,6 +2504,9 @@ async function purchaseMandatoryLand() {
     // Background status refresh
     setTimeout(async () => {
       await refreshStatus();
+      
+      // 🎁 CRITICAL FIX: Check for referral completion after purchase
+      await checkAndCompleteReferral();
       await updateWalletBalance();
     }, 1500);
     
@@ -3278,6 +3284,213 @@ function shareOnTelegram() {
 }
 
 // 🎯 ENHANCED REFERRAL SESSION: Check and link wallet to referral
+// 🎯 NEW: Track referral link when page loads
+async function trackReferralLinkOnPageLoad() {
+  try {
+    // Check URL for referral parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const referralCode = urlParams.get('ref');
+    
+    if (!referralCode) {
+      console.log('ℹ️ No referral code in URL');
+      return;
+    }
+    
+    console.log('🔗 Referral link detected! Tracking visit for:', referralCode.slice(0, 8) + '...');
+    
+    // Call track-referral API to create session
+    const trackResponse = await fetch(`/api/track-referral?ref=${encodeURIComponent(referralCode)}`);
+    
+    if (trackResponse.ok) {
+      console.log('✅ Referral visit tracked successfully');
+      
+      // Clean URL to remove ?ref= parameter
+      const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+      
+      // Store referral info temporarily
+      localStorage.setItem('pending_referral', referralCode);
+      
+      // Show referral welcome message
+      showReferralWelcomeMessage(referralCode);
+      
+    } else {
+      console.log('⚠️ Failed to track referral visit');
+    }
+    
+  } catch (error) {
+    console.error('❌ Referral tracking failed:', error);
+  }
+}
+
+// 🎯 NEW: Show referral welcome message
+function showReferralWelcomeMessage(referrerAddress) {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(45deg, #8b5cf6, #a855f7);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
+    z-index: 10000;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    animation: slideDown 0.5s ease-out;
+    max-width: 400px;
+  `;
+  
+  notification.innerHTML = `
+    <div style="font-size: 16px; font-weight: bold; margin-bottom: 8px;">
+      🎁 Welcome! You were referred by:
+    </div>
+    <div style="font-size: 14px; opacity: 0.9; font-family: monospace;">
+      ${referrerAddress.slice(0, 8)}...${referrerAddress.slice(-8)}
+    </div>
+    <div style="font-size: 12px; margin-top: 8px; opacity: 0.8;">
+      Connect your wallet and buy land + pickaxe to earn both of you rewards!
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Auto remove after 8 seconds
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.remove();
+    }
+  }, 8000);
+}
+
+// Helper function to get cookie value
+function getCookieValue(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+// 🎁 NEW: Check and complete referral after purchases
+async function checkAndCompleteReferral() {
+  if (!state.address) {
+    console.log('⚠️ No wallet connected for referral completion check');
+    return;
+  }
+  
+  try {
+    console.log('🎁 Checking if referral should be completed...');
+    
+    // Call the completion API
+    const response = await fetch(`/api/complete-referral?address=${encodeURIComponent(state.address)}`);
+    const data = await response.json();
+    
+    console.log('📊 Referral completion response:', data);
+    
+    if (data.success && data.referral_completed) {
+      console.log('🎉 Referral completed successfully!', data);
+      
+      // Show success notification
+      showReferralCompletedNotification(data);
+      
+    } else {
+      console.log('ℹ️ Referral completion result:', data.message || 'No referral to complete');
+    }
+    
+  } catch (error) {
+    console.log('⚠️ Referral completion check failed:', error.message);
+  }
+}
+
+// 🎁 NEW: Show referral completion notification
+function showReferralCompletedNotification(completionData) {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(45deg, #10b981, #059669);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4);
+    z-index: 10000;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    max-width: 450px;
+    animation: slideDown 0.5s ease-out;
+  `;
+  
+  const referrerAddress = completionData.referrer_address || '';
+  const rewardDetails = completionData.reward_details || {};
+  
+  notification.innerHTML = `
+    <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">
+      🎉 Referral Rewards Earned!
+    </div>
+    <div style="font-size: 14px; margin-bottom: 8px;">
+      Your referrer <span style="font-family: monospace; font-weight: bold;">${referrerAddress.slice(0, 6)}...${referrerAddress.slice(-6)}</span> just received:
+    </div>
+    <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin: 8px 0;">
+      <div style="font-size: 13px;">
+        ${rewardDetails.pickaxe_type ? `🔨 ${rewardDetails.pickaxe_count || 1}x ${rewardDetails.pickaxe_type} pickaxe` : '🔨 Pickaxe reward'}
+      </div>
+      <div style="font-size: 13px;">
+        ${rewardDetails.gold_reward ? `🪙 ${rewardDetails.gold_reward.toLocaleString()} gold` : '🪙 Gold reward'}
+      </div>
+      <div style="font-size: 13px;">
+        💰 0.01 SOL bonus
+      </div>
+    </div>
+    <div style="font-size: 12px; opacity: 0.9; margin-top: 10px;">
+      Thanks for using their referral link! 🎁
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Auto remove after 6 seconds
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.style.animation = 'slideUp 0.3s ease-out forwards';
+      setTimeout(() => notification.remove(), 300);
+    }
+  }, 6000);
+}
+
+// Add CSS animation for slideDown and slideUp
+if (!document.getElementById('referral-animations')) {
+  const style = document.createElement('style');
+  style.id = 'referral-animations';
+  style.textContent = `
+    @keyframes slideDown {
+      from {
+        transform: translateX(-50%) translateY(-20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+    }
+    @keyframes slideUp {
+      from {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(-50%) translateY(-20px);
+        opacity: 0;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 async function checkReferralSession() {
   try {
     if (!state.address) {
