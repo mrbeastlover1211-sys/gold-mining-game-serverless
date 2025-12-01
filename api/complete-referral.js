@@ -28,11 +28,11 @@ export default async function handler(req, res) {
     const client = await pool.connect();
     
     try {
-      // 1. Find pending referral for this address
+      // 1. Find referral for this address (converted = true means wallet was linked)
       const pendingReferral = await client.query(`
         SELECT * FROM referral_visits 
         WHERE converted_address = $1 
-        AND converted = false
+        AND converted = true
         AND expires_at > CURRENT_TIMESTAMP
       `, [address]);
       

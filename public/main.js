@@ -3385,8 +3385,16 @@ async function checkAndCompleteReferral() {
   try {
     console.log('🎁 Checking if referral should be completed...');
     
-    // Call the completion API
-    const response = await fetch(`/api/complete-referral?address=${encodeURIComponent(state.address)}`);
+    // Call the completion API with POST method
+    const response = await fetch(`/api/complete-referral`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        address: state.address
+      })
+    });
     const data = await response.json();
     
     console.log('📊 Referral completion response:', data);
