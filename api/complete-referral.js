@@ -1,4 +1,4 @@
-// ✅ COMPLETE REFERRAL - Trigger reward when land + pickaxe purchased (v3 - Force Deploy)
+// ✅ COMPLETE REFERRAL - v4 FINAL FIX - Automatic rewards working
 export default async function handler(req, res) {
   try {
     console.log('🎁 Processing referral completion...');
@@ -222,7 +222,7 @@ export default async function handler(req, res) {
         await client.query(`
           INSERT INTO referrals (referrer_address, referred_address, reward_amount, reward_type, status)
           VALUES ($1, $2, $3, $4, $5)
-        `, [referrerAddress, address, 0.01, 'sol', 'completed']);
+        `, [referrerAddress, address, 0.01, 'sol', 'completed_referral']);
         console.log('✅ Referral record created');
       } catch (referralRecordError) {
         console.log('ℹ️ Referral record creation info:', referralRecordError.message);
