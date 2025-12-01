@@ -56,7 +56,14 @@ export default async function handler(req, res) {
       
       // 2. Check if referred user has both land and pickaxe
       const userCheck = await client.query(`
-        SELECT address, has_land, inventory, total_mining_power
+        SELECT 
+          address, 
+          has_land, 
+          silver_pickaxes, 
+          gold_pickaxes, 
+          diamond_pickaxes, 
+          netherite_pickaxes,
+          total_mining_power
         FROM users 
         WHERE address = $1
       `, [address]);
@@ -73,7 +80,14 @@ export default async function handler(req, res) {
       
       const userData = userCheck.rows[0];
       const hasLand = userData.has_land;
-      const inventory = userData.inventory || {};
+      
+      // 🔧 FIX: Read pickaxes from correct database columns (not inventory JSON)
+      const inventory = {
+        silver: userData.silver_pickaxes || 0,
+        gold: userData.gold_pickaxes || 0,
+        diamond: userData.diamond_pickaxes || 0,
+        netherite: userData.netherite_pickaxes || 0
+      };
       const totalPickaxes = Object.values(inventory).reduce((sum, count) => sum + (parseInt(count) || 0), 0);
       const hasPickaxe = totalPickaxes > 0;
       
@@ -100,7 +114,16 @@ export default async function handler(req, res) {
       
       // 3. Check if referrer exists and get their current stats
       const referrerCheck = await client.query(`
-        SELECT address, total_referrals, referral_rewards_earned, inventory
+        SELECT 
+          address, 
+          total_referrals, 
+          referral_rewards_earned, 
+          silver_pickaxes, 
+          gold_pickaxes, 
+          diamond_pickaxes, 
+          netherite_pickaxes,
+          gold,
+          total_mining_power
         FROM users 
         WHERE address = $1
       `, [referrerAddress]);
