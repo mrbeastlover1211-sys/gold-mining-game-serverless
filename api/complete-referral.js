@@ -207,10 +207,13 @@ export default async function handler(req, res) {
         throw saveError;
       }
       
-      // 6. Mark referral as completed (set completed flag)
+      // 6. Mark referral as completed (use converted field since completed column doesn't exist)
       await client.query(`
         UPDATE referral_visits 
-        SET completed = true, completed_timestamp = CURRENT_TIMESTAMP
+        SET 
+          converted = true, 
+          converted_timestamp = CURRENT_TIMESTAMP,
+          notes = 'Referral completed and rewards distributed'
         WHERE session_id = $1
       `, [referralVisit.session_id]);
       
