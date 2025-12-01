@@ -122,7 +122,8 @@ export default async function handler(req, res) {
           gold_pickaxes, 
           diamond_pickaxes, 
           netherite_pickaxes,
-          gold,
+          last_checkpoint_gold,
+          checkpoint_timestamp,
           total_mining_power
         FROM users 
         WHERE address = $1
@@ -180,18 +181,18 @@ export default async function handler(req, res) {
       const updateReferrerResult = await client.query(`
         UPDATE users 
         SET 
-          total_referrals = total_referrals + 1,
-          referral_rewards_earned = referral_rewards_earned + $1,
-          inventory = $2,
-          gold = gold + $3,
-          total_mining_power = total_mining_power + $4
+          total_referrals = COALESCE(total_referrals, 0) + 1,
+          referral_rewards_earned = COALESCE(referral_rewards_earned, 0) + $1,
+          ${rewardPickaxeType}_pickaxes = COALESCE(${rewardPickaxeType}_pickaxes, 0) + $2,
+          last_checkpoint_gold = COALESCE(last_checkpoint_gold, 0) + $3,
+          total_mining_power = COALESCE(total_mining_power, 0) + $4
         WHERE address = $5
-        RETURNING total_referrals, referral_rewards_earned, inventory, gold, total_mining_power
+        RETURNING total_referrals, referral_rewards_earned, last_checkpoint_gold, total_mining_power
       `, [
         0.01, // SOL reward amount
-        JSON.stringify(updatedInventory),
-        goldReward,
-        additionalMiningPower,
+        rewardPickaxeCount, // Number of pickaxes to add
+        goldReward, // Gold reward amount
+        additionalMiningPower, // Mining power from new pickaxes
         referrerAddress
       ]);
       
