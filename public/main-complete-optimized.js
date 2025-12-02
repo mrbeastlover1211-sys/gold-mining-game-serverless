@@ -1394,14 +1394,13 @@ async function checkLandStatusAndShowPopup() {
   
   if (!state.address) return null;
   
-  // 🗄️ CACHE SYSTEM: Check sessionStorage first (like old main.js)
+  // 🗄️ EXACT CACHE SYSTEM FROM OLD MAIN.JS
   const landVerifiedKey = `land_verified_${state.address}`;
   const cachedLandStatus = sessionStorage.getItem(landVerifiedKey);
   
   if (cachedLandStatus === 'true') {
-    console.log('✅ Land ownership cached - enabling features');
-    enableAllGameFeatures();
-    return true; // User has land (from cache)
+    console.log('✅ Land ownership verified from cache - no modal needed');
+    return true; // User has land (from cache) - don't show modal
   }
   
   try {
@@ -1427,15 +1426,13 @@ async function checkLandStatusAndShowPopup() {
       
       return false; // Indicate user has no land
     } else {
-      console.log('🏠 User has land - caching and enabling features');
+      console.log('🏠 User has land - caching for session');
       
-      // 💾 CACHE LAND OWNERSHIP (like old main.js)
+      // 💾 CACHE LAND OWNERSHIP (EXACT SAME AS OLD MAIN.JS)
       sessionStorage.setItem(landVerifiedKey, 'true');
-      console.log('💾 Land ownership cached for session');
+      console.log('💾 Land ownership cached for session:', landVerifiedKey);
       
-      // ✅ ENABLE ALL GAME FUNCTIONALITY
-      enableAllGameFeatures();
-      
+      // Don't show any modal - user has land
       return true; // Indicate user has land
     }
     
