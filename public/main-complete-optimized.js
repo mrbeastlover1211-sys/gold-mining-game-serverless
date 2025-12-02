@@ -1533,9 +1533,9 @@ function setupAllEventListeners() {
   }
   
   // Sell Gold Button
-  const sellGoldBtn = $('#sellGoldBtn');
-  if (sellGoldBtn) {
-    sellGoldBtn.addEventListener('click', sellGold);
+  const sellBtn = $('#sellBtn');
+  if (sellBtn) {
+    sellBtn.addEventListener('click', sellGold);
     console.log('✅ Sell gold button bound');
   }
   
@@ -1580,7 +1580,7 @@ function setupAllEventListeners() {
   });
   
   // Gold input events
-  const goldInput = $('#goldToSell');
+  const goldInput = $('#sellAmount');
   if (goldInput) {
     goldInput.addEventListener('input', () => {
       calculateGoldValue();
@@ -1780,10 +1780,10 @@ async function sellGold() {
       }
       
       // Clear input
-      $('#goldToSell').value = '';
+      $('#sellAmount').value = '';
       
       // Reset sell button
-      const sellBtn = $('#sellGoldBtn');
+      const sellBtn = $('#sellBtn');
       if (sellBtn) {
         sellBtn.disabled = false;
         sellBtn.textContent = 'Sell Gold';
