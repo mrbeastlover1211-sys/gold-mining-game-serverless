@@ -655,15 +655,307 @@ function hideLandModal() {
   }
 }
 
-// 🚀 INITIALIZATION
+// 🚀 COMPLETE INITIALIZATION WITH PROPER EVENT BINDING
 document.addEventListener('DOMContentLoaded', async function() {
   console.log('🚀 Gold Mining Game - Complete Optimized Version Loading...');
+  
+  // Check for referrals first
+  await checkExistingReferralSession();
   
   // Load configuration
   await loadConfig();
   
+  // Setup all event listeners and button bindings
+  setupAllEventListeners();
+  
   console.log('✅ Game initialization complete!');
 });
+
+// 🎮 SETUP ALL EVENT LISTENERS AND BUTTON BINDINGS
+function setupAllEventListeners() {
+  console.log('🎮 Setting up ALL event listeners...');
+  
+  // Connect Wallet Button
+  const connectBtn = $('#connectBtn');
+  if (connectBtn) {
+    connectBtn.addEventListener('click', connectWallet);
+    console.log('✅ Connect wallet button bound');
+  }
+  
+  // Land Purchase Button
+  const purchaseLandBtn = $('#purchaseLandBtn');
+  if (purchaseLandBtn) {
+    purchaseLandBtn.addEventListener('click', purchaseLand);
+    console.log('✅ Purchase land button bound');
+  }
+  
+  // Sell Gold Button
+  const sellGoldBtn = $('#sellGoldBtn');
+  if (sellGoldBtn) {
+    sellGoldBtn.addEventListener('click', sellGold);
+    console.log('✅ Sell gold button bound');
+  }
+  
+  // Copy Referral Link Button
+  const copyReferralBtn = $('#copyReferralBtn');
+  if (copyReferralBtn) {
+    copyReferralBtn.addEventListener('click', copyReferralLink);
+    console.log('✅ Copy referral button bound');
+  }
+  
+  // Toggle Buttons
+  const toggleShopBtn = $('#toggleShopBtn');
+  if (toggleShopBtn) {
+    toggleShopBtn.addEventListener('click', togglePickaxeShop);
+    console.log('✅ Toggle shop button bound');
+  }
+  
+  const toggleExchangeBtn = $('#toggleExchangeBtn');
+  if (toggleExchangeBtn) {
+    toggleExchangeBtn.addEventListener('click', toggleGoldExchange);
+    console.log('✅ Toggle exchange button bound');
+  }
+  
+  // Modal Buttons - Find and bind ALL modal control buttons
+  const modalButtons = [
+    { id: 'openShopBtn', func: showPickaxeShop },
+    { id: 'openExchangeBtn', func: showGoldExchange },
+    { id: 'openStatsBtn', func: showStats },
+    { id: 'openReferralBtn', func: showReferralModal },
+    { id: 'closeShopBtn', func: closePickaxeShop },
+    { id: 'closeExchangeBtn', func: closeGoldExchange },
+    { id: 'closeStatsBtn', func: closeStats },
+    { id: 'closeReferralBtn', func: closeReferralModal }
+  ];
+  
+  modalButtons.forEach(btn => {
+    const element = document.getElementById(btn.id);
+    if (element) {
+      element.addEventListener('click', btn.func);
+      console.log(`✅ ${btn.id} button bound`);
+    }
+  });
+  
+  // Gold input events
+  const goldInput = $('#goldToSell');
+  if (goldInput) {
+    goldInput.addEventListener('input', () => {
+      calculateGoldValue();
+      updateSellButton();
+    });
+    console.log('✅ Gold input events bound');
+  }
+  
+  // Universal Modal Close Handler
+  document.addEventListener('click', (e) => {
+    // Close modal when clicking overlay
+    if (e.target.classList.contains('modal-overlay')) {
+      e.target.style.display = 'none';
+      e.target.classList.remove('show');
+    }
+    
+    // Close modal when clicking close button
+    if (e.target.classList.contains('close-btn') || e.target.classList.contains('modal-close')) {
+      const modal = e.target.closest('.modal-overlay');
+      if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+      }
+    }
+  });
+  
+  // ESC key to close modals
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const modals = document.querySelectorAll('.modal-overlay.show');
+      modals.forEach(modal => {
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+      });
+    }
+  });
+  
+  console.log('✅ ALL event listeners setup complete!');
+}
+
+// 🔨 CRITICAL PURCHASE FUNCTIONS FROM ORIGINAL main.js
+
+async function buyPickaxe(pickaxeType) {
+  if (!state.address || !state.config) {
+    alert('Please connect your wallet first');
+    return;
+  }
+  
+  try {
+    const quantity = parseInt($(`#qty-${pickaxeType}`).value) || 1;
+    const costSol = state.config.pickaxes[pickaxeType].costSol;
+    const totalCost = costSol * quantity;
+    
+    console.log(`🛒 Buying ${quantity}x ${pickaxeType} pickaxe(s) for ${totalCost} SOL`);
+    
+    // Show buying message
+    showShopMessage(`Purchasing ${quantity}x ${pickaxeType} pickaxe(s)...`, 'info');
+    
+    // Create and send transaction
+    const transaction = new solanaWeb3.Transaction();
+    const recipientPubkey = new solanaWeb3.PublicKey(state.config.treasury);
+    const lamports = totalCost * solanaWeb3.LAMPORTS_PER_SOL;
+    
+    transaction.add(
+      solanaWeb3.SystemProgram.transfer({
+        fromPubkey: new solanaWeb3.PublicKey(state.address),
+        toPubkey: recipientPubkey,
+        lamports: lamports,
+      })
+    );
+    
+    const { blockhash } = await state.connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = new solanaWeb3.PublicKey(state.address);
+    
+    const signedTransaction = await state.wallet.signTransaction(transaction);
+    const txId = await state.connection.sendRawTransaction(signedTransaction.serialize());
+    
+    console.log('📝 Transaction sent:', txId);
+    showShopMessage('Confirming transaction...', 'info');
+    
+    // Wait for confirmation
+    await state.connection.confirmTransaction(txId);
+    console.log('✅ Transaction confirmed');
+    
+    // Confirm purchase with backend
+    const confirmRes = await fetch('/api/purchase-confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: state.address,
+        pickaxeType,
+        quantity,
+        txId
+      })
+    });
+    
+    const confirmData = await confirmRes.json();
+    
+    if (confirmData.success) {
+      // 🎉 PICKAXE PURCHASE SUCCESS!
+      showShopMessage(`✅ Successfully bought ${quantity}x ${pickaxeType} pickaxe${quantity > 1 ? 's' : ''}!`, 'success');
+      console.log('✅ Pickaxe purchase completed successfully');
+      
+      // 🔄 UPDATE DISPLAY: Refresh status to show new pickaxes and mining
+      console.log('🔄 Refreshing status after pickaxe purchase...');
+      await refreshStatus(true);
+      
+      // 🔧 REFERRAL FIX: Check for referral completion after pickaxe purchase
+      console.log('🤝 Checking referral completion after pickaxe purchase...');
+      await autoCheckReferralCompletion();
+      
+    } else {
+      throw new Error(confirmData.error || 'Purchase confirmation failed');
+    }
+    
+  } catch (error) {
+    console.error('❌ Pickaxe purchase failed:', error);
+    showShopMessage(`❌ Purchase failed: ${error.message}`, 'error');
+  }
+}
+
+function showShopMessage(message, type) {
+  const msgEl = $('#shopMsg');
+  if (msgEl) {
+    msgEl.textContent = message;
+    msgEl.className = `msg ${type}`;
+    
+    // Auto-clear success/error messages after 5 seconds
+    if (type === 'success' || type === 'error') {
+      setTimeout(() => {
+        if (msgEl.textContent === message) {
+          msgEl.textContent = '';
+          msgEl.className = '';
+        }
+      }, 5000);
+    }
+  }
+}
+
+// 🎯 REFERRAL SESSION MANAGEMENT
+async function checkExistingReferralSession() {
+  console.log('🎯 Checking existing referral session...');
+  
+  // Check URL for ref parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const refAddress = urlParams.get('ref');
+  
+  if (refAddress) {
+    console.log('🔗 Found referral parameter:', refAddress.slice(0, 8) + '...');
+    
+    // Store in localStorage for persistence
+    localStorage.setItem('referralAddress', refAddress);
+    
+    // Track the referral visit
+    try {
+      await fetch('/api/track-referral', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          referrerAddress: refAddress,
+          timestamp: Date.now()
+        })
+      });
+      
+      console.log('✅ Referral visit tracked');
+      
+    } catch (error) {
+      console.log('⚠️ Referral tracking failed:', error.message);
+    }
+    
+    // Clean URL (remove ref parameter)
+    const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+    window.history.replaceState({}, document.title, cleanUrl);
+  }
+  
+  // Check for stored referral
+  const storedRef = localStorage.getItem('referralAddress');
+  if (storedRef) {
+    console.log('🎯 Found stored referral:', storedRef.slice(0, 8) + '...');
+  }
+}
+
+// 🏠 LAND STATUS AND MODAL FUNCTIONS
+async function checkLandStatusAndShowPopup() {
+  // Prevent infinite loop
+  if (window.landCheckInProgress) {
+    console.log('⚠️ Land detection already running, skipping...');
+    return;
+  }
+  
+  window.landCheckInProgress = true;
+  
+  // Auto-clear after 5 seconds
+  setTimeout(() => {
+    window.landCheckInProgress = false;
+  }, 5000);
+  
+  if (!state.address) return;
+  
+  try {
+    console.log('🏠 Checking land status...');
+    const response = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
+    const data = await response.json();
+    
+    console.log('🏠 Land API response:', data);
+    
+    if (!data.hasLand) {
+      console.log('🏠 User needs land - showing modal');
+      showLandModal();
+    } else {
+      console.log('🏠 User has land - no modal needed');
+    }
+    
+  } catch (error) {
+    console.log('⚠️ Land status check failed:', error.message);
+  }
+}
 
 // 🎮 UI CONTROL FUNCTIONS - All Button and Popup Handlers
 
