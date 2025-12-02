@@ -455,6 +455,17 @@ async function connectWallet() {
     if (connectBtn) {
       connectBtn.textContent = 'Connecting...';
       connectBtn.disabled = true;
+    } else {
+      console.error('❌ Connect button element not found! Looking for #connectBtn');
+      // Try alternative selectors
+      const altConnectBtn = document.querySelector('[onclick="connectWallet()"]') || 
+                            document.querySelector('.connect-btn') ||
+                            document.querySelector('button[type="button"]');
+      if (altConnectBtn) {
+        console.log('✅ Found connect button with alternative selector');
+        altConnectBtn.textContent = 'Connecting...';
+        altConnectBtn.disabled = true;
+      }
     }
     
     await provider.connect();
@@ -2521,7 +2532,7 @@ function copyReferralLink() {
 
 // Calculate gold value in SOL
 function calculateGoldValue() {
-  const goldInput = $('#goldToSell');
+  const goldInput = $('#sellAmount');
   const valueDisplay = $('#goldValueSOL');
   
   if (goldInput && valueDisplay && state.config) {
@@ -2533,8 +2544,8 @@ function calculateGoldValue() {
 
 // Update sell button based on gold amount
 function updateSellButton() {
-  const goldInput = $('#goldToSell');
-  const sellBtn = $('#sellGoldBtn');
+  const goldInput = $('#sellAmount');
+  const sellBtn = $('#sellBtn');
   
   if (goldInput && sellBtn && state.config) {
     const goldAmount = parseFloat(goldInput.value) || 0;
