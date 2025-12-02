@@ -977,9 +977,14 @@ function updateWalletInfo(address) {
   $('#connectBtn').disabled = true;
   
   // Show wallet-dependent UI elements
-  $('#userStats').style.display = 'block';
-  $('#pickaxeShop').style.display = 'block';
-  $('#goldExchange').style.display = 'block';
+  // Show wallet-dependent UI elements (with null checks)
+  const userStats = $('#userStats');
+  const pickaxeShop = $('#pickaxeShop');
+  const goldExchange = $('#goldExchange');
+  
+  if (userStats) userStats.style.display = 'block';
+  if (pickaxeShop) pickaxeShop.style.display = 'block';
+  if (goldExchange) goldExchange.style.display = 'block';
 }
 
 // 🔄 STATUS REFRESH WITH OPTIMIZED CACHING
@@ -1352,6 +1357,77 @@ function hideLandModal() {
   }
 }
 
+// 🎄 CHRISTMAS V2.0 MODAL FUNCTIONS
+function showV2ComingSoonModal() {
+  const modal = document.getElementById('v2ComingSoonModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    console.log('🎄 Opened Christmas V2.0 Coming Soon modal');
+  } else {
+    console.error('❌ #v2ComingSoonModal element not found!');
+  }
+}
+
+function hideV2ComingSoonModal() {
+  const modal = document.getElementById('v2ComingSoonModal');
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+    console.log('🎄 Closed Christmas V2.0 Coming Soon modal');
+  }
+}
+
+// Christmas V2.0 Countdown Timer
+function startChristmasCountdown() {
+  const christmasDate = new Date('December 25, 2024 00:00:00').getTime();
+  
+  setInterval(function() {
+    const now = new Date().getTime();
+    const distance = christmasDate - now;
+    
+    if (distance < 0) {
+      // Christmas has passed, show "Available Now!" or update to next year
+      const countdownEl = document.getElementById('christmasCountdown');
+      if (countdownEl) {
+        countdownEl.innerHTML = '🎉 Christmas Edition Available Now!';
+      }
+      return;
+    }
+    
+    // Calculate time units
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+    
+    // Display countdown
+    const countdownEl = document.getElementById('christmasCountdown');
+    if (countdownEl) {
+      countdownEl.innerHTML = `
+        <div class="countdown-units">
+          <div class="countdown-unit">
+            <span class="countdown-number">${days}</span>
+            <span class="countdown-label">Days</span>
+          </div>
+          <div class="countdown-unit">
+            <span class="countdown-number">${hours.toString().padStart(2, '0')}</span>
+            <span class="countdown-label">Hours</span>
+          </div>
+          <div class="countdown-unit">
+            <span class="countdown-number">${minutes.toString().padStart(2, '0')}</span>
+            <span class="countdown-label">Minutes</span>
+          </div>
+          <div class="countdown-unit">
+            <span class="countdown-number">${seconds.toString().padStart(2, '0')}</span>
+            <span class="countdown-label">Seconds</span>
+          </div>
+        </div>
+      `;
+    }
+  }, 1000);
+}
+
 // 🚀 COMPLETE INITIALIZATION - EXACT COPY FROM WORKING main.js
 document.addEventListener('DOMContentLoaded', async function() {
   console.log('🚀 Gold Mining Game - Complete Optimized Version Loading...');
@@ -1376,6 +1452,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupHealthMonitoring();
     
     console.log('✅ Game initialization complete - all systems operational!');
+    
+    // Start Christmas countdown timer
+    startChristmasCountdown();
+    console.log('✅ Started Christmas countdown timer');
     
     // Show ready notification
     setTimeout(() => {
@@ -1585,11 +1665,11 @@ function setupAllEventListeners() {
     console.log('✅ Refer & Earn button bound');
   }
   
-  // Setup Christmas Edition button
+  // Setup Christmas Edition button with proper modal
   const christmasBtn = $('#v2ComingSoonBtn');
   if (christmasBtn) {
     christmasBtn.addEventListener('click', () => {
-      alert('🎄 Christmas Edition coming soon! Special holiday mining events and exclusive Christmas pickaxes await!');
+      showV2ComingSoonModal();
     });
     console.log('✅ Christmas Edition button bound');
   }
@@ -2699,6 +2779,9 @@ function setupEventListeners() {
 
 // Export all functions for global access
 window.connectWallet = connectWallet;
+window.showV2ComingSoonModal = showV2ComingSoonModal;
+window.hideV2ComingSoonModal = hideV2ComingSoonModal;
+window.startChristmasCountdown = startChristmasCountdown;
 window.buyPickaxe = buyPickaxe;
 window.sellGold = sellGold;
 window.changeQuantity = changeQuantity;
