@@ -1481,13 +1481,13 @@ function showMandatoryLandModal() {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.9);
+    background: linear-gradient(45deg, rgba(0,0,0,0.9), rgba(10,10,30,0.95));
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 10000;
     font-family: Arial, sans-serif;
-    pointer-events: none;
+    backdrop-filter: blur(10px);
   `;
   
   // 🔒 CRITICAL: Backdrop is unclickable, only modal content accepts clicks
@@ -1515,7 +1515,6 @@ function showMandatoryLandModal() {
       margin: 20px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.3);
       border: 2px solid #4a90e2;
-      pointer-events: auto;
     ">"
       <h2 style="margin-bottom: 20px; color: #ffd700; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
         🏗️ Land Required to Start Mining!
@@ -1574,8 +1573,33 @@ function showMandatoryLandModal() {
   document.body.appendChild(modal);
   document.body.style.overflow = 'hidden';
   
-  // 🔒 COMPLETELY DISABLE BACKDROP CLICKS - No event listeners needed
-  // Modal backdrop has pointer-events: none, only content is clickable
+  // 🔒 EXACT COPY FROM OLD MAIN.JS - WORKING MODAL PREVENTION
+  modal.addEventListener('contextmenu', (e) => e.preventDefault());
+  modal.addEventListener('click', (e) => e.stopPropagation());
+  
+  // Prevent all closing mechanisms like old main.js
+  document.addEventListener('keydown', function preventLandModalEscape(e) {
+    if (document.getElementById('mandatoryLandModal')) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        showMandatoryLandMessage('⚠️ Cannot close with Escape - land purchase required!', 'error');
+        return false;
+      }
+    }
+  });
+  
+  // Prevent F5 refresh during modal (like old main.js)
+  document.addEventListener('keydown', function preventRefreshDuringLandModal(e) {
+    if (document.getElementById('mandatoryLandModal')) {
+      if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+        e.preventDefault();
+        e.stopPropagation();
+        showMandatoryLandMessage('⚠️ Please complete land purchase before refreshing!', 'error');
+        return false;
+      }
+    }
+  });
   
   // Disable escape key
   document.addEventListener('keydown', preventModalClose);
