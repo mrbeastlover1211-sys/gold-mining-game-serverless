@@ -2025,7 +2025,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         z-index: 9999;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       `;
-      notification.innerHTML = '🎮 Game Ready - Optimized & Cost-Efficient!';
+      // Notification removed - no longer needed
       document.body.appendChild(notification);
       
       setTimeout(() => {
