@@ -1459,7 +1459,7 @@ function setupAllEventListeners() {
   console.log('✅ ALL event listeners setup complete!');
 }
 
-// 🔨 CRITICAL PURCHASE FUNCTIONS FROM ORIGINAL main.js
+// 🔨 COMPLETE PURCHASE & TRANSACTION FUNCTIONS - EXACT COPY FROM WORKING main.js
 
 async function buyPickaxe(pickaxeType) {
   if (!state.address || !state.config) {
@@ -1527,6 +1527,9 @@ async function buyPickaxe(pickaxeType) {
       console.log('🔄 Refreshing status after pickaxe purchase...');
       await refreshStatus(true);
       
+      // Update mining immediately with new pickaxe
+      updateMiningAfterPurchase(pickaxeType, quantity);
+      
       // 🔧 REFERRAL FIX: Check for referral completion after pickaxe purchase
       console.log('🤝 Checking referral completion after pickaxe purchase...');
       await autoCheckReferralCompletion();
@@ -1538,6 +1541,247 @@ async function buyPickaxe(pickaxeType) {
   } catch (error) {
     console.error('❌ Pickaxe purchase failed:', error);
     showShopMessage(`❌ Purchase failed: ${error.message}`, 'error');
+  }
+}
+
+// Complete gold selling function from original main.js
+async function sellGold() {
+  if (!state.address || !state.config) {
+    alert('Please connect your wallet first');
+    return;
+  }
+  
+  try {
+    const goldToSell = parseFloat($('#goldToSell').value);
+    const minSell = state.config.minSellGold;
+    
+    if (!goldToSell || goldToSell <= 0) {
+      $('#sellMsg').textContent = '❌ Please enter a valid gold amount';
+      $('#sellMsg').className = 'msg error';
+      return;
+    }
+    
+    if (goldToSell < minSell) {
+      $('#sellMsg').textContent = `❌ Minimum sell amount is ${minSell.toLocaleString()} gold`;
+      $('#sellMsg').className = 'msg error';
+      return;
+    }
+    
+    // Get current gold from display
+    const currentGold = state.status.gold || 0;
+    
+    if (goldToSell > currentGold) {
+      $('#sellMsg').textContent = `❌ You only have ${Math.floor(currentGold).toLocaleString()} gold`;
+      $('#sellMsg').className = 'msg error';
+      return;
+    }
+    
+    console.log(`💰 Attempting to sell ${goldToSell} gold...`);
+    
+    // Calculate SOL amount
+    const solAmount = goldToSell * state.config.goldPriceSol;
+    $('#sellMsg').textContent = `Selling ${goldToSell.toLocaleString()} gold for ${solAmount.toFixed(6)} SOL...`;
+    $('#sellMsg').className = 'msg info';
+    
+    const sellRes = await fetch('/api/sell-gold', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: state.address,
+        goldAmount: goldToSell
+      })
+    });
+    
+    const sellData = await sellRes.json();
+    
+    if (sellData.success) {
+      $('#sellMsg').textContent = `✅ Gold sale successful! You will receive ${solAmount.toFixed(6)} SOL within 24 hours.`;
+      $('#sellMsg').className = 'msg success';
+      
+      // Update gold display immediately (subtract sold gold)
+      const newGold = currentGold - goldToSell;
+      state.status.gold = newGold;
+      
+      // Update checkpoint base gold
+      if (state.checkpoint) {
+        state.checkpoint.last_checkpoint_gold = newGold;
+        state.checkpoint.checkpoint_timestamp = Math.floor(Date.now() / 1000);
+      }
+      
+      // Update display
+      const goldEl = $('#totalGold');
+      if (goldEl) {
+        goldEl.textContent = newGold.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      }
+      
+      // Clear input
+      $('#goldToSell').value = '';
+      
+      // Reset sell button
+      const sellBtn = $('#sellGoldBtn');
+      if (sellBtn) {
+        sellBtn.disabled = false;
+        sellBtn.textContent = 'Sell Gold';
+      }
+      
+      console.log('✅ Gold sale completed successfully');
+      
+    } else {
+      throw new Error(sellData.error || 'Gold sale failed');
+    }
+    
+  } catch (error) {
+    console.error('❌ Gold sale failed:', error);
+    $('#sellMsg').textContent = `❌ Sale failed: ${error.message}`;
+    $('#sellMsg').className = 'msg error';
+  }
+}
+
+// Complete land purchase function from original main.js
+async function purchaseLand() {
+  if (!state.address || !state.config) {
+    alert('Please connect your wallet first');
+    return;
+  }
+  
+  try {
+    console.log('🏠 Initiating land purchase...');
+    
+    const landCost = state.config.landCostSol || 0.001;
+    const statusEl = $('#landPurchaseStatus');
+    
+    if (statusEl) {
+      statusEl.textContent = `Purchasing land for ${landCost} SOL...`;
+      statusEl.className = 'status info';
+    }
+    
+    console.log('💰 Land cost:', landCost, 'SOL');
+    console.log('🏛️ Treasury address:', state.config.treasury);
+    
+    // Create transaction
+    const transaction = new solanaWeb3.Transaction();
+    const recipientPubkey = new solanaWeb3.PublicKey(state.config.treasury);
+    const lamports = landCost * solanaWeb3.LAMPORTS_PER_SOL;
+    
+    console.log('💸 Lamports to transfer:', lamports);
+    
+    transaction.add(
+      solanaWeb3.SystemProgram.transfer({
+        fromPubkey: new solanaWeb3.PublicKey(state.address),
+        toPubkey: recipientPubkey,
+        lamports: lamports,
+      })
+    );
+    
+    const { blockhash } = await state.connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = new solanaWeb3.PublicKey(state.address);
+    
+    console.log('✍️ Requesting transaction signature...');
+    
+    const signedTransaction = await state.wallet.signTransaction(transaction);
+    const txId = await state.connection.sendRawTransaction(signedTransaction.serialize());
+    
+    console.log('📝 Land purchase transaction sent:', txId);
+    
+    if (statusEl) {
+      statusEl.textContent = 'Confirming transaction...';
+    }
+    
+    // Wait for confirmation
+    await state.connection.confirmTransaction(txId);
+    console.log('✅ Land purchase transaction confirmed');
+    
+    // Confirm with backend
+    const confirmRes = await fetch('/api/purchase-land', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: state.address,
+        txId: txId
+      })
+    });
+    
+    const confirmData = await confirmRes.json();
+    console.log('🏛️ Backend confirmation response:', confirmData);
+    
+    if (confirmData.success) {
+      if (statusEl) {
+        statusEl.textContent = '✅ Land purchase successful! Welcome to your new land!';
+        statusEl.className = 'status success';
+      }
+      
+      console.log('🎉 Land purchased successfully!');
+      
+      // Hide land modal
+      hideLandModal();
+      
+      // Update wallet balance
+      await updateWalletBalance();
+      
+      // 🔧 REFERRAL FIX: Check for referral completion after land purchase
+      console.log('🤝 Checking referral completion after land purchase...');
+      await autoCheckReferralCompletion();
+      
+      // Show success notification
+      setTimeout(() => {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: linear-gradient(45deg, #22c55e, #16a34a);
+          color: white;
+          padding: 20px 30px;
+          border-radius: 15px;
+          z-index: 10001;
+          font-family: Arial, sans-serif;
+          text-align: center;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        `;
+        
+        notification.innerHTML = `
+          <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">
+            🎉 Land Purchase Complete!
+          </div>
+          <div style="font-size: 14px;">
+            You can now buy pickaxes and start mining!
+          </div>
+          <button onclick="this.parentElement.remove()" style="
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            margin-top: 15px;
+            cursor: pointer;
+          ">Awesome! 🚀</button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+          if (notification.parentElement) {
+            notification.remove();
+          }
+        }, 8000);
+      }, 1000);
+      
+    } else {
+      throw new Error(confirmData.error || 'Land purchase confirmation failed');
+    }
+    
+  } catch (error) {
+    console.error('❌ Land purchase failed:', error);
+    const statusEl = $('#landPurchaseStatus');
+    if (statusEl) {
+      statusEl.textContent = `❌ Purchase failed: ${error.message}`;
+      statusEl.className = 'status error';
+    }
   }
 }
 
