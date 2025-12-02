@@ -2699,3 +2699,197 @@ window.closeReferralModal = closeReferralModal;
 window.copyReferralLink = copyReferralLink;
 window.calculateGoldValue = calculateGoldValue;
 window.updateSellButton = updateSellButton;
+
+// 🎯 MODAL FUNCTIONS - Added for popup functionality
+
+// How It Works Modal Functions
+function showHowItWorksModal() {
+  console.log('❓ Opening How It Works modal');
+  const modal = document.getElementById('howItWorksModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function hideHowItWorksModal() {
+  console.log('❓ Closing How It Works modal');
+  const modal = document.getElementById('howItWorksModal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    document.body.style.overflow = 'auto';
+  }
+}
+
+// Promoters Modal Functions
+function showPromotersModal() {
+  console.log('📈 Opening Promoters modal');
+  const modal = document.getElementById('promotersModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closePromotersModal() {
+  console.log('📈 Closing Promoters modal');
+  const modal = document.getElementById('promotersModal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    document.body.style.overflow = 'auto';
+  }
+}
+
+// Battlezone Modal Functions
+function showBattlezoneModal() {
+  console.log('⚔️ Opening Battlezone modal');
+  const modal = document.getElementById('battlezoneModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeBattlezoneModal() {
+  console.log('⚔️ Closing Battlezone modal');
+  const modal = document.getElementById('battlezoneModal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    document.body.style.overflow = 'auto';
+  }
+}
+
+// V2 Modal Functions
+function closeV2Modal() {
+  console.log('🎄 Closing V2 modal');
+  const modal = document.getElementById('v2ComingSoonModal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    document.body.style.overflow = 'auto';
+  }
+}
+
+// Gold Store Modal Functions
+function openGoldStoreModal() {
+  console.log('🏪 Opening Gold Store modal');
+  const modal = document.getElementById('goldStoreModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.classList.add('show');
+    updateGoldStoreModal();
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeGoldStoreModal(event) {
+  if (event && event.target !== event.currentTarget) {
+    return;
+  }
+  console.log('🏪 Closing Gold Store modal');
+  const modal = document.getElementById('goldStoreModal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    document.body.style.overflow = 'auto';
+  }
+}
+
+function updateGoldStoreModal() {
+  console.log('🏪 Updating Gold Store modal with current data');
+  
+  const currentGold = state.status.gold || 0;
+  const inventory = state.status.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 };
+  
+  const silverCount = inventory.silver || 0;
+  const goldCount = inventory.gold || 0;
+  
+  const modalSilverOwnedEl = $('#modal-silver-owned-count');
+  if (modalSilverOwnedEl) {
+    modalSilverOwnedEl.textContent = `${silverCount} pickaxe${silverCount === 1 ? '' : 's'}`;
+  }
+  
+  const modalGoldOwnedEl = $('#modal-gold-owned-count');
+  if (modalGoldOwnedEl) {
+    modalGoldOwnedEl.textContent = `${goldCount} pickaxe${goldCount === 1 ? '' : 's'}`;
+  }
+}
+
+// Referral Modal Functions
+function showReferralModal() {
+  console.log('🎁 Opening Referral modal');
+  const modal = document.getElementById('referralModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeReferralModal() {
+  console.log('🎁 Closing Referral modal');
+  const modal = document.getElementById('referralModal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    document.body.style.overflow = 'auto';
+  }
+}
+
+// Gold Store Purchase Functions
+function buyPickaxeWithGold(pickaxeType, goldCost) {
+  const currentGold = state.status.gold || 0;
+  
+  if (currentGold < goldCost) {
+    alert(`You need ${goldCost.toLocaleString()} gold to buy this pickaxe. You have ${Math.floor(currentGold).toLocaleString()} gold.`);
+    return;
+  }
+  
+  console.log(`🛒 Buying ${pickaxeType} pickaxe with ${goldCost} gold`);
+  
+  // Update local state immediately for better UX
+  state.status.gold -= goldCost;
+  state.status.inventory[pickaxeType] = (state.status.inventory[pickaxeType] || 0) + 1;
+  
+  updateDisplay({
+    gold: state.status.gold,
+    inventory: state.status.inventory
+  });
+  
+  // Update mining after purchase
+  updateMiningAfterPurchase(pickaxeType, 1);
+  
+  updateGoldStoreModal();
+  
+  // Show success message
+  const msgEl = $('#modalStoreMsg');
+  if (msgEl) {
+    msgEl.textContent = `✅ Successfully bought ${pickaxeType} pickaxe with ${goldCost.toLocaleString()} gold!`;
+    msgEl.className = 'store-message-modal success';
+    setTimeout(() => {
+      msgEl.textContent = '';
+      msgEl.className = 'store-message-modal';
+    }, 3000);
+  }
+}
+
+// Make functions globally available
+window.showHowItWorksModal = showHowItWorksModal;
+window.hideHowItWorksModal = hideHowItWorksModal;
+window.showPromotersModal = showPromotersModal;
+window.closePromotersModal = closePromotersModal;
+window.showBattlezoneModal = showBattlezoneModal;
+window.closeBattlezoneModal = closeBattlezoneModal;
+window.closeV2Modal = closeV2Modal;
+window.openGoldStoreModal = openGoldStoreModal;
+window.closeGoldStoreModal = closeGoldStoreModal;
+window.updateGoldStoreModal = updateGoldStoreModal;
+window.showReferralModal = showReferralModal;
+window.closeReferralModal = closeReferralModal;
+window.buyPickaxeWithGold = buyPickaxeWithGold;
