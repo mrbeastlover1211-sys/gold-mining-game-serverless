@@ -96,6 +96,11 @@ async function autoReconnectWallet() {
             return; // Stop execution - no other features available
           }
           
+          // ✅ Enable features if land check passed or was cached
+          if (landCheckResult === true) {
+            console.log('✅ Land verified after refresh - proceeding normally');
+          }
+          
           console.log('🎉 Wallet auto-reconnect and data restore complete!');
         } else {
           console.log('ℹ️ New user after auto-reconnect');
@@ -1422,6 +1427,11 @@ async function checkLandStatusAndShowPopup() {
     
   } catch (error) {
     console.error('❌ Land status check failed:', error.message);
+    
+    // 🔄 ON ERROR: Enable features to prevent total lockout
+    console.log('⚠️ API error - enabling features to prevent lockout');
+    enableAllGameFeatures();
+    
     return null; // Unknown status
   }
 }
