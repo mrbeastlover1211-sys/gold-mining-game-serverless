@@ -3336,6 +3336,20 @@ window.hideV2ComingSoonModal = hideV2ComingSoonModal;
 window.startChristmasCountdown = startChristmasCountdown;
 window.showMandatoryLandModal = showMandatoryLandModal;
 window.handleMandatoryLandPurchase = handleMandatoryLandPurchase;
+
+// 📈 PROMOTERS MODAL FUNCTIONS
+function showPromotersModal() {
+  alert('📈 Promoters Program coming soon! Earn rewards for promoting the game.');
+  console.log('📈 Promoters modal shown');
+}
+
+function showBattlezoneModal() {
+  alert('⚔️ V2.0 Battlezone coming soon! Epic mining battles and competitions.');
+  console.log('⚔️ Battlezone modal shown');
+}
+
+window.showPromotersModal = showPromotersModal;
+window.showBattlezoneModal = showBattlezoneModal;
 window.buyPickaxe = buyPickaxe;
 window.sellGold = sellGold;
 window.changeQuantity = changeQuantity;
