@@ -971,10 +971,17 @@ async function autoReconnectWallet() {
 
 function updateWalletInfo(address) {
   const shortAddress = address.slice(0, 4) + '...' + address.slice(-4);
-  $('#walletAddress').textContent = shortAddress;
-  $('#walletStatus').textContent = 'Connected';
-  $('#connectBtn').textContent = 'Connected';
-  $('#connectBtn').disabled = true;
+  const walletAddressEl = $('#walletAddress');
+  const walletStatusEl = $('#walletStatus');
+  const connectBtn = $('#connectBtn');
+  
+  if (walletAddressEl) walletAddressEl.textContent = shortAddress;
+  if (walletStatusEl) walletStatusEl.textContent = 'Connected';
+  if (connectBtn) {
+    connectBtn.textContent = shortAddress;
+    connectBtn.disabled = true;
+    connectBtn.style.background = '#22c55e';
+  }
   
   // Show wallet-dependent UI elements
   // Show wallet-dependent UI elements (with null checks)
@@ -1308,26 +1315,35 @@ async function checkLandStatusAndShowPopup() {
   
   window.landCheckInProgress = true;
   
-  // Auto-clear after 5 seconds
   setTimeout(() => {
     window.landCheckInProgress = false;
-  }, 5000);
+  }, 10000);
   
   if (!state.address) return;
   
   try {
+    console.log('🏠 Checking land status for:', state.address.slice(0, 8) + '...');
+    
     const response = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
     const data = await response.json();
     
     if (!data.hasLand) {
-      console.log('🏠 User needs land - showing modal');
-      showLandModal();
+      console.log('🏠 User needs land - showing MANDATORY modal');
+      
+      // Remove any existing modals first
+      const existingModal = document.getElementById('mandatoryLandModal');
+      if (existingModal) {
+        existingModal.remove();
+      }
+      
+      // Show mandatory land purchase modal (like old main.js)
+      showMandatoryLandModal();
     } else {
       console.log('🏠 User has land - no modal needed');
     }
     
   } catch (error) {
-    console.log('⚠️ Land status check failed:', error.message);
+    console.error('❌ Land status check failed:', error.message);
   }
 }
 
