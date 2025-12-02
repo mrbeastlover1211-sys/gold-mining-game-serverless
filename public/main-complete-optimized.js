@@ -1566,23 +1566,44 @@ function setupAllEventListeners() {
   }
   
   // Copy Referral Link Button
-  const copyReferralBtn = $('#copyReferralBtn');
-  if (copyReferralBtn) {
-    copyReferralBtn.addEventListener('click', copyReferralLink);
+  const copyLinkBtn = $('#copyLinkBtn');
+  if (copyLinkBtn) {
+    copyLinkBtn.addEventListener('click', copyReferralLink);
     console.log('✅ Copy referral button bound');
   }
   
   // Toggle Buttons
-  const toggleShopBtn = $('#toggleShopBtn');
-  if (toggleShopBtn) {
-    toggleShopBtn.addEventListener('click', togglePickaxeShop);
-    console.log('✅ Toggle shop button bound');
+  // Setup referral modal button
+  const referBtn = $('#referBtn');
+  if (referBtn) {
+    referBtn.addEventListener('click', () => {
+      const referralModal = document.getElementById('referralModal');
+      if (referralModal) {
+        referralModal.style.display = 'flex';
+      }
+    });
+    console.log('✅ Refer & Earn button bound');
   }
   
-  const toggleExchangeBtn = $('#toggleExchangeBtn');
-  if (toggleExchangeBtn) {
-    toggleExchangeBtn.addEventListener('click', toggleGoldExchange);
-    console.log('✅ Toggle exchange button bound');
+  // Setup Christmas Edition button
+  const christmasBtn = $('#v2ComingSoonBtn');
+  if (christmasBtn) {
+    christmasBtn.addEventListener('click', () => {
+      alert('🎄 Christmas Edition coming soon! Special holiday mining events and exclusive Christmas pickaxes await!');
+    });
+    console.log('✅ Christmas Edition button bound');
+  }
+  
+  // Setup modal close functionality
+  const closeModal = $('#closeModal');
+  if (closeModal) {
+    closeModal.addEventListener('click', () => {
+      const referralModal = document.getElementById('referralModal');
+      if (referralModal) {
+        referralModal.style.display = 'none';
+      }
+    });
+    console.log('✅ Modal close button bound');
   }
   
   // Modal Buttons - Find and bind ALL modal control buttons
