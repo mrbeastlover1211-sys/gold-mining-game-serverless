@@ -1882,7 +1882,266 @@ async function checkLandStatusAndShowPopup() {
   }
 }
 
-// 🎮 UI CONTROL FUNCTIONS - All Button and Popup Handlers
+// 🎮 COMPLETE UI & MODAL FUNCTIONS - EXACT COPY FROM WORKING main.js
+
+// Complete land status and modal functions from original main.js
+async function checkLandStatusAndShowPopup() {
+  // Prevent infinite loop
+  if (window.landCheckInProgress) {
+    console.log('⚠️ Land detection already running, skipping...');
+    return;
+  }
+  
+  window.landCheckInProgress = true;
+  
+  // Auto-clear after 5 seconds
+  setTimeout(() => {
+    window.landCheckInProgress = false;
+  }, 5000);
+  
+  if (!state.address) return;
+  
+  console.log('🔍 Running comprehensive land detection...');
+  console.log('📦 Checking land status via inventory...');
+  
+  try {
+    // Check via API
+    console.log('🏠 Checking actual land status...');
+    const response = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
+    const data = await response.json();
+    
+    console.log('🏠 Land API response:', data);
+    
+    if (data.hasLand) {
+      console.log('✅ Land detected via API, no modal needed');
+    } else {
+      console.log('🏠 User needs land - showing modal');
+      showLandModal();
+    }
+    
+  } catch (error) {
+    console.log('⚠️ Land status check failed:', error.message);
+    // If API fails, show modal to be safe for new users
+    showLandModal();
+  }
+}
+
+function showLandModal() {
+  console.log('🏠 Smart land modal check...');
+  
+  if (state.address) {
+    fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`)
+      .then(r => r.json())
+      .then(data => {
+        console.log('🏠 Land status API response:', data);
+        if (!data.hasLand) {
+          console.log('🏠 User actually needs land - showing modal');
+          // User really doesn't have land, show the modal
+          const landModal = document.getElementById('landModal');
+          if (landModal) {
+            landModal.style.display = 'flex';
+            landModal.classList.add('show');
+          }
+        } else {
+          console.log('🏠 User actually has land - not showing modal');
+        }
+      })
+      .catch(err => {
+        console.log('⚠️ Could not check land status, showing modal to be safe:', err.message);
+        // If we can't check, show modal to be safe for new users
+        const landModal = document.getElementById('landModal');
+        if (landModal) {
+          landModal.style.display = 'flex';
+          landModal.classList.add('show');
+        }
+      });
+  } else {
+    console.log('🏠 No wallet connected, showing land modal');
+    // No wallet connected, show modal
+    const landModal = document.getElementById('landModal');
+    if (landModal) {
+      landModal.style.display = 'flex';
+      landModal.classList.add('show');
+    }
+  }
+}
+
+function hideLandModal() {
+  const landModal = document.getElementById('landModal');
+  if (landModal) {
+    landModal.style.display = 'none';
+    landModal.classList.remove('show');
+  }
+}
+
+// Complete referral completion function from original main.js
+async function autoCheckReferralCompletion() {
+  if (!state.address) {
+    console.log('⚠️ No wallet connected for referral completion check');
+    return;
+  }
+  
+  try {
+    console.log('🤝 Auto-checking referral completion for:', state.address.slice(0, 8) + '...');
+    
+    const response = await fetch('/api/complete-referral', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.address })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success && result.referral_completed) {
+      console.log('🎉 REFERRAL COMPLETED!', result);
+      
+      // Show success notification
+      showReferralCompletionNotification(result);
+      
+      // Refresh user data to show updated rewards
+      setTimeout(() => {
+        if (state.address) {
+          refreshStatus(true);
+        }
+      }, 2000);
+      
+    } else if (result.success && !result.referral_completed) {
+      console.log('ℹ️ No referral completion needed:', result.message);
+    } else {
+      console.log('⚠️ Referral completion check failed:', result.error || 'Unknown error');
+    }
+    
+  } catch (error) {
+    console.error('❌ Auto referral completion check failed:', error);
+  }
+}
+
+// Show referral completion notification
+function showReferralCompletionNotification(result) {
+  const notification = document.createElement('div');
+  notification.id = 'referralCompletionNotification';
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(45deg, #10b981, #059669);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 10001;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    animation: slideDown 0.5s ease-out;
+    max-width: 400px;
+  `;
+  
+  const rewards = result.reward_details || {};
+  
+  notification.innerHTML = `
+    <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">
+      🎉 Referral Reward Earned!
+    </div>
+    <div style="font-size: 14px; margin-bottom: 15px;">
+      Your referrer received:
+    </div>
+    <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+      <div>🔨 ${rewards.pickaxe_count || 1}x ${(rewards.pickaxe_type || 'silver').toUpperCase()} Pickaxe</div>
+      <div>💰 ${rewards.gold_reward || 100} Gold</div>
+      <div>🪙 ${rewards.sol_reward || 0.01} SOL</div>
+    </div>
+    <div style="font-size: 12px; opacity: 0.9;">
+      Referrals completed: ${rewards.new_referral_count || 1}
+    </div>
+    <button onclick="this.parentElement.remove()" style="
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 5px;
+      margin-top: 15px;
+      cursor: pointer;
+      font-weight: bold;
+    ">Awesome! ✨</button>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Auto-remove after 8 seconds
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.remove();
+    }
+  }, 8000);
+}
+
+// Complete status refresh function from original main.js
+async function refreshStatus(forceRefresh = false) {
+  if (!state.address) {
+    console.log('⚠️ No wallet connected for status refresh');
+    return;
+  }
+  
+  try {
+    console.log('🔄 Refreshing status...');
+    
+    const res = await fetch(`/api/status?address=${encodeURIComponent(state.address)}`);
+    const userData = await res.json();
+    
+    if (!userData.success) {
+      console.error('❌ Status refresh failed:', userData.error);
+      return;
+    }
+    
+    console.log('✅ Status refreshed:', userData);
+    
+    // Update state
+    state.status = userData;
+    
+    // Update display with fresh data
+    updateDisplay({
+      gold: userData.last_checkpoint_gold || 0,
+      inventory: {
+        silver: userData.silver_pickaxes || 0,
+        gold: userData.gold_pickaxes || 0,
+        diamond: userData.diamond_pickaxes || 0,
+        netherite: userData.netherite_pickaxes || 0
+      },
+      checkpoint: {
+        total_mining_power: userData.total_mining_power || 0,
+        checkpoint_timestamp: userData.checkpoint_timestamp,
+        last_checkpoint_gold: userData.last_checkpoint_gold || 0
+      }
+    });
+    
+    // Update checkpoint state
+    state.checkpoint = {
+      total_mining_power: userData.total_mining_power || 0,
+      checkpoint_timestamp: userData.checkpoint_timestamp,
+      last_checkpoint_gold: userData.last_checkpoint_gold || 0
+    };
+    
+    // Start mining if user has pickaxes and not already running
+    if (state.checkpoint.total_mining_power > 0 && !state.goldUpdateInterval) {
+      startCheckpointGoldLoop();
+    }
+    
+    // Update other user stats
+    const totalReferralsEl = $('#totalReferrals');
+    if (totalReferralsEl) {
+      totalReferralsEl.textContent = userData.total_referrals || 0;
+    }
+    
+    const referralRewardsEl = $('#referralRewards');
+    if (referralRewardsEl) {
+      referralRewardsEl.textContent = (userData.referral_rewards_earned || 0).toFixed(4) + ' SOL';
+    }
+    
+  } catch (error) {
+    console.error('❌ Status refresh error:', error);
+  }
+}
 
 // Toggle pickaxe shop visibility
 function togglePickaxeShop() {
