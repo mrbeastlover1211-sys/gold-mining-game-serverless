@@ -87,7 +87,14 @@ async function autoReconnectWallet() {
             startCheckpointGoldLoop();
           }
           
-          await checkLandStatusAndShowPopup();
+          // 🏠 CHECK LAND STATUS ON AUTO-RECONNECT
+          const landCheckResult = await checkLandStatusAndShowPopup();
+          
+          // 🔒 BLOCK ALL OTHER FUNCTIONALITY if no land on refresh
+          if (landCheckResult === false) {
+            console.log('🚫 User has no land after refresh - blocking all functionality');
+            return; // Stop execution - no other features available
+          }
           
           console.log('🎉 Wallet auto-reconnect and data restore complete!');
         } else {
@@ -274,7 +281,15 @@ async function handleWalletSwitch(newAddress, provider) {
       notification.style.background = 'linear-gradient(45deg, #3b82f6, #2563eb)';
     }
     
-    await checkLandStatusAndShowPopup();
+    // 🏠 CHECK LAND STATUS FOR SWITCHED WALLET
+    const landCheckResult = await checkLandStatusAndShowPopup();
+    
+    // 🔒 BLOCK ALL OTHER FUNCTIONALITY if switched wallet has no land
+    if (landCheckResult === false) {
+      console.log('🚫 Switched wallet has no land - blocking all functionality');
+      return; // Stop execution for switched wallet without land
+    }
+    
     console.log('🎉 Wallet switch complete!');
     
   } catch (error) {
@@ -1437,7 +1452,7 @@ function showMandatoryLandModal() {
   `;
   
   modal.innerHTML = `
-    <div style="
+    <div id="landModalContent" style="
       background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
       padding: 40px;
       border-radius: 20px;
@@ -1447,7 +1462,7 @@ function showMandatoryLandModal() {
       margin: 20px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.3);
       border: 2px solid #4a90e2;
-    ">
+    ">`
       <h2 style="margin-bottom: 20px; color: #ffd700; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
         🏗️ Land Required to Start Mining!
       </h2>
@@ -1504,6 +1519,31 @@ function showMandatoryLandModal() {
   // Add to page
   document.body.appendChild(modal);
   document.body.style.overflow = 'hidden';
+  
+  // 🔒 PREVENT MODAL FROM CLOSING - Completely uncloseable
+  modal.addEventListener('click', (e) => {
+    // Only allow clicks on the modal content, not the backdrop
+    const modalContent = document.getElementById('landModalContent');
+    if (modalContent && !modalContent.contains(e.target)) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Show warning when user tries to close
+      showMandatoryLandMessage('⚠️ This modal cannot be closed until land is purchased!', 'error');
+      
+      // Add shake animation to emphasize it's locked
+      modalContent.style.animation = 'shake 0.5s ease-in-out';
+      setTimeout(() => {
+        modalContent.style.animation = '';
+      }, 500);
+    }
+  });
+  
+  // Disable escape key
+  document.addEventListener('keydown', preventModalClose);
+  
+  // Store that modal is active
+  window.mandatoryLandModalActive = true;
   
   // Setup purchase button
   const purchaseBtn = document.getElementById('mandatoryLandPurchaseBtn');
@@ -1597,6 +1637,10 @@ async function handleMandatoryLandPurchase() {
         if (modal) {
           modal.remove();
           document.body.style.overflow = 'auto';
+          
+          // Re-enable escape key
+          document.removeEventListener('keydown', preventModalClose);
+          window.mandatoryLandModalActive = false;
         }
         
         // Show success notification
@@ -1759,6 +1803,28 @@ function enableAllGameFeatures() {
   
   // Remove overlay message
   removeLandRequiredOverlay();
+}
+
+// 🔒 PREVENT MODAL FROM CLOSING WITH ESCAPE KEY
+function preventModalClose(e) {
+  if (window.mandatoryLandModalActive && e.key === 'Escape') {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Show warning
+    showMandatoryLandMessage('⚠️ Cannot close with Escape - land purchase required!', 'error');
+    
+    // Shake modal
+    const modalContent = document.getElementById('landModalContent');
+    if (modalContent) {
+      modalContent.style.animation = 'shake 0.5s ease-in-out';
+      setTimeout(() => {
+        modalContent.style.animation = '';
+      }, 500);
+    }
+    
+    return false;
+  }
 }
 
 // Add overlay message for disabled features
