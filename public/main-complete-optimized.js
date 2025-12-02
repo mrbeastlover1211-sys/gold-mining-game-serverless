@@ -1481,17 +1481,28 @@ function showMandatoryLandModal() {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.9);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 10000;
     font-family: Arial, sans-serif;
+    pointer-events: none;
   `;
   
-  // 🔒 CRITICAL: Prevent modal from closing by disabling default close behaviors
-  modal.style.pointerEvents = 'auto';
+  // 🔒 CRITICAL: Backdrop is unclickable, only modal content accepts clicks
   modal.setAttribute('data-modal-type', 'mandatory-uncloseable');
+  
+  // Add CSS for shake animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+  `;
+  document.head.appendChild(style);
   
   modal.innerHTML = `
     <div id="landModalContent" style="
@@ -1504,6 +1515,7 @@ function showMandatoryLandModal() {
       margin: 20px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.3);
       border: 2px solid #4a90e2;
+      pointer-events: auto;
     ">"
       <h2 style="margin-bottom: 20px; color: #ffd700; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
         🏗️ Land Required to Start Mining!
@@ -1562,29 +1574,8 @@ function showMandatoryLandModal() {
   document.body.appendChild(modal);
   document.body.style.overflow = 'hidden';
   
-  // 🔒 PREVENT MODAL FROM CLOSING - Completely uncloseable
-  modal.addEventListener('click', (e) => {
-    const modalContent = document.getElementById('landModalContent');
-    
-    // Prevent ALL backdrop clicks from closing the modal
-    if (e.target === modal) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      // Show warning when user tries to close
-      showMandatoryLandMessage('⚠️ This modal cannot be closed until land is purchased!', 'error');
-      
-      // Add shake animation to emphasize it's locked
-      if (modalContent) {
-        modalContent.style.animation = 'shake 0.5s ease-in-out';
-        setTimeout(() => {
-          modalContent.style.animation = '';
-        }, 500);
-      }
-      
-      return false;
-    }
-  });
+  // 🔒 COMPLETELY DISABLE BACKDROP CLICKS - No event listeners needed
+  // Modal backdrop has pointer-events: none, only content is clickable
   
   // Disable escape key
   document.addEventListener('keydown', preventModalClose);
