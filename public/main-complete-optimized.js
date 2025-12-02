@@ -16,7 +16,18 @@ let state = {
   isPolling: false
 };
 
-const $ = (sel) => document.querySelector(sel);
+// Enhanced element selector with error handling
+const $ = (sel) => {
+  const element = document.querySelector(sel);
+  if (!element && sel.includes('#')) {
+    console.warn(`⚠️ Element not found: ${sel}`);
+    // List similar elements for debugging
+    const idName = sel.replace('#', '');
+    const allIds = Array.from(document.querySelectorAll('[id]')).map(el => el.id);
+    console.log('📋 Available IDs:', allIds);
+  }
+  return element;
+};
 
 // 🎯 EXACT COPY: All essential functions from working main.js
 
@@ -451,21 +462,15 @@ async function connectWallet() {
   try {
     console.log('🔗 Requesting wallet connection...');
     
-    const connectBtn = $('#connectBtn');
+    const connectBtn = document.getElementById('connectBtn');
     if (connectBtn) {
+      console.log('✅ Found connect button, updating text...');
       connectBtn.textContent = 'Connecting...';
       connectBtn.disabled = true;
     } else {
-      console.error('❌ Connect button element not found! Looking for #connectBtn');
-      // Try alternative selectors
-      const altConnectBtn = document.querySelector('[onclick="connectWallet()"]') || 
-                            document.querySelector('.connect-btn') ||
-                            document.querySelector('button[type="button"]');
-      if (altConnectBtn) {
-        console.log('✅ Found connect button with alternative selector');
-        altConnectBtn.textContent = 'Connecting...';
-        altConnectBtn.disabled = true;
-      }
+      console.error('❌ CRITICAL: #connectBtn element not found in DOM!');
+      console.log('🔍 DOM ready state:', document.readyState);
+      console.log('🔍 All elements with IDs:', Array.from(document.querySelectorAll('[id]')).map(el => el.id));
     }
     
     await provider.connect();
