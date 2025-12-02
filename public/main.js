@@ -601,6 +601,9 @@ async function connectWallet() {
     console.log('🔍 Checking land ownership immediately after wallet connection...');
     await checkLandStatusAndShowPopup();
     
+    // 🔧 REFERRAL FIX: Auto-check for referral completion after wallet connection
+    await autoCheckReferralCompletion();
+    
     // 🎯 FIXED SESSION TRACKING: Use existing localStorage referral system
     await checkExistingReferralSession();
     
@@ -619,6 +622,108 @@ async function connectWallet() {
     console.error('❌ Wallet connection failed:', e);
     alert('Failed to connect wallet: ' + e.message);
   }
+}
+
+// 🔧 REFERRAL FIX: Auto-check referral completion function
+async function autoCheckReferralCompletion() {
+  if (!state.address) {
+    console.log('⚠️ No wallet connected for referral completion check');
+    return;
+  }
+  
+  try {
+    console.log('🤝 Auto-checking referral completion for:', state.address.slice(0, 8) + '...');
+    
+    const response = await fetch('/api/complete-referral', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.address })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success && result.referral_completed) {
+      console.log('🎉 REFERRAL COMPLETED!', result);
+      
+      // Show success notification
+      showReferralCompletionNotification(result);
+      
+      // Refresh user data to show updated rewards
+      setTimeout(() => {
+        if (state.address) {
+          refreshStatus(true);
+        }
+      }, 2000);
+      
+    } else if (result.success && !result.referral_completed) {
+      console.log('ℹ️ No referral completion needed:', result.message);
+    } else {
+      console.log('⚠️ Referral completion check failed:', result.error || 'Unknown error');
+    }
+    
+  } catch (error) {
+    console.error('❌ Auto referral completion check failed:', error);
+  }
+}
+
+// 🎉 Show referral completion notification
+function showReferralCompletionNotification(result) {
+  const notification = document.createElement('div');
+  notification.id = 'referralCompletionNotification';
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(45deg, #10b981, #059669);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 10001;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    animation: slideDown 0.5s ease-out;
+    max-width: 400px;
+  `;
+  
+  const rewards = result.reward_details || {};
+  
+  notification.innerHTML = `
+    <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">
+      🎉 Referral Reward Earned!
+    </div>
+    <div style="font-size: 14px; margin-bottom: 15px;">
+      Your referrer received:
+    </div>
+    <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+      <div>🔨 ${rewards.pickaxe_count || 1}x ${(rewards.pickaxe_type || 'silver').toUpperCase()} Pickaxe</div>
+      <div>💰 ${rewards.gold_reward || 100} Gold</div>
+      <div>🪙 ${rewards.sol_reward || 0.01} SOL</div>
+    </div>
+    <div style="font-size: 12px; opacity: 0.9;">
+      Referrals completed: ${rewards.new_referral_count || 1}
+    </div>
+    <button onclick="this.parentElement.remove()" style="
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 5px;
+      margin-top: 15px;
+      cursor: pointer;
+      font-weight: bold;
+    ">Awesome! ✨</button>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Auto-remove after 8 seconds
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.remove();
+    }
+  }, 8000);
 }
 
 async function updateWalletBalance() {
