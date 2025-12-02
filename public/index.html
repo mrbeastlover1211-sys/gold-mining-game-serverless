@@ -39,6 +39,18 @@
         <div class="stat-label">💰 Total Gold</div>
         <div id="totalGold" class="stat-value highlight">0</div>
       </div>
+      <div class="stat-item">
+        <div class="stat-label">💳 Wallet</div>
+        <div id="walletAddress" class="stat-value">Not Connected</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">💰 Balance</div>
+        <div id="walletBalance" class="stat-value">0.0000 SOL</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">🔗 Status</div>
+        <div id="walletStatus" class="stat-value">Disconnected</div>
+      </div>
       
       <div class="stat-item">
         <div class="stat-label">⛏️ Total Pickaxes</div>
@@ -211,7 +223,7 @@
     <!-- Selling Panel -->
     <div class="selling-panel">
       <div class="panel-title">💰 Sell Gold</div>
-      <input type="number" id="sellAmount" class="sell-input" placeholder="Enter gold amount to sell" />
+      <input type="number" id="goldToSell" class="sell-input" placeholder="Enter gold amount to sell" />
       <button id="sellBtn" class="sell-btn">💰 Sell Gold for SOL</button>
       <div id="sellMsg" class="msg"></div>
     </div>
@@ -870,8 +882,8 @@
     </div>
   </div>
 
-  <script src="mining-engine.js"></script>
-  <script src="main.js"></script>
+  <script src="mining-engine-complete-optimized.js"></script>
+  <script src="main-complete-optimized.js"></script>
   
   <!-- 🎯 FIXED SESSION TRACKING REFERRAL SYSTEM -->
   <script>
