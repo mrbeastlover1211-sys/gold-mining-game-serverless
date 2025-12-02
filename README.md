@@ -1,4 +1,4 @@
-# 🎮 Gold Mining Game - Serverless v1.1
+# 🎮 Gold Mining Game - Serverless v2.0 (Production Ready)
 
 A Solana-based idle mining game built for serverless deployment on Vercel.
 
