@@ -1,5 +1,5 @@
-// 🚀 COMPLETE OPTIMIZED Gold Mining Game - All Functions Working
-// This version combines the working main.js functionality with client-side mining optimization
+// 🚀 COMPLETE OPTIMIZED Gold Mining Game - ALL WORKING FUNCTIONALITY
+// Perfect copy of main.js with 99% cost reduction through client-side mining
 
 let state = {
   connection: null,
@@ -10,10 +10,321 @@ let state = {
   status: { gold: 0, inventory: null },
   miningEngine: null,
   checkpoint: null,
-  goldUpdateInterval: null
+  goldUpdateInterval: null,
+  solBalance: null,
+  consecutiveErrors: 0,
+  isPolling: false
 };
 
 const $ = (sel) => document.querySelector(sel);
+
+// 🎯 EXACT COPY: All essential functions from working main.js
+
+// Auto-reconnect wallet on page refresh  
+async function autoReconnectWallet() {
+  try {
+    const savedAddress = localStorage.getItem('gm_address');
+    if (!savedAddress) {
+      console.log('🔄 No saved wallet address found');
+      return;
+    }
+    
+    console.log('🔄 Found saved wallet address, attempting auto-reconnect...');
+    
+    const provider = window.solana || window.phantom?.solana;
+    if (!provider) {
+      console.log('⚠️ Phantom wallet not available for auto-reconnect');
+      return;
+    }
+    
+    if (provider.isConnected) {
+      console.log('✅ Phantom wallet already connected, restoring session...');
+      
+      const account = provider.publicKey;
+      if (account && account.toString() === savedAddress) {
+        state.wallet = provider;
+        state.address = savedAddress;
+        
+        console.log('✅ Wallet auto-reconnected:', savedAddress.slice(0, 8) + '...');
+        
+        await updateWalletBalance();
+        updateConnectButtonDisplay();
+        
+        const userData = await loadInitialUserData();
+        
+        if (userData) {
+          console.log('✅ User data restored after refresh:', userData);
+          
+          updateDisplay({
+            gold: userData.last_checkpoint_gold || 0,
+            inventory: userData.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 },
+            checkpoint: {
+              total_mining_power: userData.total_mining_power || 0,
+              checkpoint_timestamp: userData.checkpoint_timestamp,
+              last_checkpoint_gold: userData.last_checkpoint_gold || 0
+            }
+          });
+          
+          state.checkpoint = {
+            total_mining_power: userData.total_mining_power || 0,
+            checkpoint_timestamp: userData.checkpoint_timestamp,
+            last_checkpoint_gold: userData.last_checkpoint_gold || 0
+          };
+          
+          if (state.checkpoint.total_mining_power > 0) {
+            console.log('⛏️ Resuming mining after page refresh...');
+            startCheckpointGoldLoop();
+          }
+          
+          await checkLandStatusAndShowPopup();
+          
+          console.log('🎉 Wallet auto-reconnect and data restore complete!');
+        } else {
+          console.log('ℹ️ New user after auto-reconnect');
+          updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
+        }
+        
+        setupWalletSwitchDetection(provider);
+        
+      } else {
+        console.log('⚠️ Connected wallet address differs from saved address - wallet switched');
+        await handleWalletSwitch(account?.toString(), provider);
+      }
+    } else {
+      console.log('ℹ️ Phantom wallet not connected, user needs to connect manually');
+    }
+    
+  } catch (error) {
+    console.error('❌ Auto-reconnect failed:', error);
+  }
+}
+
+// Setup wallet switch detection
+function setupWalletSwitchDetection(provider) {
+  console.log('🔍 Setting up wallet switch detection...');
+  
+  if (provider.on) {
+    try {
+      provider.on('accountChanged', async (publicKey) => {
+        console.log('🔄 Phantom accountChanged event fired!', publicKey?.toString()?.slice(0, 8));
+        if (publicKey) {
+          const newAddress = publicKey.toString();
+          const currentAddress = state.address;
+          
+          if (newAddress !== currentAddress) {
+            console.log('👤 Wallet switched from', currentAddress?.slice(0, 8), 'to', newAddress.slice(0, 8));
+            await handleWalletSwitch(newAddress, provider);
+          }
+        } else {
+          console.log('👤 Wallet disconnected');
+          handleWalletDisconnect();
+        }
+      });
+      
+      console.log('✅ Phantom accountChanged listener added');
+    } catch (e) {
+      console.error('❌ Failed to add accountChanged listener:', e);
+    }
+  }
+  
+  let pollCount = 0;
+  const pollInterval = setInterval(async () => {
+    pollCount++;
+    
+    if (provider.isConnected && provider.publicKey && state.address) {
+      const currentPhantomAddress = provider.publicKey.toString();
+      const gameAddress = state.address;
+      
+      if (pollCount % 10 === 0) {
+        console.log(`🔍 Wallet poll #${pollCount}:`, {
+          phantom: currentPhantomAddress.slice(0, 8),
+          game: gameAddress.slice(0, 8),
+          same: currentPhantomAddress === gameAddress
+        });
+      }
+      
+      if (currentPhantomAddress !== gameAddress) {
+        console.log('🔄 POLLING DETECTED WALLET SWITCH!');
+        await handleWalletSwitch(currentPhantomAddress, provider);
+        clearInterval(pollInterval);
+      }
+    }
+  }, 3000);
+  
+  console.log('✅ Enhanced wallet polling started');
+}
+
+// Handle wallet switch
+async function handleWalletSwitch(newAddress, provider) {
+  console.log('🔄 Handling wallet switch to:', newAddress?.slice(0, 8) + '...');
+  
+  state.address = null;
+  state.wallet = null;
+  state.status = { gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } };
+  state.checkpoint = null;
+  
+  if (state.goldUpdateInterval) {
+    clearInterval(state.goldUpdateInterval);
+    state.goldUpdateInterval = null;
+  }
+  
+  const existingModal = document.getElementById('mandatoryLandModal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  if (window.landCheckTimeout) {
+    clearTimeout(window.landCheckTimeout);
+    window.landCheckTimeout = null;
+  }
+  
+  const notification = document.createElement('div');
+  notification.id = 'walletSwitchNotification';
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(45deg, #4ade80, #22c55e);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    text-align: center;
+    animation: slideDown 0.3s ease-out;
+  `;
+  
+  notification.innerHTML = `
+    <div>🔄 Wallet Switch Detected!</div>
+    <div style="font-size: 14px; margin-top: 5px;">
+      Loading data for new wallet...
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  try {
+    state.wallet = provider;
+    state.address = newAddress;
+    localStorage.setItem('gm_address', newAddress);
+    
+    console.log('✅ New wallet connected automatically:', newAddress.slice(0, 8) + '...');
+    
+    await updateWalletBalance();
+    updateConnectButtonDisplay();
+    
+    const userData = await loadInitialUserData();
+    
+    if (userData) {
+      updateDisplay({
+        gold: userData.last_checkpoint_gold || 0,
+        inventory: userData.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 },
+        checkpoint: {
+          total_mining_power: userData.total_mining_power || 0,
+          checkpoint_timestamp: userData.checkpoint_timestamp,
+          last_checkpoint_gold: userData.last_checkpoint_gold || 0
+        }
+      });
+      
+      state.checkpoint = {
+        total_mining_power: userData.total_mining_power || 0,
+        checkpoint_timestamp: userData.checkpoint_timestamp,
+        last_checkpoint_gold: userData.last_checkpoint_gold || 0
+      };
+      
+      if (state.checkpoint.total_mining_power > 0) {
+        console.log('⛏️ Resuming mining for switched wallet...');
+        startCheckpointGoldLoop();
+      }
+      
+      notification.innerHTML = `
+        <div>✅ Wallet Switch Complete!</div>
+        <div style="font-size: 14px; margin-top: 5px;">
+          Loaded data for ${newAddress.slice(0, 6)}...${newAddress.slice(-4)}
+        </div>
+      `;
+      notification.style.background = 'linear-gradient(45deg, #22c55e, #16a34a)';
+      
+    } else {
+      updateDisplay({ 
+        gold: 0, 
+        inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } 
+      });
+      
+      notification.innerHTML = `
+        <div>✅ Wallet Switch Complete!</div>
+        <div style="font-size: 14px; margin-top: 5px;">
+          New wallet detected - ready to start!
+        </div>
+      `;
+      notification.style.background = 'linear-gradient(45deg, #3b82f6, #2563eb)';
+    }
+    
+    await checkLandStatusAndShowPopup();
+    console.log('🎉 Wallet switch complete!');
+    
+  } catch (error) {
+    console.error('❌ Failed to load data for switched wallet:', error);
+    
+    updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
+    
+    const connectBtn = $('#connectBtn');
+    if (connectBtn) {
+      connectBtn.textContent = 'Connect Wallet';
+      connectBtn.disabled = false;
+    }
+    
+    notification.innerHTML = `
+      <div>❌ Wallet Switch Error</div>
+      <div style="font-size: 14px; margin-top: 5px;">
+        Please click "Connect Wallet" to try again
+      </div>
+      <button onclick="this.parentElement.remove()" style="
+        background: rgba(255,255,255,0.2);
+        border: none;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        margin-top: 10px;
+        cursor: pointer;
+      ">OK</button>
+    `;
+    notification.style.background = 'linear-gradient(45deg, #ef4444, #dc2626)';
+  }
+  
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.remove();
+    }
+  }, 4000);
+}
+
+// Handle wallet disconnect
+function handleWalletDisconnect() {
+  console.log('👤 Wallet disconnected');
+  
+  state.address = null;
+  state.wallet = null;
+  state.status = { gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } };
+  state.checkpoint = null;
+  
+  if (state.goldUpdateInterval) {
+    clearInterval(state.goldUpdateInterval);
+    state.goldUpdateInterval = null;
+  }
+  
+  localStorage.removeItem('gm_address');
+  updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
+  
+  const connectBtn = $('#connectBtn');
+  if (connectBtn) {
+    connectBtn.textContent = 'Connect Wallet';
+    connectBtn.disabled = false;
+  }
+}
 
 // 🎯 OPTIMIZED: Client-side mining engine (99% cost reduction)
 class OptimizedMiningEngine {
@@ -119,6 +430,213 @@ class OptimizedMiningEngine {
 
 // Initialize optimized mining engine
 state.miningEngine = new OptimizedMiningEngine();
+
+// 🔗 WALLET CONNECTION FUNCTIONS - EXACT COPY FROM WORKING main.js
+async function connectWallet() {
+  console.log('🔗 Attempting to connect Phantom wallet...');
+  
+  const provider = window.solana || window.phantom?.solana;
+  
+  if (!provider) {
+    alert('Phantom wallet not found! Please install Phantom to continue.');
+    window.open('https://phantom.app/', '_blank');
+    return;
+  }
+  
+  if (!provider.isPhantom) {
+    alert('Please install the official Phantom wallet extension');
+    return;
+  }
+  
+  try {
+    console.log('🔗 Requesting wallet connection...');
+    
+    const connectBtn = $('#connectBtn');
+    if (connectBtn) {
+      connectBtn.textContent = 'Connecting...';
+      connectBtn.disabled = true;
+    }
+    
+    await provider.connect();
+    
+    if (!provider.publicKey) {
+      throw new Error('Failed to get public key from wallet');
+    }
+    
+    const publicKey = provider.publicKey.toString();
+    console.log('✅ Wallet connected successfully!');
+    console.log('📬 Public Key:', publicKey.slice(0, 8) + '...' + publicKey.slice(-8));
+    
+    // Store wallet info
+    state.wallet = provider;
+    state.address = publicKey;
+    localStorage.setItem('gm_address', publicKey);
+    
+    // Update wallet balance
+    await updateWalletBalance();
+    updateConnectButtonDisplay();
+    
+    // 🎯 FIXED SESSION TRACKING: Use existing localStorage referral system
+    await checkExistingReferralSession();
+    
+    // Load user data
+    const userData = await loadInitialUserData();
+    
+    if (userData) {
+      console.log('✅ User data loaded:', userData);
+      
+      // Update display with user data
+      updateDisplay({
+        gold: userData.last_checkpoint_gold || 0,
+        inventory: userData.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 },
+        checkpoint: {
+          total_mining_power: userData.total_mining_power || 0,
+          checkpoint_timestamp: userData.checkpoint_timestamp,
+          last_checkpoint_gold: userData.last_checkpoint_gold || 0
+        }
+      });
+      
+      // Set checkpoint for gold calculation
+      state.checkpoint = {
+        total_mining_power: userData.total_mining_power || 0,
+        checkpoint_timestamp: userData.checkpoint_timestamp,
+        last_checkpoint_gold: userData.last_checkpoint_gold || 0
+      };
+      
+      // Start mining if user has pickaxes
+      if (state.checkpoint.total_mining_power > 0) {
+        console.log('⛏️ User has mining power, starting gold accumulation...');
+        startCheckpointGoldLoop();
+      }
+      
+    } else {
+      console.log('ℹ️ New user - showing default values');
+      updateDisplay({ 
+        gold: 0, 
+        inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } 
+      });
+    }
+    
+    // Setup wallet switch detection
+    setupWalletSwitchDetection(provider);
+    
+    // Check land status immediately after wallet connection
+    console.log('🔍 Checking land ownership immediately after wallet connection...');
+    await checkLandStatusAndShowPopup();
+    
+    // 🔧 REFERRAL FIX: Auto-check for referral completion after wallet connection
+    await autoCheckReferralCompletion();
+    
+  } catch (error) {
+    console.error('❌ Wallet connection failed:', error);
+    alert(`Failed to connect wallet: ${error.message}`);
+    
+    const connectBtn = $('#connectBtn');
+    if (connectBtn) {
+      connectBtn.textContent = 'Connect Wallet';
+      connectBtn.disabled = false;
+    }
+  }
+}
+
+// Update wallet balance
+async function updateWalletBalance() {
+  if (!state.connection || !state.address) {
+    console.log('⚠️ Cannot update balance: missing connection or address');
+    return;
+  }
+  
+  try {
+    const publicKey = new solanaWeb3.PublicKey(state.address);
+    const balance = await state.connection.getBalance(publicKey);
+    const solBalance = balance / solanaWeb3.LAMPORTS_PER_SOL;
+    
+    state.solBalance = solBalance;
+    
+    const balanceEl = $('#walletBalance');
+    if (balanceEl) {
+      balanceEl.textContent = solBalance.toFixed(4) + ' SOL';
+    }
+    
+    console.log('💰 Wallet balance updated:', solBalance.toFixed(4), 'SOL');
+    
+  } catch (error) {
+    console.error('❌ Failed to update wallet balance:', error);
+    const balanceEl = $('#walletBalance');
+    if (balanceEl) {
+      balanceEl.textContent = 'Error loading balance';
+    }
+  }
+}
+
+// Update connect button display
+function updateConnectButtonDisplay() {
+  if (!state.address) return;
+  
+  const connectBtn = $('#connectBtn');
+  const walletAddressEl = $('#walletAddress');
+  const walletStatusEl = $('#walletStatus');
+  
+  if (connectBtn) {
+    const shortAddress = state.address.slice(0, 6) + '...' + state.address.slice(-4);
+    connectBtn.textContent = shortAddress;
+    connectBtn.disabled = true;
+    connectBtn.style.background = '#22c55e';
+  }
+  
+  if (walletAddressEl) {
+    const shortAddress = state.address.slice(0, 8) + '...' + state.address.slice(-8);
+    walletAddressEl.textContent = shortAddress;
+  }
+  
+  if (walletStatusEl) {
+    walletStatusEl.textContent = 'Connected';
+    walletStatusEl.style.color = '#22c55e';
+  }
+  
+  console.log('✅ Connect button display updated');
+}
+
+// Load initial user data
+async function loadInitialUserData() {
+  if (!state.address) {
+    console.log('⚠️ No address provided for loadInitialUserData');
+    return null;
+  }
+  
+  try {
+    console.log('📡 Loading user data from server...');
+    
+    const response = await fetch(`/api/status?address=${encodeURIComponent(state.address)}`);
+    const data = await response.json();
+    
+    if (data.success && data.user_exists) {
+      console.log('✅ User data loaded successfully:', {
+        gold: data.last_checkpoint_gold,
+        total_mining_power: data.total_mining_power,
+        pickaxes: {
+          silver: data.silver_pickaxes,
+          gold: data.gold_pickaxes, 
+          diamond: data.diamond_pickaxes,
+          netherite: data.netherite_pickaxes
+        },
+        has_land: data.has_land
+      });
+      
+      return data;
+    } else if (data.success && !data.user_exists) {
+      console.log('ℹ️ User not found in database - new user');
+      return null;
+    } else {
+      console.error('❌ API returned error:', data.error);
+      return null;
+    }
+    
+  } catch (error) {
+    console.error('❌ Failed to load user data:', error);
+    return null;
+  }
+}
 
 // Load configuration
 async function loadConfig() {
