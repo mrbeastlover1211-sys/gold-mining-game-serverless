@@ -1587,29 +1587,31 @@ function showMandatoryLandModal() {
   document.body.appendChild(modal);
   document.body.style.overflow = 'hidden';
   
-  // 🔒 PREVENT MODAL FROM CLOSING - EXACT OLD MAIN.JS BEHAVIOR
+  // 🔒 COMPLETELY PREVENT MODAL CLOSING - OVERRIDE ALL CLICK EVENTS
   modal.addEventListener('click', function(e) {
-    // If click is on modal backdrop (not content), prevent closing
-    if (e.target === modal) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      // Show warning message
-      showMandatoryLandMessage('⚠️ This modal cannot be closed until land is purchased!', 'error');
-      
-      // Shake animation
-      const modalContent = document.getElementById('landModalContent');
-      if (modalContent) {
-        modalContent.style.transform = 'scale(1.05)';
-        modalContent.style.transition = 'all 0.1s ease';
-        setTimeout(() => {
-          modalContent.style.transform = 'scale(1)';
-        }, 100);
-      }
-      
-      return false;
+    console.log('🔍 Modal click detected:', e.target.id, e.target.className);
+    
+    // ALWAYS prevent modal closing regardless of target
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    
+    // Show warning for ANY click on modal area
+    showMandatoryLandMessage('⚠️ This modal cannot be closed until land is purchased!', 'error');
+    
+    // Visual feedback
+    const modalContent = document.getElementById('landModalContent');
+    if (modalContent) {
+      modalContent.style.transform = 'scale(1.02)';
+      modalContent.style.transition = 'all 0.1s ease';
+      setTimeout(() => {
+        modalContent.style.transform = 'scale(1)';
+      }, 150);
     }
-  });
+    
+    console.log('🔒 Modal close attempt blocked');
+    return false;
+  }, true); // Use capture phase
   
   // Prevent right-click
   modal.addEventListener('contextmenu', (e) => {
@@ -1630,8 +1632,27 @@ function showMandatoryLandModal() {
   // Disable escape key
   document.addEventListener('keydown', preventModalClose);
   
-  // Store that modal is active
+  // Store that modal is active and OVERRIDE ALL DOCUMENT CLICKS
   window.mandatoryLandModalActive = true;
+  
+  // NUCLEAR OPTION: Block ALL document clicks while modal is open
+  document.addEventListener('click', function blockAllClicks(e) {
+    if (document.getElementById('mandatoryLandModal')) {
+      const modal = document.getElementById('mandatoryLandModal');
+      const landPurchaseBtn = document.getElementById('mandatoryLandPurchaseBtn');
+      
+      // Only allow clicks on the purchase button
+      if (e.target !== landPurchaseBtn && !landPurchaseBtn.contains(e.target)) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        
+        console.log('🚫 Document click blocked - modal is open');
+        showMandatoryLandMessage('⚠️ Only the purchase button works!', 'error');
+        return false;
+      }
+    }
+  }, true);
   
   // Setup purchase button
   const purchaseBtn = document.getElementById('mandatoryLandPurchaseBtn');
