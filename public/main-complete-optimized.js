@@ -1489,6 +1489,10 @@ function showMandatoryLandModal() {
     font-family: Arial, sans-serif;
   `;
   
+  // 🔒 CRITICAL: Prevent modal from closing by disabling default close behaviors
+  modal.style.pointerEvents = 'auto';
+  modal.setAttribute('data-modal-type', 'mandatory-uncloseable');
+  
   modal.innerHTML = `
     <div id="landModalContent" style="
       background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
@@ -1560,9 +1564,10 @@ function showMandatoryLandModal() {
   
   // 🔒 PREVENT MODAL FROM CLOSING - Completely uncloseable
   modal.addEventListener('click', (e) => {
-    // Only allow clicks on the modal content, not the backdrop
     const modalContent = document.getElementById('landModalContent');
-    if (modalContent && !modalContent.contains(e.target)) {
+    
+    // Prevent ALL backdrop clicks from closing the modal
+    if (e.target === modal) {
       e.preventDefault();
       e.stopPropagation();
       
@@ -1570,10 +1575,14 @@ function showMandatoryLandModal() {
       showMandatoryLandMessage('⚠️ This modal cannot be closed until land is purchased!', 'error');
       
       // Add shake animation to emphasize it's locked
-      modalContent.style.animation = 'shake 0.5s ease-in-out';
-      setTimeout(() => {
-        modalContent.style.animation = '';
-      }, 500);
+      if (modalContent) {
+        modalContent.style.animation = 'shake 0.5s ease-in-out';
+        setTimeout(() => {
+          modalContent.style.animation = '';
+        }, 500);
+      }
+      
+      return false;
     }
   });
   
