@@ -1534,32 +1534,20 @@ async function checkExistingReferralSession() {
 function setupAllEventListeners() {
   console.log('🎮 Setting up ALL event listeners...');
   
-  // Connect Wallet Button - Fix for actual HTML structure
-  let connectBtn = $('#connectBtn') || $('[onclick="connectWallet()"]') || $('.connect-btn');
-  
-  // Also try finding by text content
-  if (!connectBtn) {
-    const allButtons = document.querySelectorAll('button');
-    for (let btn of allButtons) {
-      if (btn.textContent && btn.textContent.toLowerCase().includes('connect')) {
-        connectBtn = btn;
-        break;
-      }
-    }
-  }
-  
+  // Connect Wallet Button - Use direct getElementById for reliability
+  const connectBtn = document.getElementById('connectBtn');
   if (connectBtn) {
+    // Remove any existing onclick to prevent conflicts
+    connectBtn.removeAttribute('onclick');
     connectBtn.addEventListener('click', connectWallet);
-    console.log('✅ Connect wallet button found and bound:', connectBtn.id || connectBtn.className);
+    console.log('✅ Connect wallet button bound successfully');
   } else {
-    console.error('❌ Connect wallet button not found with any selector!');
-    // List all buttons for debugging
-    const allButtons = document.querySelectorAll('button');
-    console.log('📋 All buttons found:', Array.from(allButtons).map(b => ({
-      id: b.id,
-      class: b.className,
-      text: b.textContent,
-      onclick: b.getAttribute('onclick')
+    console.error('❌ #connectBtn element not found during event binding!');
+    console.log('🔍 DOM ready state:', document.readyState);
+    console.log('🔍 Available buttons:', Array.from(document.querySelectorAll('button')).map(b => ({
+      id: b.id || 'no-id',
+      class: b.className || 'no-class', 
+      text: b.textContent?.trim() || 'no-text'
     })));
   }
   
