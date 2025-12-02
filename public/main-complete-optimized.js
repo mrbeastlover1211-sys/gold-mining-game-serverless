@@ -1396,23 +1396,18 @@ async function checkLandStatusAndShowPopup() {
   
   if (!state.address) return null;
   
-  // 🗄️ EXACT CACHE SYSTEM FROM OLD MAIN.JS
-  const landVerifiedKey = `land_verified_${state.address}`;
-  const cachedLandStatus = sessionStorage.getItem(landVerifiedKey);
-  
-  if (cachedLandStatus === 'true') {
-    console.log('✅ Land ownership verified from cache - no modal needed');
-    return true; // User has land (from cache) - don't show modal
-  }
+  console.log('🔍 STEP 1: Checking DATABASE for land ownership...');
+  console.log('📡 API Call: /api/land-status?address=' + state.address.slice(0, 8) + '...');
   
   try {
-    console.log('🏠 Checking land status for:', state.address.slice(0, 8) + '...');
-    
+    // 🗄️ ALWAYS CHECK DATABASE FIRST (no cache initially)
     const response = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
     const data = await response.json();
     
+    console.log('🔍 STEP 2: Database response:', data);
+    
     if (!data.hasLand) {
-      console.log('🏠 User needs land - showing MANDATORY modal');
+      console.log('❌ STEP 3: User has NO LAND in database - showing modal');
       
       // 🔒 DISABLE ALL GAME FUNCTIONALITY
       disableAllGameFeatures();
@@ -1423,27 +1418,30 @@ async function checkLandStatusAndShowPopup() {
         existingModal.remove();
       }
       
-      // Show mandatory land purchase modal (like old main.js)
+      // Show mandatory land purchase modal
       showMandatoryLandModal();
       
-      return false; // Indicate user has no land
+      return false; // User has no land
     } else {
-      console.log('🏠 User has land - caching for session');
+      console.log('✅ STEP 3: User HAS LAND in database - no modal needed');
+      console.log('💾 STEP 4: Caching land ownership for this session');
       
-      // 💾 CACHE LAND OWNERSHIP (EXACT SAME AS OLD MAIN.JS)
+      // 💾 CACHE LAND OWNERSHIP FOR FUTURE CHECKS
+      const landVerifiedKey = `land_verified_${state.address}`;
       sessionStorage.setItem(landVerifiedKey, 'true');
-      console.log('💾 Land ownership cached for session:', landVerifiedKey);
+      console.log('✅ Cache updated:', landVerifiedKey, '= true');
       
-      // Don't show any modal - user has land
-      return true; // Indicate user has land
+      // ✅ ENABLE ALL GAME FUNCTIONALITY
+      enableAllGameFeatures();
+      
+      return true; // User has land
     }
     
   } catch (error) {
-    console.error('❌ Land status check failed:', error.message);
+    console.error('❌ Database check failed:', error.message);
     
-    // 🔄 ON ERROR: Enable features to prevent total lockout
-    console.log('⚠️ API error - enabling features to prevent lockout');
-    enableAllGameFeatures();
+    // 🔄 ON ERROR: Don't show modal, but don't cache either
+    console.log('⚠️ API error - will retry next time');
     
     return null; // Unknown status
   }
@@ -1737,12 +1735,17 @@ async function handleMandatoryLandPurchase() {
     if (confirmData.success) {
       showMandatoryLandMessage('🎉 Land purchased successfully!', 'success');
       
-      // 💾 CACHE LAND OWNERSHIP IMMEDIATELY
+      console.log('✅ STEP 1: Land purchase confirmed by database');
+      console.log('💾 STEP 2: Updating cache with new land ownership');
+      
+      // 💾 CACHE LAND OWNERSHIP IMMEDIATELY AFTER PURCHASE
       const landVerifiedKey = `land_verified_${state.address}`;
       sessionStorage.setItem(landVerifiedKey, 'true');
-      console.log('💾 Land ownership cached after successful purchase');
+      console.log('✅ STEP 3: Cache updated -', landVerifiedKey, '= true');
       
       setTimeout(() => {
+        console.log('✅ STEP 4: Enabling all game features');
+        
         // ✅ ENABLE ALL GAME FEATURES NOW
         enableAllGameFeatures();
         
