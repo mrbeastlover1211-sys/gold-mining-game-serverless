@@ -1373,6 +1373,259 @@ function hideLandModal() {
   }
 }
 
+// 🏠 MANDATORY LAND PURCHASE MODAL - FROM OLD MAIN.JS
+function showMandatoryLandModal() {
+  console.log('🏠 Creating mandatory land purchase modal...');
+  
+  // Remove any existing modals
+  const existingModal = document.getElementById('mandatoryLandModal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  // Create mandatory modal
+  const modal = document.createElement('div');
+  modal.id = 'mandatoryLandModal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    font-family: Arial, sans-serif;
+  `;
+  
+  modal.innerHTML = `
+    <div style="
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      padding: 40px;
+      border-radius: 20px;
+      text-align: center;
+      color: white;
+      max-width: 500px;
+      margin: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      border: 2px solid #4a90e2;
+    ">
+      <h2 style="margin-bottom: 20px; color: #ffd700; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+        🏗️ Land Required to Start Mining!
+      </h2>
+      
+      <div style="margin: 20px 0; font-size: 16px; line-height: 1.6;">
+        <p style="margin-bottom: 15px;">
+          🔒 <strong>Mining requires land ownership!</strong>
+        </p>
+        <p style="margin-bottom: 15px;">
+          ⛏️ Without land, you cannot place pickaxes or mine gold
+        </p>
+        <p style="margin-bottom: 20px;">
+          🏠 Purchase your mining plot to get started
+        </p>
+      </div>
+      
+      <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin: 20px 0;">
+        <div style="font-size: 18px; margin-bottom: 10px; color: #ffd700;">
+          💰 Land Price: <strong>0.05 SOL</strong>
+        </div>
+        <div style="font-size: 14px; opacity: 0.8;">
+          One-time purchase • Permanent ownership • Start mining immediately
+        </div>
+      </div>
+      
+      <button id="mandatoryLandPurchaseBtn" style="
+        background: linear-gradient(45deg, #ff6b35, #ff8e53);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 25px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        margin: 10px;
+        box-shadow: 0 4px 15px rgba(255,107,53,0.3);
+        transition: all 0.3s ease;
+      ">
+        🏠 Buy Land (0.05 SOL)
+      </button>
+      
+      <div id="mandatoryLandMsg" style="
+        margin-top: 15px;
+        font-size: 14px;
+        min-height: 20px;
+      "></div>
+      
+      <div style="margin-top: 20px; font-size: 12px; opacity: 0.7;">
+        🔒 This modal cannot be closed until land is purchased
+      </div>
+    </div>
+  `;
+  
+  // Add to page
+  document.body.appendChild(modal);
+  document.body.style.overflow = 'hidden';
+  
+  // Setup purchase button
+  const purchaseBtn = document.getElementById('mandatoryLandPurchaseBtn');
+  if (purchaseBtn) {
+    purchaseBtn.addEventListener('click', handleMandatoryLandPurchase);
+    
+    // Hover effects
+    purchaseBtn.addEventListener('mouseenter', () => {
+      purchaseBtn.style.transform = 'translateY(-2px)';
+      purchaseBtn.style.boxShadow = '0 6px 20px rgba(255,107,53,0.4)';
+    });
+    
+    purchaseBtn.addEventListener('mouseleave', () => {
+      purchaseBtn.style.transform = 'translateY(0)';
+      purchaseBtn.style.boxShadow = '0 4px 15px rgba(255,107,53,0.3)';
+    });
+  }
+  
+  console.log('✅ Mandatory land modal created and displayed');
+}
+
+async function handleMandatoryLandPurchase() {
+  if (!state.address || !state.config) {
+    showMandatoryLandMessage('❌ Please connect wallet first', 'error');
+    return;
+  }
+  
+  const btn = document.getElementById('mandatoryLandPurchaseBtn');
+  const originalText = btn.textContent;
+  
+  try {
+    console.log('🏠 Starting mandatory land purchase...');
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ Processing...';
+    showMandatoryLandMessage('🔄 Creating land purchase transaction...', 'info');
+    
+    // Create land purchase transaction (0.05 SOL)
+    const landCost = 0.05;
+    const transaction = new solanaWeb3.Transaction();
+    const recipientPubkey = new solanaWeb3.PublicKey(state.config.treasury);
+    const lamports = landCost * solanaWeb3.LAMPORTS_PER_SOL;
+    
+    transaction.add(
+      solanaWeb3.SystemProgram.transfer({
+        fromPubkey: new solanaWeb3.PublicKey(state.address),
+        toPubkey: recipientPubkey,
+        lamports: lamports,
+      })
+    );
+    
+    const { blockhash } = await state.connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = new solanaWeb3.PublicKey(state.address);
+    
+    showMandatoryLandMessage('📝 Please approve the transaction in Phantom...', 'info');
+    
+    const signedTransaction = await state.wallet.signTransaction(transaction);
+    const txId = await state.connection.sendRawTransaction(signedTransaction.serialize());
+    
+    console.log('📝 Land purchase transaction sent:', txId);
+    showMandatoryLandMessage('⏳ Confirming transaction...', 'info');
+    
+    // Wait for confirmation
+    await state.connection.confirmTransaction(txId);
+    console.log('✅ Land purchase transaction confirmed');
+    
+    showMandatoryLandMessage('🏗️ Registering land ownership...', 'info');
+    
+    // Confirm land purchase with backend
+    const confirmRes = await fetch('/api/purchase-land', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: state.address,
+        txId: txId
+      })
+    });
+    
+    const confirmData = await confirmRes.json();
+    
+    if (confirmData.success) {
+      showMandatoryLandMessage('🎉 Land purchased successfully!', 'success');
+      
+      setTimeout(() => {
+        // Close modal
+        const modal = document.getElementById('mandatoryLandModal');
+        if (modal) {
+          modal.remove();
+          document.body.style.overflow = 'auto';
+        }
+        
+        // Show success notification
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: linear-gradient(45deg, #22c55e, #16a34a);
+          color: white;
+          padding: 20px 30px;
+          border-radius: 15px;
+          z-index: 10001;
+          font-family: Arial, sans-serif;
+          text-align: center;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        `;
+        
+        notification.innerHTML = `
+          <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">
+            🏠 Land Ownership Confirmed!
+          </div>
+          <div style="font-size: 14px;">
+            You can now start mining! Buy pickaxes to begin earning gold.
+          </div>
+          <button onclick="this.parentElement.remove()" style="
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            margin-top: 15px;
+            cursor: pointer;
+          ">Start Mining! 🎉</button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+          if (notification.parentElement) {
+            notification.remove();
+          }
+        }, 6000);
+        
+      }, 2000);
+      
+    } else {
+      throw new Error(confirmData.error || 'Land purchase confirmation failed');
+    }
+    
+  } catch (error) {
+    console.error('❌ Land purchase failed:', error);
+    showMandatoryLandMessage(`❌ Purchase failed: ${error.message}`, 'error');
+    
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+function showMandatoryLandMessage(message, type) {
+  const msgEl = document.getElementById('mandatoryLandMsg');
+  if (msgEl) {
+    msgEl.textContent = message;
+    msgEl.style.color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#4ecdc4' : '#ffd700';
+  }
+}
+
 // 🎄 CHRISTMAS V2.0 MODAL FUNCTIONS
 function showV2ComingSoonModal() {
   const modal = document.getElementById('v2ComingSoonModal');
@@ -2798,6 +3051,8 @@ window.connectWallet = connectWallet;
 window.showV2ComingSoonModal = showV2ComingSoonModal;
 window.hideV2ComingSoonModal = hideV2ComingSoonModal;
 window.startChristmasCountdown = startChristmasCountdown;
+window.showMandatoryLandModal = showMandatoryLandModal;
+window.handleMandatoryLandPurchase = handleMandatoryLandPurchase;
 window.buyPickaxe = buyPickaxe;
 window.sellGold = sellGold;
 window.changeQuantity = changeQuantity;
