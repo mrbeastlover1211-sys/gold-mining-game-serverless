@@ -87,19 +87,24 @@ async function autoReconnectWallet() {
             startCheckpointGoldLoop();
           }
           
-          // 🏠 CHECK LAND STATUS ON AUTO-RECONNECT
+          // 🏠 MANDATORY LAND CHECK ON REFRESH - FORCE MODAL IF NO LAND
+          console.log('🔄 Checking land ownership on page refresh...');
           const landCheckResult = await checkLandStatusAndShowPopup();
           
-          // 🔒 BLOCK ALL OTHER FUNCTIONALITY if no land on refresh
           if (landCheckResult === false) {
-            console.log('🚫 User has no land after refresh - blocking all functionality');
-            return; // Stop execution - no other features available
+            console.log('🚫 User has no land after refresh - showing MANDATORY modal immediately');
+            
+            // Force modal to appear instantly on refresh if no land
+            setTimeout(() => {
+              if (!document.getElementById('mandatoryLandModal')) {
+                showMandatoryLandModal();
+              }
+            }, 100);
+            
+            return; // Block all other functionality
           }
           
-          // ✅ Enable features if land check passed or was cached
-          if (landCheckResult === true) {
-            console.log('✅ Land verified after refresh - proceeding normally');
-          }
+          console.log('✅ Land ownership confirmed after refresh - proceeding normally');
           
           console.log('🎉 Wallet auto-reconnect and data restore complete!');
         } else {
@@ -556,18 +561,27 @@ async function connectWallet() {
     // Setup wallet switch detection
     setupWalletSwitchDetection(provider);
     
-    // 🏠 MANDATORY LAND CHECK - Must happen BEFORE any other functionality
-    console.log('🔍 Checking land ownership immediately after wallet connection...');
+    // 🏠 INSTANT MANDATORY LAND CHECK AFTER WALLET CONNECTION
+    console.log('🔍 Forcing immediate land ownership check after wallet connection...');
     const landCheckResult = await checkLandStatusAndShowPopup();
     
-    // 🔒 BLOCK ALL OTHER FUNCTIONALITY if no land
     if (landCheckResult === false) {
-      console.log('🚫 User has no land - blocking all other functionality');
-      return; // Stop execution here - no referral checks, no other features
+      console.log('🚫 No land detected - forcing MANDATORY land purchase modal');
+      
+      // IMMEDIATELY show modal - no delays, no bypass possible
+      setTimeout(() => {
+        if (!document.getElementById('mandatoryLandModal')) {
+          console.log('🔒 Force-showing mandatory land modal');
+          showMandatoryLandModal();
+        }
+      }, 500);
+      
+      // COMPLETELY BLOCK all other functionality
+      disableAllGameFeatures();
+      return; // Stop all execution - nothing else works
     }
     
-    // ✅ User has land - proceed with normal functionality
-    console.log('✅ User has land - enabling all features');
+    console.log('✅ Land ownership verified - enabling all game features');
     
     // 🔧 REFERRAL FIX: Auto-check for referral completion after wallet connection
     await autoCheckReferralCompletion();
@@ -1573,31 +1587,43 @@ function showMandatoryLandModal() {
   document.body.appendChild(modal);
   document.body.style.overflow = 'hidden';
   
-  // 🔒 EXACT COPY FROM OLD MAIN.JS - WORKING MODAL PREVENTION
-  modal.addEventListener('contextmenu', (e) => e.preventDefault());
-  modal.addEventListener('click', (e) => e.stopPropagation());
-  
-  // Prevent all closing mechanisms like old main.js
-  document.addEventListener('keydown', function preventLandModalEscape(e) {
-    if (document.getElementById('mandatoryLandModal')) {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
-        showMandatoryLandMessage('⚠️ Cannot close with Escape - land purchase required!', 'error');
-        return false;
+  // 🔒 PREVENT MODAL FROM CLOSING - EXACT OLD MAIN.JS BEHAVIOR
+  modal.addEventListener('click', function(e) {
+    // If click is on modal backdrop (not content), prevent closing
+    if (e.target === modal) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Show warning message
+      showMandatoryLandMessage('⚠️ This modal cannot be closed until land is purchased!', 'error');
+      
+      // Shake animation
+      const modalContent = document.getElementById('landModalContent');
+      if (modalContent) {
+        modalContent.style.transform = 'scale(1.05)';
+        modalContent.style.transition = 'all 0.1s ease';
+        setTimeout(() => {
+          modalContent.style.transform = 'scale(1)';
+        }, 100);
       }
+      
+      return false;
     }
   });
   
-  // Prevent F5 refresh during modal (like old main.js)
-  document.addEventListener('keydown', function preventRefreshDuringLandModal(e) {
-    if (document.getElementById('mandatoryLandModal')) {
-      if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
-        e.preventDefault();
-        e.stopPropagation();
-        showMandatoryLandMessage('⚠️ Please complete land purchase before refreshing!', 'error');
-        return false;
-      }
+  // Prevent right-click
+  modal.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    showMandatoryLandMessage('⚠️ Right-click disabled - land purchase required!', 'error');
+  });
+  
+  // Global escape key prevention
+  window.addEventListener('keydown', function(e) {
+    if (document.getElementById('mandatoryLandModal') && e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      showMandatoryLandMessage('⚠️ Escape key disabled - land purchase required!', 'error');
+      return false;
     }
   });
   
