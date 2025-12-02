@@ -536,9 +536,18 @@ async function connectWallet() {
     // Setup wallet switch detection
     setupWalletSwitchDetection(provider);
     
-    // Check land status immediately after wallet connection
+    // 🏠 MANDATORY LAND CHECK - Must happen BEFORE any other functionality
     console.log('🔍 Checking land ownership immediately after wallet connection...');
-    await checkLandStatusAndShowPopup();
+    const landCheckResult = await checkLandStatusAndShowPopup();
+    
+    // 🔒 BLOCK ALL OTHER FUNCTIONALITY if no land
+    if (landCheckResult === false) {
+      console.log('🚫 User has no land - blocking all other functionality');
+      return; // Stop execution here - no referral checks, no other features
+    }
+    
+    // ✅ User has land - proceed with normal functionality
+    console.log('✅ User has land - enabling all features');
     
     // 🔧 REFERRAL FIX: Auto-check for referral completion after wallet connection
     await autoCheckReferralCompletion();
@@ -1074,6 +1083,22 @@ async function buyPickaxe(pickaxeType) {
     return;
   }
   
+  // 🔒 BLOCK PICKAXE PURCHASE IF NO LAND
+  try {
+    const landResponse = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
+    const landData = await landResponse.json();
+    
+    if (!landData.hasLand) {
+      alert('🏠 You must purchase land before buying pickaxes!\n\nClick "Buy Land" to get started.');
+      showMandatoryLandModal();
+      return;
+    }
+  } catch (error) {
+    console.error('❌ Land status check failed during pickaxe purchase:', error);
+    alert('Unable to verify land ownership. Please try again.');
+    return;
+  }
+  
   try {
     const quantity = parseInt($(`#qty-${pickaxeType}`).value) || 1;
     const costSol = state.config.pickaxes[pickaxeType].costSol;
@@ -1319,7 +1344,7 @@ async function checkLandStatusAndShowPopup() {
     window.landCheckInProgress = false;
   }, 10000);
   
-  if (!state.address) return;
+  if (!state.address) return null;
   
   try {
     console.log('🏠 Checking land status for:', state.address.slice(0, 8) + '...');
@@ -1330,6 +1355,9 @@ async function checkLandStatusAndShowPopup() {
     if (!data.hasLand) {
       console.log('🏠 User needs land - showing MANDATORY modal');
       
+      // 🔒 DISABLE ALL GAME FUNCTIONALITY
+      disableAllGameFeatures();
+      
       // Remove any existing modals first
       const existingModal = document.getElementById('mandatoryLandModal');
       if (existingModal) {
@@ -1338,12 +1366,20 @@ async function checkLandStatusAndShowPopup() {
       
       // Show mandatory land purchase modal (like old main.js)
       showMandatoryLandModal();
+      
+      return false; // Indicate user has no land
     } else {
       console.log('🏠 User has land - no modal needed');
+      
+      // ✅ ENABLE ALL GAME FUNCTIONALITY
+      enableAllGameFeatures();
+      
+      return true; // Indicate user has land
     }
     
   } catch (error) {
     console.error('❌ Land status check failed:', error.message);
+    return null; // Unknown status
   }
 }
 
@@ -1553,6 +1589,9 @@ async function handleMandatoryLandPurchase() {
       showMandatoryLandMessage('🎉 Land purchased successfully!', 'success');
       
       setTimeout(() => {
+        // ✅ ENABLE ALL GAME FEATURES NOW
+        enableAllGameFeatures();
+        
         // Close modal
         const modal = document.getElementById('mandatoryLandModal');
         if (modal) {
@@ -1623,6 +1662,141 @@ function showMandatoryLandMessage(message, type) {
   if (msgEl) {
     msgEl.textContent = message;
     msgEl.style.color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#4ecdc4' : '#ffd700';
+  }
+}
+
+// 🔒 DISABLE ALL GAME FEATURES - Force land purchase first
+function disableAllGameFeatures() {
+  console.log('🔒 Disabling all game features - land required');
+  
+  // Disable pickaxe shop
+  const pickaxeShop = document.getElementById('pickaxeShop');
+  if (pickaxeShop) {
+    pickaxeShop.style.opacity = '0.3';
+    pickaxeShop.style.pointerEvents = 'none';
+    pickaxeShop.style.filter = 'blur(2px)';
+  }
+  
+  // Disable gold exchange
+  const goldExchange = document.getElementById('goldExchange');
+  if (goldExchange) {
+    goldExchange.style.opacity = '0.3';
+    goldExchange.style.pointerEvents = 'none';
+    goldExchange.style.filter = 'blur(2px)';
+  }
+  
+  // Disable user stats (except wallet connection)
+  const userStats = document.getElementById('userStats');
+  if (userStats) {
+    userStats.style.opacity = '0.3';
+    userStats.style.pointerEvents = 'none';
+    userStats.style.filter = 'blur(2px)';
+  }
+  
+  // Disable referral modal
+  const referBtn = document.getElementById('referBtn');
+  if (referBtn) {
+    referBtn.disabled = true;
+    referBtn.style.opacity = '0.3';
+    referBtn.style.pointerEvents = 'none';
+  }
+  
+  // Disable Christmas button
+  const christmasBtn = document.getElementById('v2ComingSoonBtn');
+  if (christmasBtn) {
+    christmasBtn.disabled = true;
+    christmasBtn.style.opacity = '0.3';
+    christmasBtn.style.pointerEvents = 'none';
+  }
+  
+  // Add overlay message
+  addLandRequiredOverlay();
+}
+
+// ✅ ENABLE ALL GAME FEATURES - After land purchase
+function enableAllGameFeatures() {
+  console.log('✅ Enabling all game features - land ownership confirmed');
+  
+  // Enable pickaxe shop
+  const pickaxeShop = document.getElementById('pickaxeShop');
+  if (pickaxeShop) {
+    pickaxeShop.style.opacity = '1';
+    pickaxeShop.style.pointerEvents = 'auto';
+    pickaxeShop.style.filter = 'none';
+  }
+  
+  // Enable gold exchange
+  const goldExchange = document.getElementById('goldExchange');
+  if (goldExchange) {
+    goldExchange.style.opacity = '1';
+    goldExchange.style.pointerEvents = 'auto';
+    goldExchange.style.filter = 'none';
+  }
+  
+  // Enable user stats
+  const userStats = document.getElementById('userStats');
+  if (userStats) {
+    userStats.style.opacity = '1';
+    userStats.style.pointerEvents = 'auto';
+    userStats.style.filter = 'none';
+  }
+  
+  // Enable referral button
+  const referBtn = document.getElementById('referBtn');
+  if (referBtn) {
+    referBtn.disabled = false;
+    referBtn.style.opacity = '1';
+    referBtn.style.pointerEvents = 'auto';
+  }
+  
+  // Enable Christmas button
+  const christmasBtn = document.getElementById('v2ComingSoonBtn');
+  if (christmasBtn) {
+    christmasBtn.disabled = false;
+    christmasBtn.style.opacity = '1';
+    christmasBtn.style.pointerEvents = 'auto';
+  }
+  
+  // Remove overlay message
+  removeLandRequiredOverlay();
+}
+
+// Add overlay message for disabled features
+function addLandRequiredOverlay() {
+  // Remove existing overlay if any
+  removeLandRequiredOverlay();
+  
+  const overlay = document.createElement('div');
+  overlay.id = 'landRequiredOverlay';
+  overlay.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(45deg, #ff6b35, #ff8e53);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 25px;
+    font-weight: bold;
+    z-index: 9999;
+    box-shadow: 0 4px 15px rgba(255,107,53,0.3);
+    animation: pulse 2s infinite;
+    font-family: Arial, sans-serif;
+    text-align: center;
+  `;
+  
+  overlay.innerHTML = `
+    🔒 <strong>Land Required!</strong> Purchase land to access all features
+  `;
+  
+  document.body.appendChild(overlay);
+}
+
+// Remove overlay message
+function removeLandRequiredOverlay() {
+  const overlay = document.getElementById('landRequiredOverlay');
+  if (overlay) {
+    overlay.remove();
   }
 }
 
