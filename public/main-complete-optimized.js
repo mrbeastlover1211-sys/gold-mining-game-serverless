@@ -665,10 +665,373 @@ document.addEventListener('DOMContentLoaded', async function() {
   console.log('✅ Game initialization complete!');
 });
 
-// Export functions for global access
+// 🎮 UI CONTROL FUNCTIONS - All Button and Popup Handlers
+
+// Toggle pickaxe shop visibility
+function togglePickaxeShop() {
+  const shop = $('#pickaxeShop');
+  const btn = $('#toggleShopBtn');
+  
+  if (shop.style.display === 'none') {
+    shop.style.display = 'block';
+    btn.textContent = 'Hide Shop';
+    console.log('🛒 Pickaxe shop opened');
+  } else {
+    shop.style.display = 'none';
+    btn.textContent = 'Show Shop';
+    console.log('🛒 Pickaxe shop closed');
+  }
+}
+
+// Toggle gold exchange visibility
+function toggleGoldExchange() {
+  const exchange = $('#goldExchange');
+  const btn = $('#toggleExchangeBtn');
+  
+  if (exchange.style.display === 'none') {
+    exchange.style.display = 'block';
+    btn.textContent = 'Hide Exchange';
+    console.log('💰 Gold exchange opened');
+  } else {
+    exchange.style.display = 'none';
+    btn.textContent = 'Show Exchange';
+    console.log('💰 Gold exchange closed');
+  }
+}
+
+// Land purchase function
+async function purchaseLand() {
+  if (!state.address || !state.config) {
+    alert('Please connect your wallet first');
+    return;
+  }
+  
+  try {
+    console.log('🏠 Purchasing land...');
+    
+    const landCost = state.config.landCostSol || 0.001;
+    
+    // Show loading message
+    const statusEl = $('#landPurchaseStatus');
+    if (statusEl) {
+      statusEl.textContent = `Purchasing land for ${landCost} SOL...`;
+      statusEl.className = 'status info';
+    }
+    
+    // Create transaction
+    const transaction = new solanaWeb3.Transaction();
+    const recipientPubkey = new solanaWeb3.PublicKey(state.config.treasury);
+    const lamports = landCost * solanaWeb3.LAMPORTS_PER_SOL;
+    
+    transaction.add(
+      solanaWeb3.SystemProgram.transfer({
+        fromPubkey: new solanaWeb3.PublicKey(state.address),
+        toPubkey: recipientPubkey,
+        lamports: lamports,
+      })
+    );
+    
+    const { blockhash } = await state.connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = new solanaWeb3.PublicKey(state.address);
+    
+    const signedTransaction = await state.wallet.signTransaction(transaction);
+    const txId = await state.connection.sendRawTransaction(signedTransaction.serialize());
+    
+    console.log('📝 Land purchase transaction sent:', txId);
+    
+    if (statusEl) {
+      statusEl.textContent = 'Confirming transaction...';
+    }
+    
+    // Wait for confirmation
+    await state.connection.confirmTransaction(txId);
+    console.log('✅ Land purchase confirmed');
+    
+    // Confirm with backend
+    const confirmRes = await fetch('/api/purchase-land', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: state.address,
+        txId: txId
+      })
+    });
+    
+    const confirmData = await confirmRes.json();
+    
+    if (confirmData.success) {
+      if (statusEl) {
+        statusEl.textContent = '✅ Land purchase successful! Welcome to your new land!';
+        statusEl.className = 'status success';
+      }
+      
+      console.log('🎉 Land purchased successfully!');
+      
+      // Hide land modal
+      hideLandModal();
+      
+      // Refresh status
+      await refreshStatus(true);
+      
+      // Check for referral completion
+      await autoCheckReferralCompletion();
+      
+    } else {
+      throw new Error(confirmData.error || 'Land purchase confirmation failed');
+    }
+    
+  } catch (error) {
+    console.error('❌ Land purchase failed:', error);
+    const statusEl = $('#landPurchaseStatus');
+    if (statusEl) {
+      statusEl.textContent = `❌ Purchase failed: ${error.message}`;
+      statusEl.className = 'status error';
+    }
+  }
+}
+
+// Modal control functions
+function openModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.classList.add('show');
+    console.log(`📱 Opened modal: ${modalId}`);
+  }
+}
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    console.log(`📱 Closed modal: ${modalId}`);
+  }
+}
+
+// Specific modal functions
+function showPickaxeShop() {
+  openModal('pickaxeShopModal');
+}
+
+function closePickaxeShop() {
+  closeModal('pickaxeShopModal');
+}
+
+function showGoldExchange() {
+  openModal('goldExchangeModal');
+}
+
+function closeGoldExchange() {
+  closeModal('goldExchangeModal');
+}
+
+function showStats() {
+  openModal('statsModal');
+}
+
+function closeStats() {
+  closeModal('statsModal');
+}
+
+function showReferralModal() {
+  openModal('referralModal');
+  generateReferralLink();
+}
+
+function closeReferralModal() {
+  closeModal('referralModal');
+}
+
+// Generate referral link
+function generateReferralLink() {
+  if (!state.address) {
+    alert('Please connect your wallet first');
+    return;
+  }
+  
+  const baseUrl = window.location.origin + window.location.pathname;
+  const referralLink = `${baseUrl}?ref=${state.address}`;
+  
+  const linkEl = $('#referralLink');
+  if (linkEl) {
+    linkEl.value = referralLink;
+  }
+  
+  console.log('🔗 Generated referral link:', referralLink);
+}
+
+function copyReferralLink() {
+  const linkEl = $('#referralLink');
+  if (linkEl) {
+    linkEl.select();
+    document.execCommand('copy');
+    
+    const btn = $('#copyReferralBtn');
+    if (btn) {
+      const originalText = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => {
+        btn.textContent = originalText;
+      }, 2000);
+    }
+    
+    console.log('📋 Referral link copied to clipboard');
+  }
+}
+
+// Calculate gold value in SOL
+function calculateGoldValue() {
+  const goldInput = $('#goldToSell');
+  const valueDisplay = $('#goldValueSOL');
+  
+  if (goldInput && valueDisplay && state.config) {
+    const goldAmount = parseFloat(goldInput.value) || 0;
+    const solValue = goldAmount * state.config.goldPriceSol;
+    valueDisplay.textContent = `≈ ${solValue.toFixed(6)} SOL`;
+  }
+}
+
+// Update sell button based on gold amount
+function updateSellButton() {
+  const goldInput = $('#goldToSell');
+  const sellBtn = $('#sellGoldBtn');
+  
+  if (goldInput && sellBtn && state.config) {
+    const goldAmount = parseFloat(goldInput.value) || 0;
+    const minSell = state.config.minSellGold;
+    
+    if (goldAmount < minSell) {
+      sellBtn.disabled = true;
+      sellBtn.textContent = `Minimum ${minSell.toLocaleString()} gold`;
+    } else {
+      sellBtn.disabled = false;
+      sellBtn.textContent = 'Sell Gold';
+    }
+  }
+}
+
+// 🎯 REFERRAL SYSTEM MANAGEMENT
+async function checkExistingReferralSession() {
+  console.log('🎯 Checking existing referral session...');
+  
+  // Check URL for ref parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const refAddress = urlParams.get('ref');
+  
+  if (refAddress) {
+    console.log('🔗 Found referral parameter:', refAddress.slice(0, 8) + '...');
+    
+    // Store in localStorage for persistence
+    localStorage.setItem('referralAddress', refAddress);
+    
+    // Track the referral visit
+    try {
+      await fetch('/api/track-referral', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          referrerAddress: refAddress,
+          timestamp: Date.now()
+        })
+      });
+      
+      console.log('✅ Referral visit tracked');
+      
+    } catch (error) {
+      console.log('⚠️ Referral tracking failed:', error.message);
+    }
+    
+    // Clean URL (remove ref parameter)
+    const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+    window.history.replaceState({}, document.title, cleanUrl);
+  }
+  
+  // Check for stored referral
+  const storedRef = localStorage.getItem('referralAddress');
+  if (storedRef) {
+    console.log('🎯 Found stored referral:', storedRef.slice(0, 8) + '...');
+  }
+}
+
+// Link wallet to referral session
+async function linkReferralSession() {
+  const storedRef = localStorage.getItem('referralAddress');
+  
+  if (storedRef && state.address) {
+    console.log('🔗 Linking wallet to referral session...');
+    
+    try {
+      await fetch('/api/link-referral-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          referrerAddress: storedRef,
+          walletAddress: state.address
+        })
+      });
+      
+      console.log('✅ Wallet linked to referral session');
+      
+    } catch (error) {
+      console.log('⚠️ Referral session linking failed:', error.message);
+    }
+  }
+}
+
+// Event listeners setup
+function setupEventListeners() {
+  console.log('🎮 Setting up event listeners...');
+  
+  // Gold input events
+  const goldInput = $('#goldToSell');
+  if (goldInput) {
+    goldInput.addEventListener('input', () => {
+      calculateGoldValue();
+      updateSellButton();
+    });
+  }
+  
+  // Modal close buttons
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) {
+      e.target.style.display = 'none';
+      e.target.classList.remove('show');
+    }
+    
+    if (e.target.classList.contains('close-btn')) {
+      const modal = e.target.closest('.modal-overlay');
+      if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+      }
+    }
+  });
+  
+  console.log('✅ Event listeners setup complete');
+}
+
+// Export all functions for global access
 window.connectWallet = connectWallet;
 window.buyPickaxe = buyPickaxe;
 window.sellGold = sellGold;
 window.changeQuantity = changeQuantity;
 window.showLandModal = showLandModal;
 window.hideLandModal = hideLandModal;
+window.purchaseLand = purchaseLand;
+window.togglePickaxeShop = togglePickaxeShop;
+window.toggleGoldExchange = toggleGoldExchange;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.showPickaxeShop = showPickaxeShop;
+window.closePickaxeShop = closePickaxeShop;
+window.showGoldExchange = showGoldExchange;
+window.closeGoldExchange = closeGoldExchange;
+window.showStats = showStats;
+window.closeStats = closeStats;
+window.showReferralModal = showReferralModal;
+window.closeReferralModal = closeReferralModal;
+window.copyReferralLink = copyReferralLink;
+window.calculateGoldValue = calculateGoldValue;
+window.updateSellButton = updateSellButton;
