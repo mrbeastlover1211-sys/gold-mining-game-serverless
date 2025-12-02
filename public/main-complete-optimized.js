@@ -1529,11 +1529,33 @@ async function checkExistingReferralSession() {
 function setupAllEventListeners() {
   console.log('🎮 Setting up ALL event listeners...');
   
-  // Connect Wallet Button
-  const connectBtn = $('#connectBtn');
+  // Connect Wallet Button - Fix for actual HTML structure
+  let connectBtn = $('#connectBtn') || $('[onclick="connectWallet()"]') || $('.connect-btn');
+  
+  // Also try finding by text content
+  if (!connectBtn) {
+    const allButtons = document.querySelectorAll('button');
+    for (let btn of allButtons) {
+      if (btn.textContent && btn.textContent.toLowerCase().includes('connect')) {
+        connectBtn = btn;
+        break;
+      }
+    }
+  }
+  
   if (connectBtn) {
     connectBtn.addEventListener('click', connectWallet);
-    console.log('✅ Connect wallet button bound');
+    console.log('✅ Connect wallet button found and bound:', connectBtn.id || connectBtn.className);
+  } else {
+    console.error('❌ Connect wallet button not found with any selector!');
+    // List all buttons for debugging
+    const allButtons = document.querySelectorAll('button');
+    console.log('📋 All buttons found:', Array.from(allButtons).map(b => ({
+      id: b.id,
+      class: b.className,
+      text: b.textContent,
+      onclick: b.getAttribute('onclick')
+    })));
   }
   
   // Land Purchase Button
