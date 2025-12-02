@@ -1098,20 +1098,34 @@ async function buyPickaxe(pickaxeType) {
     return;
   }
   
-  // 🔒 BLOCK PICKAXE PURCHASE IF NO LAND
-  try {
-    const landResponse = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
-    const landData = await landResponse.json();
-    
-    if (!landData.hasLand) {
-      alert('🏠 You must purchase land before buying pickaxes!\n\nClick "Buy Land" to get started.');
-      showMandatoryLandModal();
+  // 🔒 BLOCK PICKAXE PURCHASE IF NO LAND (with cache check)
+  const landVerifiedKey = `land_verified_${state.address}`;
+  const cachedLandStatus = sessionStorage.getItem(landVerifiedKey);
+  
+  // First check cache
+  if (cachedLandStatus === 'true') {
+    console.log('✅ Pickaxe purchase allowed - land ownership cached');
+    // Continue with purchase
+  } else {
+    // Check database if not cached
+    try {
+      const landResponse = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
+      const landData = await landResponse.json();
+      
+      if (!landData.hasLand) {
+        alert('🏠 You must purchase land before buying pickaxes!\n\nClick "Buy Land" to get started.');
+        showMandatoryLandModal();
+        return;
+      } else {
+        // Cache the land ownership
+        sessionStorage.setItem(landVerifiedKey, 'true');
+        console.log('💾 Land ownership verified and cached during pickaxe purchase');
+      }
+    } catch (error) {
+      console.error('❌ Land status check failed during pickaxe purchase:', error);
+      alert('Unable to verify land ownership. Please try again.');
       return;
     }
-  } catch (error) {
-    console.error('❌ Land status check failed during pickaxe purchase:', error);
-    alert('Unable to verify land ownership. Please try again.');
-    return;
   }
   
   try {
@@ -1361,6 +1375,16 @@ async function checkLandStatusAndShowPopup() {
   
   if (!state.address) return null;
   
+  // 🗄️ CACHE SYSTEM: Check sessionStorage first (like old main.js)
+  const landVerifiedKey = `land_verified_${state.address}`;
+  const cachedLandStatus = sessionStorage.getItem(landVerifiedKey);
+  
+  if (cachedLandStatus === 'true') {
+    console.log('✅ Land ownership cached - enabling features');
+    enableAllGameFeatures();
+    return true; // User has land (from cache)
+  }
+  
   try {
     console.log('🏠 Checking land status for:', state.address.slice(0, 8) + '...');
     
@@ -1384,7 +1408,11 @@ async function checkLandStatusAndShowPopup() {
       
       return false; // Indicate user has no land
     } else {
-      console.log('🏠 User has land - no modal needed');
+      console.log('🏠 User has land - caching and enabling features');
+      
+      // 💾 CACHE LAND OWNERSHIP (like old main.js)
+      sessionStorage.setItem(landVerifiedKey, 'true');
+      console.log('💾 Land ownership cached for session');
       
       // ✅ ENABLE ALL GAME FUNCTIONALITY
       enableAllGameFeatures();
@@ -1627,6 +1655,11 @@ async function handleMandatoryLandPurchase() {
     
     if (confirmData.success) {
       showMandatoryLandMessage('🎉 Land purchased successfully!', 'success');
+      
+      // 💾 CACHE LAND OWNERSHIP IMMEDIATELY
+      const landVerifiedKey = `land_verified_${state.address}`;
+      sessionStorage.setItem(landVerifiedKey, 'true');
+      console.log('💾 Land ownership cached after successful purchase');
       
       setTimeout(() => {
         // ✅ ENABLE ALL GAME FEATURES NOW
