@@ -87,24 +87,26 @@ async function autoReconnectWallet() {
             startCheckpointGoldLoop();
           }
           
-          // 🏠 MANDATORY LAND CHECK ON REFRESH - FORCE MODAL IF NO LAND
-          console.log('🔄 Checking land ownership on page refresh...');
+          // 🏠 MANDATORY LAND CHECK ON REFRESH - EXACT SAME AS OLD MAIN.JS
+          console.log('🔄 Auto-reconnect: Checking land status...');
           const landCheckResult = await checkLandStatusAndShowPopup();
           
+          // Debug logging
+          console.log('🔍 Land check result on refresh:', landCheckResult);
+          console.log('🔍 Current address:', state.address);
+          console.log('🔍 Cache key would be:', `land_verified_${state.address}`);
+          console.log('🔍 Cache value:', sessionStorage.getItem(`land_verified_${state.address}`));
+          
           if (landCheckResult === false) {
-            console.log('🚫 User has no land after refresh - showing MANDATORY modal immediately');
-            
-            // Force modal to appear instantly on refresh if no land
-            setTimeout(() => {
-              if (!document.getElementById('mandatoryLandModal')) {
-                showMandatoryLandModal();
-              }
-            }, 100);
-            
-            return; // Block all other functionality
+            console.log('🚫 No land detected after refresh - user needs to purchase land');
+            disableAllGameFeatures();
+            return; // Block all other functionality until land purchase
           }
           
-          console.log('✅ Land ownership confirmed after refresh - proceeding normally');
+          if (landCheckResult === true) {
+            console.log('✅ Land ownership verified after refresh - enabling features');
+            enableAllGameFeatures();
+          }
           
           console.log('🎉 Wallet auto-reconnect and data restore complete!');
         } else {
@@ -1687,19 +1689,20 @@ async function handleMandatoryLandPurchase() {
     btn.textContent = '⏳ Processing...';
     showMandatoryLandMessage('🔄 Creating land purchase transaction...', 'info');
     
-    // Create land purchase transaction (0.05 SOL)
+    // Create land purchase transaction (0.05 SOL) - Fixed Buffer issue
     const landCost = 0.05;
     const transaction = new solanaWeb3.Transaction();
     const recipientPubkey = new solanaWeb3.PublicKey(state.config.treasury);
-    const lamports = landCost * solanaWeb3.LAMPORTS_PER_SOL;
+    const lamports = Math.floor(landCost * solanaWeb3.LAMPORTS_PER_SOL);
     
-    transaction.add(
-      solanaWeb3.SystemProgram.transfer({
-        fromPubkey: new solanaWeb3.PublicKey(state.address),
-        toPubkey: recipientPubkey,
-        lamports: lamports,
-      })
-    );
+    // Create transfer instruction without Buffer dependency
+    const transferInstruction = solanaWeb3.SystemProgram.transfer({
+      fromPubkey: new solanaWeb3.PublicKey(state.address),
+      toPubkey: recipientPubkey,
+      lamports: lamports,
+    });
+    
+    transaction.add(transferInstruction);
     
     const { blockhash } = await state.connection.getLatestBlockhash();
     transaction.recentBlockhash = blockhash;
