@@ -1500,7 +1500,7 @@ function showMandatoryLandModal() {
       margin: 20px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.3);
       border: 2px solid #4a90e2;
-    ">`
+    ">"
       <h2 style="margin-bottom: 20px; color: #ffd700; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
         🏗️ Land Required to Start Mining!
       </h2>
