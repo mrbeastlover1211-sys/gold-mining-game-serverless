@@ -661,11 +661,174 @@ async function loadConfig() {
   }
 }
 
+// 🎮 DISPLAY AND MINING FUNCTIONS - EXACT COPY FROM WORKING main.js
+
 function updateStaticInfo() {
   if (state.config) {
     $('#goldPrice').textContent = state.config.goldPriceSol + ' SOL';
     $('#minSell').textContent = state.config.minSellGold.toLocaleString();
   }
+}
+
+// Update display with optimized mining calculations
+function updateDisplay(data) {
+  console.log('🖼️ Updating display with data:', data);
+  
+  if (data.gold !== undefined) {
+    const goldEl = $('#totalGold');
+    if (goldEl) {
+      goldEl.textContent = data.gold.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+    
+    state.status.gold = data.gold;
+  }
+  
+  if (data.inventory) {
+    const inventory = data.inventory;
+    state.status.inventory = inventory;
+    
+    // Update pickaxe counts display
+    const pickaxeTypes = ['silver', 'gold', 'diamond', 'netherite'];
+    pickaxeTypes.forEach(type => {
+      const count = inventory[type] || 0;
+      const ownedEl = $(`#owned-${type}`);
+      if (ownedEl) {
+        ownedEl.textContent = `Owned: ${count}`;
+        ownedEl.style.display = count > 0 ? 'block' : 'none';
+      }
+    });
+    
+    // Update total mining rate display
+    const totalRate = 
+      (inventory.silver || 0) * 1 +
+      (inventory.gold || 0) * 10 +
+      (inventory.diamond || 0) * 100 +
+      (inventory.netherite || 0) * 1000;
+    
+    const rateEl = $('#currentMiningRate');
+    if (rateEl) {
+      rateEl.textContent = `+${totalRate.toLocaleString()} gold/min`;
+    }
+  }
+  
+  if (data.checkpoint) {
+    state.checkpoint = data.checkpoint;
+  }
+  
+  console.log('✅ Display updated successfully');
+}
+
+// Start optimized checkpoint gold loop (client-side calculations)
+function startCheckpointGoldLoop() {
+  if (state.goldUpdateInterval) {
+    console.log('⚠️ Mining loop already running');
+    return;
+  }
+  
+  if (!state.checkpoint || state.checkpoint.total_mining_power <= 0) {
+    console.log('⚠️ Cannot start mining - no mining power');
+    return;
+  }
+  
+  console.log('⛏️ Starting optimized mining loop...');
+  console.log('📊 Mining power:', state.checkpoint.total_mining_power, 'gold/min');
+  
+  const startMining = () => {
+    const checkpointTime = state.checkpoint.checkpoint_timestamp;
+    const currentTime = Math.floor(Date.now() / 1000);
+    const timeSinceCheckpoint = currentTime - checkpointTime;
+    const goldPerSecond = state.checkpoint.total_mining_power / 60;
+    const calculatedGold = state.checkpoint.last_checkpoint_gold + (goldPerSecond * timeSinceCheckpoint);
+    
+    console.log('⛏️ Mining calculation:', {
+      miningPower: state.checkpoint.total_mining_power,
+      checkpointTime: checkpointTime,
+      currentTime: currentTime,
+      timeSinceCheckpoint: timeSinceCheckpoint,
+      goldPerSecond: goldPerSecond,
+      baseGold: state.checkpoint.last_checkpoint_gold,
+      calculatedGold: calculatedGold.toFixed(2)
+    });
+    
+    // Update gold display
+    const goldEl = $('#totalGold');
+    if (goldEl) {
+      goldEl.textContent = calculatedGold.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+    
+    console.log('💰 Updated gold display to:', calculatedGold.toFixed(2));
+    
+    // Update state
+    state.status.gold = calculatedGold;
+    
+    console.log('⏰ Mining tick - Gold:', calculatedGold.toFixed(2), 'Power:', state.checkpoint.total_mining_power);
+  };
+  
+  // Start immediately
+  startMining();
+  
+  // Continue every second (optimized display updates only)
+  state.goldUpdateInterval = setInterval(startMining, 1000);
+  
+  console.log('✅ Optimized mining loop started successfully!');
+}
+
+// Stop mining loop
+function stopMining() {
+  if (state.goldUpdateInterval) {
+    clearInterval(state.goldUpdateInterval);
+    state.goldUpdateInterval = null;
+    console.log('🛑 Mining loop stopped');
+  }
+}
+
+// Update mining display after purchases
+function updateMiningAfterPurchase(pickaxeType, quantity) {
+  console.log('🔄 Updating mining after purchase:', pickaxeType, 'x' + quantity);
+  
+  if (!state.checkpoint) {
+    state.checkpoint = {
+      total_mining_power: 0,
+      checkpoint_timestamp: Math.floor(Date.now() / 1000),
+      last_checkpoint_gold: state.status.gold || 0
+    };
+  }
+  
+  // Add new mining power
+  const pickaxePower = {
+    silver: 1,
+    gold: 10,
+    diamond: 100,
+    netherite: 1000
+  };
+  
+  const additionalPower = pickaxePower[pickaxeType] * quantity;
+  state.checkpoint.total_mining_power += additionalPower;
+  
+  // Update inventory
+  if (!state.status.inventory) {
+    state.status.inventory = { silver: 0, gold: 0, diamond: 0, netherite: 0 };
+  }
+  state.status.inventory[pickaxeType] = (state.status.inventory[pickaxeType] || 0) + quantity;
+  
+  // Update display
+  updateDisplay({
+    inventory: state.status.inventory,
+    checkpoint: state.checkpoint
+  });
+  
+  // Start mining if not already running
+  if (!state.goldUpdateInterval) {
+    startCheckpointGoldLoop();
+  }
+  
+  console.log('✅ Mining updated - New total power:', state.checkpoint.total_mining_power);
 }
 
 function renderShop() {
