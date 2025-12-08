@@ -254,19 +254,24 @@ async function buyPickaxe(pickaxeType) {
     
     console.log(`💰 Total cost: ${totalCost} SOL for ${quantity}x ${pickaxeType}`);
     
-    // Create transaction
-    const fromPubkey = new solanaWeb3.PublicKey(state.address);
-    const toPubkey = new solanaWeb3.PublicKey(state.config.treasuryPublicKey);
+    // Check if Solana Web3 library is loaded
+    if (typeof window.solanaWeb3 === 'undefined') {
+      throw new Error('Solana library not loaded. Please refresh the page.');
+    }
     
-    const transaction = new solanaWeb3.Transaction().add(
-      solanaWeb3.SystemProgram.transfer({
+    // Create transaction
+    const fromPubkey = new window.solanaWeb3.PublicKey(state.address);
+    const toPubkey = new window.solanaWeb3.PublicKey(state.config.treasuryPublicKey);
+    
+    const transaction = new window.solanaWeb3.Transaction().add(
+      window.solanaWeb3.SystemProgram.transfer({
         fromPubkey,
         toPubkey,
-        lamports: totalCost * solanaWeb3.LAMPORTS_PER_SOL
+        lamports: Math.floor(totalCost * window.solanaWeb3.LAMPORTS_PER_SOL)
       })
     );
     
-    const { blockhash } = await state.connection.getRecentBlockhash();
+    const { blockhash } = await state.connection.getLatestBlockhash();
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = fromPubkey;
     
@@ -331,9 +336,17 @@ async function updateWalletBalance() {
   }
   
   try {
-    const publicKey = new solanaWeb3.PublicKey(state.address);
+    // Check if Solana Web3 library is loaded
+    if (typeof window.solanaWeb3 === 'undefined') {
+      console.error('Solana Web3 library not loaded');
+      state.solBalance = 'Error';
+      updateConnectButtonDisplay();
+      return;
+    }
+    
+    const publicKey = new window.solanaWeb3.PublicKey(state.address);
     const balance = await state.connection.getBalance(publicKey);
-    const solBalance = (balance / solanaWeb3.LAMPORTS_PER_SOL).toFixed(3);
+    const solBalance = (balance / window.solanaWeb3.LAMPORTS_PER_SOL).toFixed(3);
     state.solBalance = solBalance;
     
     updateConnectButtonDisplay();
@@ -1240,31 +1253,80 @@ async function purchaseLand() {
     return;
   }
   
+  // Check if Solana Web3 library is loaded
+  if (typeof window.solanaWeb3 === 'undefined') {
+    console.error('❌ Solana Web3 library not loaded');
+    $('#landMsg').textContent = '❌ Solana library not loaded. Please refresh the page.';
+    $('#landMsg').style.color = '#f44336';
+    return;
+  }
+  
+  if (!state.wallet) {
+    alert('Wallet not connected properly. Please reconnect your wallet.');
+    return;
+  }
+  
   try {
     console.log('🏞️ Starting land purchase...');
     
+    // Show loading state
+    $('#landMsg').textContent = 'Processing land purchase...';
+    $('#landMsg').style.color = '#2196F3';
+    
     const landCost = state.config.landCostSol || 0.01; // Default 0.01 SOL
+    console.log('💰 Land cost:', landCost, 'SOL');
+    console.log('🏦 Treasury address:', state.config.treasuryPublicKey);
+    
+    // Check wallet balance first
+    const balance = await state.connection.getBalance(new window.solanaWeb3.PublicKey(state.address));
+    const solBalance = balance / window.solanaWeb3.LAMPORTS_PER_SOL;
+    console.log('💳 Current balance:', solBalance, 'SOL');
+    
+    if (solBalance < landCost + 0.001) { // Add small buffer for transaction fee
+      throw new Error(`Insufficient balance. You need at least ${landCost + 0.001} SOL but only have ${solBalance.toFixed(6)} SOL`);
+    }
     
     // Create transaction for land purchase
-    const fromPubkey = new solanaWeb3.PublicKey(state.address);
-    const toPubkey = new solanaWeb3.PublicKey(state.config.treasuryPublicKey);
+    const fromPubkey = new window.solanaWeb3.PublicKey(state.address);
+    const toPubkey = new window.solanaWeb3.PublicKey(state.config.treasuryPublicKey);
     
-    const transaction = new solanaWeb3.Transaction().add(
-      solanaWeb3.SystemProgram.transfer({
+    console.log('📤 Creating transaction from:', fromPubkey.toString());
+    console.log('📥 Creating transaction to:', toPubkey.toString());
+    
+    const transaction = new window.solanaWeb3.Transaction().add(
+      window.solanaWeb3.SystemProgram.transfer({
         fromPubkey,
         toPubkey,
-        lamports: landCost * solanaWeb3.LAMPORTS_PER_SOL
+        lamports: Math.floor(landCost * window.solanaWeb3.LAMPORTS_PER_SOL)
       })
     );
     
-    const { blockhash } = await state.connection.getRecentBlockhash();
+    // Get recent blockhash
+    console.log('🔗 Getting recent blockhash...');
+    const { blockhash } = await state.connection.getLatestBlockhash();
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = fromPubkey;
     
+    console.log('✍️ Requesting wallet signature...');
+    $('#landMsg').textContent = 'Please approve the transaction in your wallet...';
+    $('#landMsg').style.color = '#FF9800';
+    
+    // Sign and send transaction
     const signedTransaction = await state.wallet.signTransaction(transaction);
-    const signature = await state.connection.sendRawTransaction(signedTransaction.serialize());
+    
+    console.log('📡 Sending transaction to blockchain...');
+    $('#landMsg').textContent = 'Sending transaction to blockchain...';
+    $('#landMsg').style.color = '#2196F3';
+    
+    const signature = await state.connection.sendRawTransaction(signedTransaction.serialize(), {
+      skipPreflight: false,
+      preflightCommitment: 'confirmed'
+    });
     
     console.log('📝 Land purchase transaction signature:', signature);
+    
+    $('#landMsg').textContent = 'Confirming transaction with server...';
+    $('#landMsg').style.color = '#2196F3';
     
     // Confirm with server
     const response = await fetch('/api/purchase-land', {
@@ -1302,13 +1364,27 @@ async function purchaseLand() {
     
   } catch (error) {
     console.error('❌ Land purchase failed:', error);
-    $('#landMsg').textContent = `❌ Land purchase failed: ${error.message}`;
+    
+    let errorMessage = error.message;
+    
+    // Handle specific error types
+    if (error.message.includes('User rejected')) {
+      errorMessage = 'Transaction cancelled by user';
+    } else if (error.message.includes('Insufficient')) {
+      errorMessage = error.message; // Already formatted above
+    } else if (error.message.includes('_bn')) {
+      errorMessage = 'Blockchain library error. Please refresh the page and try again.';
+    } else if (error.message.includes('blockhash')) {
+      errorMessage = 'Network error. Please try again in a few seconds.';
+    }
+    
+    $('#landMsg').textContent = `❌ Land purchase failed: ${errorMessage}`;
     $('#landMsg').style.color = '#f44336';
     
-    // Clear message after 5 seconds
+    // Clear message after 10 seconds for errors
     setTimeout(() => {
       $('#landMsg').textContent = '';
-    }, 5000);
+    }, 10000);
   }
 }
 
