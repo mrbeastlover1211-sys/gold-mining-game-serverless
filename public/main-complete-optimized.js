@@ -1557,9 +1557,89 @@ function waitForSolanaWeb3() {
   });
 }
 
+// 🎁 Check and track referral from URL parameters (CRITICAL MISSING FUNCTION!)
+async function checkAndTrackReferral() {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const referrerAddress = urlParams.get('ref');
+    
+    if (referrerAddress && referrerAddress.length > 20) {
+      console.log('🎁 Referral detected from:', referrerAddress.slice(0, 8) + '...');
+      
+      // Track the referral session
+      const response = await fetch('/api/track-referral', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          referrer_address: referrerAddress,
+          timestamp: Math.floor(Date.now() / 1000)
+        })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        console.log('✅ Referral session tracked successfully');
+        
+        // Store referrer in localStorage for later use
+        localStorage.setItem('gm_referrer', referrerAddress);
+        
+        // Show referral notification
+        showReferralTrackedNotification(referrerAddress);
+      } else {
+        console.log('⚠️ Failed to track referral:', result.error);
+      }
+    } else {
+      console.log('ℹ️ No referral parameter found');
+    }
+  } catch (error) {
+    console.error('❌ Error checking referral:', error);
+  }
+}
+
+// 🎉 Show referral tracked notification
+function showReferralTrackedNotification(referrerAddress) {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(45deg, #3B82F6, #1D4ED8);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    font-family: Arial, sans-serif;
+    max-width: 300px;
+    animation: slideIn 0.5s ease-out;
+  `;
+  
+  notification.innerHTML = `
+    <div style="font-weight: bold; margin-bottom: 5px;">🎁 Referral Tracked!</div>
+    <div style="font-size: 12px; opacity: 0.9;">
+      Referred by: ${referrerAddress.slice(0, 8)}...${referrerAddress.slice(-4)}
+    </div>
+    <div style="font-size: 11px; margin-top: 5px; opacity: 0.8;">
+      Buy land to complete referral
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.remove();
+    }
+  }, 5000);
+}
+
 // 🚀 Initialize the game when page loads
 window.addEventListener('DOMContentLoaded', async function() {
   console.log('🚀 Initializing Complete Optimized Gold Mining Game...');
+  
+  // 🎁 CRITICAL: Check for referral tracking FIRST!
+  await checkAndTrackReferral();
   
   // Wait for Solana Web3 library to load first
   await waitForSolanaWeb3();
