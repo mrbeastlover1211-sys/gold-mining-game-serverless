@@ -630,11 +630,8 @@ function openGoldStoreModal() {
   }
 }
 
-function closeGoldStoreModal(event) {
+function closeGoldStoreModal() {
   console.log('🏪 Closing Gold Store Modal...');
-  if (event && event.target !== event.currentTarget && !event.target.classList.contains('modal-close-btn')) {
-    return; // Don't close if clicking inside modal content
-  }
   const modal = $('#goldStoreModal');
   if (modal) {
     modal.style.display = 'none';
@@ -1044,6 +1041,9 @@ window.addEventListener('DOMContentLoaded', async function() {
     console.log('✅ Connect button event listener added');
   }
   
+  // 🎯 Setup click-outside-to-close for ALL modals
+  setupModalClickOutside();
+  
   // Setup sell button event listener
   const sellBtn = $('#sellBtn');
   if (sellBtn) {
@@ -1112,3 +1112,42 @@ window.addEventListener('DOMContentLoaded', async function() {
   
   console.log('🎉 Game initialization complete with ALL modal and button functions!');
 });
+
+// 🎯 Setup click-outside-to-close functionality for all modals
+function setupModalClickOutside() {
+  const modals = [
+    { id: 'goldStoreModal', closeFunction: closeGoldStoreModal },
+    { id: 'howItWorksModal', closeFunction: hideHowItWorksModal },
+    { id: 'promotersModal', closeFunction: closePromotersModal },
+    { id: 'battlezoneModal', closeFunction: closeBattlezoneModal },
+    { id: 'v2ComingSoonModal', closeFunction: closeV2Modal },
+    { id: 'referralModal', closeFunction: closeReferralModal }
+    // Note: landModal is intentionally excluded as it's a mandatory modal
+  ];
+  
+  modals.forEach(modal => {
+    const modalElement = document.getElementById(modal.id);
+    if (modalElement) {
+      modalElement.addEventListener('click', function(event) {
+        // Close modal if clicking on the overlay (not the modal content)
+        if (event.target === modalElement) {
+          console.log(`🎯 Clicked outside ${modal.id}, closing modal...`);
+          modal.closeFunction();
+        }
+      });
+      console.log(`✅ Click-outside-to-close setup for ${modal.id}`);
+    }
+  });
+  
+  // Special handling for Gold Store Modal since it has a different parameter structure
+  const goldStoreModal = document.getElementById('goldStoreModal');
+  if (goldStoreModal) {
+    goldStoreModal.removeEventListener('click', closeGoldStoreModal); // Remove existing listener
+    goldStoreModal.addEventListener('click', function(event) {
+      if (event.target === goldStoreModal) {
+        console.log('🎯 Clicked outside Gold Store Modal, closing...');
+        closeGoldStoreModal();
+      }
+    });
+  }
+}
