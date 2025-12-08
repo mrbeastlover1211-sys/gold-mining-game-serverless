@@ -1256,9 +1256,20 @@ async function purchaseLand() {
   // Check if Solana Web3 library is loaded
   if (typeof window.solanaWeb3 === 'undefined') {
     console.error('❌ Solana Web3 library not loaded');
-    $('#landMsg').textContent = '❌ Solana library not loaded. Please refresh the page.';
-    $('#landMsg').style.color = '#f44336';
-    return;
+    $('#landMsg').textContent = '❌ Loading blockchain library... Please wait a moment.';
+    $('#landMsg').style.color = '#FF9800';
+    
+    // Try to wait for the library to load
+    await waitForSolanaWeb3();
+    
+    if (typeof window.solanaWeb3 === 'undefined') {
+      $('#landMsg').textContent = '❌ Blockchain library failed to load. Please refresh the page.';
+      $('#landMsg').style.color = '#f44336';
+      return;
+    } else {
+      $('#landMsg').textContent = '✅ Blockchain library loaded. Continuing with purchase...';
+      $('#landMsg').style.color = '#4CAF50';
+    }
   }
   
   if (!state.wallet) {
@@ -1461,9 +1472,39 @@ function downloadBanner(type) {
   }
 }
 
+// 🔄 Wait for Solana Web3 library to load
+function waitForSolanaWeb3() {
+  return new Promise((resolve) => {
+    if (typeof window.solanaWeb3 !== 'undefined') {
+      console.log('✅ Solana Web3 library already loaded');
+      resolve();
+      return;
+    }
+    
+    console.log('⏳ Waiting for Solana Web3 library to load...');
+    const checkInterval = setInterval(() => {
+      if (typeof window.solanaWeb3 !== 'undefined') {
+        console.log('✅ Solana Web3 library loaded successfully');
+        clearInterval(checkInterval);
+        resolve();
+      }
+    }, 100); // Check every 100ms
+    
+    // Timeout after 10 seconds
+    setTimeout(() => {
+      clearInterval(checkInterval);
+      console.error('❌ Solana Web3 library failed to load within 10 seconds');
+      resolve(); // Still resolve to continue initialization
+    }, 10000);
+  });
+}
+
 // 🚀 Initialize the game when page loads
 window.addEventListener('DOMContentLoaded', async function() {
   console.log('🚀 Initializing Complete Optimized Gold Mining Game...');
+  
+  // Wait for Solana Web3 library to load first
+  await waitForSolanaWeb3();
   
   // Load configuration and setup
   await loadConfig();
