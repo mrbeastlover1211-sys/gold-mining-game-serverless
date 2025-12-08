@@ -1242,151 +1242,73 @@ async function updateReferralStatus() {
   }
 }
 
-// 🏞️ Land Purchase Functions
+// 🏞️ Land Purchase Functions (EXACT COPY FROM WORKING VERSION)
 async function purchaseLand() {
   if (!state.address) {
-    alert('Please connect your wallet first');
-    return;
-  }
-  
-  if (!state.config) {
-    alert('Configuration not loaded. Please refresh the page.');
-    return;
-  }
-  
-  // Check if Solana Web3 library is loaded
-  if (typeof solanaWeb3 === 'undefined') {
-    console.error('❌ Solana Web3 library not loaded');
-    $('#landMsg').textContent = '❌ Loading blockchain library... Please wait a moment.';
-    $('#landMsg').style.color = '#FF9800';
-    
-    // Try to wait for the library to load
-    await waitForSolanaWeb3();
-    
-    if (typeof solanaWeb3 === 'undefined') {
-      $('#landMsg').textContent = '❌ Blockchain library failed to load. Please refresh the page.';
-      $('#landMsg').style.color = '#f44336';
-      return;
-    } else {
-      $('#landMsg').textContent = '✅ Blockchain library loaded. Continuing with purchase...';
-      $('#landMsg').style.color = '#4CAF50';
-    }
-  }
-  
-  if (!state.wallet) {
-    alert('Wallet not connected properly. Please reconnect your wallet.');
+    $('#landMsg').textContent = 'Please connect your wallet first!';
+    $('#landMsg').style.color = '#f44336';
     return;
   }
   
   try {
-    console.log('🏞️ Starting land purchase...');
-    console.log('🔍 Debug - typeof solanaWeb3:', typeof solanaWeb3);
-    console.log('🔍 Debug - solanaWeb3 object:', solanaWeb3);
-    console.log('🔍 Debug - state.wallet:', state.wallet);
-    console.log('🔍 Debug - state.address:', state.address);
-    console.log('🔍 Debug - state.config:', state.config);
-    console.log('🔍 Debug - state.connection:', state.connection);
-    
-    // Show loading state
-    $('#landMsg').textContent = 'Processing land purchase...';
+    $('#landMsg').textContent = 'Creating land purchase transaction...';
     $('#landMsg').style.color = '#2196F3';
     
-    const landCost = state.config.landCostSol || 0.01; // Default 0.01 SOL
-    console.log('💰 Land cost:', landCost, 'SOL');
-    console.log('🏦 Treasury address (treasuryPublicKey):', state.config.treasuryPublicKey);
-    console.log('🏦 Treasury address (treasury):', state.config.treasury);
-    
-    // Get treasury address (use treasury field, not treasuryPublicKey)
-    const treasuryAddress = state.config.treasuryPublicKey || state.config.treasury;
-    if (!treasuryAddress) {
-      throw new Error('Treasury address not found in configuration');
-    }
-    console.log('🏦 Using treasury address:', treasuryAddress);
-    
-    // Check wallet balance first
-    const balance = await state.connection.getBalance(new solanaWeb3.PublicKey(state.address));
-    const solBalance = balance / solanaWeb3.LAMPORTS_PER_SOL;
-    console.log('💳 Current balance:', solBalance, 'SOL');
-    
-    if (solBalance < landCost + 0.001) { // Add small buffer for transaction fee
-      throw new Error(`Insufficient balance. You need at least ${landCost + 0.001} SOL but only have ${solBalance.toFixed(6)} SOL`);
-    }
-    
-    // Create transaction for land purchase
-    const fromPubkey = new solanaWeb3.PublicKey(state.address);
-    const toPubkey = new solanaWeb3.PublicKey(treasuryAddress);
-    
-    console.log('📤 Creating transaction from:', fromPubkey.toString());
-    console.log('📥 Creating transaction to:', toPubkey.toString());
-    
-    const transaction = new solanaWeb3.Transaction().add(
-      solanaWeb3.SystemProgram.transfer({
-        fromPubkey,
-        toPubkey,
-        lamports: Math.floor(landCost * solanaWeb3.LAMPORTS_PER_SOL)
-      })
-    );
-    
-    // Get recent blockhash
-    console.log('🔗 Getting recent blockhash...');
-    const { blockhash } = await state.connection.getLatestBlockhash();
-    transaction.recentBlockhash = blockhash;
-    transaction.feePayer = fromPubkey;
-    
-    console.log('✍️ Requesting wallet signature...');
-    $('#landMsg').textContent = 'Please approve the transaction in your wallet...';
-    $('#landMsg').style.color = '#FF9800';
-    
-    // Sign and send transaction
-    const signedTransaction = await state.wallet.signTransaction(transaction);
-    
-    console.log('📡 Sending transaction to blockchain...');
-    $('#landMsg').textContent = 'Sending transaction to blockchain...';
-    $('#landMsg').style.color = '#2196F3';
-    
-    const signature = await state.connection.sendRawTransaction(signedTransaction.serialize(), {
-      skipPreflight: false,
-      preflightCommitment: 'confirmed'
-    });
-    
-    console.log('📝 Land purchase transaction signature:', signature);
-    
-    $('#landMsg').textContent = 'Confirming transaction with server...';
-    $('#landMsg').style.color = '#2196F3';
-    
-    // Confirm with server
+    // Create land purchase transaction (SERVER CREATES THE TRANSACTION)
     const response = await fetch('/api/purchase-land', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        address: state.address,
-        signature: signature,
-        landCostSol: landCost
+      body: JSON.stringify({ address: state.address })
+    });
+    
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+    
+    $('#landMsg').textContent = 'Please sign the transaction in your wallet...';
+    $('#landMsg').style.color = '#FF9800';
+    
+    // Sign and send transaction (NO CLIENT-SIDE BUFFER NEEDED!)
+    const txBytes = Uint8Array.from(atob(data.transaction), c => c.charCodeAt(0));
+    const tx = solanaWeb3.Transaction.from(txBytes);
+    
+    const sig = await state.wallet.signAndSendTransaction(tx);
+    $('#landMsg').textContent = `Transaction submitted: ${sig.signature.slice(0, 8)}...`;
+    $('#landMsg').style.color = '#2196F3';
+    
+    // Confirm purchase
+    const confirmResponse = await fetch('/api/confirm-land-purchase', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        address: state.address, 
+        signature: sig.signature 
       })
     });
     
-    const result = await response.json();
-    
-    if (result.success) {
-      console.log('✅ Land purchase confirmed by server:', result);
-      
-      $('#landMsg').textContent = '✅ Land purchased successfully!';
-      $('#landMsg').style.color = '#4CAF50';
-      
-      // Hide the mandatory modal
-      hideMandatoryLandModal();
-      
-      // Update wallet balance
-      await updateWalletBalance();
-      
-      // Refresh status
-      await refreshStatus(true);
-      
-      console.log('🎉 Land purchase complete - user now has access!');
-      
-    } else {
-      throw new Error(result.error || 'Land purchase verification failed');
+    if (!confirmResponse.ok) {
+      const errorText = await confirmResponse.text();
+      throw new Error(`Confirm failed: ${errorText}`);
     }
+    
+    const confirmData = await confirmResponse.json();
+    if (confirmData.error) throw new Error(confirmData.error);
+    
+    console.log('✅ Land purchase confirmed successfully!');
+    
+    // Show success message
+    $('#landMsg').textContent = '✅ Land purchased successfully!';
+    $('#landMsg').style.color = '#4CAF50';
+    
+    // Hide the mandatory modal
+    hideMandatoryLandModal();
+    
+    // Update wallet balance
+    await updateWalletBalance();
+    
+    // Refresh status
+    await refreshStatus(true);
+    
+    console.log('🎉 Land purchase complete - user now has access!');
     
   } catch (error) {
     console.error('❌ Land purchase failed:', error);
@@ -1396,27 +1318,17 @@ async function purchaseLand() {
     // Handle specific error types
     if (error.message.includes('User rejected')) {
       errorMessage = 'Transaction cancelled by user';
-    } else if (error.message.includes('Insufficient')) {
-      errorMessage = error.message; // Already formatted above
-    } else if (error.message.includes('_bn')) {
-      errorMessage = 'Blockchain library error. Please refresh the page and try again.';
-      console.error('🔍 _bn Error Details:', error);
-      console.error('🔍 Error Stack:', error.stack);
-    } else if (error.message.includes('blockhash')) {
-      errorMessage = 'Network error. Please try again in a few seconds.';
-    } else {
-      console.error('🔍 Unknown Error Details:', error);
-      console.error('🔍 Error Stack:', error.stack);
-      console.error('🔍 Error Type:', error.constructor.name);
+    } else if (error.message.includes('insufficient funds')) {
+      errorMessage = 'Insufficient SOL balance for land purchase';
     }
     
     $('#landMsg').textContent = `❌ Land purchase failed: ${errorMessage}`;
     $('#landMsg').style.color = '#f44336';
     
-    // Clear message after 10 seconds for errors
+    // Clear message after 8 seconds
     setTimeout(() => {
       $('#landMsg').textContent = '';
-    }, 10000);
+    }, 8000);
   }
 }
 
