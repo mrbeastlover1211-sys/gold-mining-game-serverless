@@ -5,17 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>⛏️ Gold Mining Dashboard</title>
   <link rel="stylesheet" href="styles.css" />
-  <script src="https://unpkg.com/buffer@6.0.3/index.js"></script>
-  <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.js"></script>
   <script>
-    // Polyfill Buffer for browser compatibility
+    // Setup Buffer polyfill for Solana Web3.js compatibility
     if (typeof global === 'undefined') {
-      var global = globalThis;
+      window.global = window;
     }
     if (typeof Buffer === 'undefined') {
+      window.Buffer = buffer.Buffer;
       global.Buffer = buffer.Buffer;
     }
+    console.log('🔧 Buffer polyfill setup:', typeof Buffer);
   </script>
+  <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
 </head>
 <body>
   <div class="game-dashboard">
