@@ -7,15 +7,28 @@
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.js"></script>
   <script>
-    // Setup Buffer polyfill for Solana Web3.js compatibility
+    // Setup comprehensive Buffer polyfill for Solana Web3.js
     if (typeof global === 'undefined') {
       window.global = window;
     }
-    if (typeof Buffer === 'undefined') {
-      window.Buffer = buffer.Buffer;
-      global.Buffer = buffer.Buffer;
+    
+    // Ensure Buffer and all its methods are available
+    if (typeof Buffer === 'undefined' || typeof Buffer.from === 'undefined') {
+      const BufferPolyfill = buffer.Buffer;
+      window.Buffer = BufferPolyfill;
+      global.Buffer = BufferPolyfill;
+      
+      // Ensure all Buffer static methods are available
+      if (!Buffer.from) Buffer.from = BufferPolyfill.from;
+      if (!Buffer.alloc) Buffer.alloc = BufferPolyfill.alloc;
+      if (!Buffer.allocUnsafe) Buffer.allocUnsafe = BufferPolyfill.allocUnsafe;
+      if (!Buffer.isBuffer) Buffer.isBuffer = BufferPolyfill.isBuffer;
+      if (!Buffer.concat) Buffer.concat = BufferPolyfill.concat;
     }
+    
     console.log('🔧 Buffer polyfill setup:', typeof Buffer);
+    console.log('🔧 Buffer.from available:', typeof Buffer.from);
+    console.log('🔧 Buffer.alloc available:', typeof Buffer.alloc);
   </script>
   <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
 </head>
