@@ -1279,6 +1279,12 @@ async function purchaseLand() {
   
   try {
     console.log('🏞️ Starting land purchase...');
+    console.log('🔍 Debug - typeof solanaWeb3:', typeof solanaWeb3);
+    console.log('🔍 Debug - solanaWeb3 object:', solanaWeb3);
+    console.log('🔍 Debug - state.wallet:', state.wallet);
+    console.log('🔍 Debug - state.address:', state.address);
+    console.log('🔍 Debug - state.config:', state.config);
+    console.log('🔍 Debug - state.connection:', state.connection);
     
     // Show loading state
     $('#landMsg').textContent = 'Processing land purchase...';
@@ -1385,8 +1391,14 @@ async function purchaseLand() {
       errorMessage = error.message; // Already formatted above
     } else if (error.message.includes('_bn')) {
       errorMessage = 'Blockchain library error. Please refresh the page and try again.';
+      console.error('🔍 _bn Error Details:', error);
+      console.error('🔍 Error Stack:', error.stack);
     } else if (error.message.includes('blockhash')) {
       errorMessage = 'Network error. Please try again in a few seconds.';
+    } else {
+      console.error('🔍 Unknown Error Details:', error);
+      console.error('🔍 Error Stack:', error.stack);
+      console.error('🔍 Error Type:', error.constructor.name);
     }
     
     $('#landMsg').textContent = `❌ Land purchase failed: ${errorMessage}`;
