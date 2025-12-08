@@ -261,7 +261,8 @@ async function buyPickaxe(pickaxeType) {
     
     // Create transaction
     const fromPubkey = new solanaWeb3.PublicKey(state.address);
-    const toPubkey = new solanaWeb3.PublicKey(state.config.treasuryPublicKey);
+    const treasuryAddress = state.config.treasuryPublicKey || state.config.treasury;
+    const toPubkey = new solanaWeb3.PublicKey(treasuryAddress);
     
     const transaction = new solanaWeb3.Transaction().add(
       solanaWeb3.SystemProgram.transfer({
@@ -1292,7 +1293,15 @@ async function purchaseLand() {
     
     const landCost = state.config.landCostSol || 0.01; // Default 0.01 SOL
     console.log('💰 Land cost:', landCost, 'SOL');
-    console.log('🏦 Treasury address:', state.config.treasuryPublicKey);
+    console.log('🏦 Treasury address (treasuryPublicKey):', state.config.treasuryPublicKey);
+    console.log('🏦 Treasury address (treasury):', state.config.treasury);
+    
+    // Get treasury address (use treasury field, not treasuryPublicKey)
+    const treasuryAddress = state.config.treasuryPublicKey || state.config.treasury;
+    if (!treasuryAddress) {
+      throw new Error('Treasury address not found in configuration');
+    }
+    console.log('🏦 Using treasury address:', treasuryAddress);
     
     // Check wallet balance first
     const balance = await state.connection.getBalance(new solanaWeb3.PublicKey(state.address));
@@ -1305,7 +1314,7 @@ async function purchaseLand() {
     
     // Create transaction for land purchase
     const fromPubkey = new solanaWeb3.PublicKey(state.address);
-    const toPubkey = new solanaWeb3.PublicKey(state.config.treasuryPublicKey);
+    const toPubkey = new solanaWeb3.PublicKey(treasuryAddress);
     
     console.log('📤 Creating transaction from:', fromPubkey.toString());
     console.log('📥 Creating transaction to:', toPubkey.toString());
