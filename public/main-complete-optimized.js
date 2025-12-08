@@ -221,6 +221,10 @@ async function connectWallet() {
     // Auto-check for referral completion after wallet connection
     await autoCheckReferralCompletion();
     
+    // Check land status immediately after wallet connection
+    console.log('🔍 Checking land ownership immediately after wallet connection...');
+    await checkLandStatusAndShowPopup();
+    
   } catch (e) {
     console.error('❌ Wallet connection failed:', e);
     alert('Failed to connect wallet: ' + e.message);
@@ -676,6 +680,10 @@ async function autoReconnectWallet() {
           updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
         }
         
+        // Check land status after auto-reconnect
+        console.log('🔍 Checking land ownership after auto-reconnect...');
+        await checkLandStatusAndShowPopup();
+        
         // Setup wallet switch detection
         setupWalletSwitchDetection(provider);
         
@@ -718,6 +726,10 @@ async function autoReconnectWallet() {
               startCheckpointGoldLoop();
             }
           }
+          
+          // Check land status after silent reconnect
+          console.log('🔍 Checking land ownership after silent reconnect...');
+          await checkLandStatusAndShowPopup();
           
           setupWalletSwitchDetection(provider);
           
@@ -819,8 +831,81 @@ function handleWalletDisconnect() {
   console.log('✅ Wallet disconnect handled');
 }
 
-function checkLandStatusAndShowPopup() {
-  console.log('🏞️ Land status check available in full version');
+// 🏞️ Check land status and show mandatory popup
+async function checkLandStatusAndShowPopup() {
+  if (!state.address) {
+    console.log('🏞️ No wallet connected, skipping land check');
+    return;
+  }
+  
+  try {
+    console.log('🏞️ Checking land ownership status...');
+    
+    const response = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
+    const result = await response.json();
+    
+    console.log('🏞️ Land status result:', result);
+    
+    if (!result.hasLand) {
+      console.log('🚨 User does not own land - showing mandatory purchase modal');
+      showMandatoryLandModal();
+    } else {
+      console.log('✅ User owns land - access granted');
+      hideMandatoryLandModal();
+    }
+    
+  } catch (error) {
+    console.error('❌ Failed to check land status:', error);
+    // If API fails, assume no land and show modal for safety
+    console.log('🚨 Assuming no land due to API error - showing mandatory purchase modal');
+    showMandatoryLandModal();
+  }
+}
+
+// 🚨 Show mandatory land purchase modal
+function showMandatoryLandModal() {
+  console.log('🚨 Showing mandatory land purchase modal...');
+  
+  const landModal = $('#landModal');
+  if (landModal) {
+    landModal.style.display = 'flex';
+    
+    // Store in localStorage that user needs to buy land
+    localStorage.setItem('gm_needs_land_' + state.address, 'true');
+    
+    // Disable page interactions (optional - prevent clicking other elements)
+    document.body.style.overflow = 'hidden';
+    
+    console.log('🚨 Mandatory land modal displayed - user must purchase land');
+  }
+}
+
+// ✅ Hide mandatory land purchase modal
+function hideMandatoryLandModal() {
+  console.log('✅ Hiding mandatory land purchase modal...');
+  
+  const landModal = $('#landModal');
+  if (landModal) {
+    landModal.style.display = 'none';
+    
+    // Clear localStorage flag
+    if (state.address) {
+      localStorage.removeItem('gm_needs_land_' + state.address);
+    }
+    
+    // Re-enable page interactions
+    document.body.style.overflow = 'auto';
+    
+    console.log('✅ Mandatory land modal hidden - user has access');
+  }
+}
+
+// 🏞️ Check if user needs to buy land (for auto-show on refresh)
+function checkIfUserNeedsLand() {
+  if (!state.address) return false;
+  
+  const needsLand = localStorage.getItem('gm_needs_land_' + state.address);
+  return needsLand === 'true';
 }
 
 function autoCheckReferralCompletion() {
@@ -992,9 +1077,21 @@ function closePromotersModal() {
   }
 }
 
-function updatePromotersStatus() {
+async function updatePromotersStatus() {
   const walletConnected = !!state.address;
-  const hasLand = false; // Would check land status
+  let hasLand = false;
+  
+  // Check actual land ownership status
+  if (walletConnected) {
+    try {
+      const response = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
+      const result = await response.json();
+      hasLand = result.hasLand || false;
+    } catch (error) {
+      console.log('⚠️ Could not check land status for promoters modal');
+      hasLand = false;
+    }
+  }
   
   $('#walletStatusPromoters').textContent = walletConnected ? '✅ Connected' : '❌ Not Connected';
   $('#walletStatusPromoters').style.color = walletConnected ? '#4CAF50' : '#f44336';
@@ -1099,9 +1196,21 @@ function closeReferralModal() {
   }
 }
 
-function updateReferralStatus() {
+async function updateReferralStatus() {
   const walletConnected = !!state.address;
-  const hasLand = false; // Would check land status
+  let hasLand = false;
+  
+  // Check actual land ownership status
+  if (walletConnected) {
+    try {
+      const response = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
+      const result = await response.json();
+      hasLand = result.hasLand || false;
+    } catch (error) {
+      console.log('⚠️ Could not check land status for referral modal');
+      hasLand = false;
+    }
+  }
   
   $('#walletStatusReferral').textContent = walletConnected ? '✅ Connected' : '❌ Not Connected';
   $('#walletStatusReferral').style.color = walletConnected ? '#4CAF50' : '#f44336';
@@ -1120,45 +1229,87 @@ function updateReferralStatus() {
 }
 
 // 🏞️ Land Purchase Functions
-function purchaseLand() {
+async function purchaseLand() {
   if (!state.address) {
     alert('Please connect your wallet first');
     return;
   }
   
-  console.log('🏞️ Starting land purchase...');
+  if (!state.config) {
+    alert('Configuration not loaded. Please refresh the page.');
+    return;
+  }
   
-  // This would connect to your land purchase API
-  fetch('/api/purchase-land', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      address: state.address
-    })
-  })
-  .then(response => response.json())
-  .then(result => {
+  try {
+    console.log('🏞️ Starting land purchase...');
+    
+    const landCost = state.config.landCostSol || 0.01; // Default 0.01 SOL
+    
+    // Create transaction for land purchase
+    const fromPubkey = new solanaWeb3.PublicKey(state.address);
+    const toPubkey = new solanaWeb3.PublicKey(state.config.treasuryPublicKey);
+    
+    const transaction = new solanaWeb3.Transaction().add(
+      solanaWeb3.SystemProgram.transfer({
+        fromPubkey,
+        toPubkey,
+        lamports: landCost * solanaWeb3.LAMPORTS_PER_SOL
+      })
+    );
+    
+    const { blockhash } = await state.connection.getRecentBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = fromPubkey;
+    
+    const signedTransaction = await state.wallet.signTransaction(transaction);
+    const signature = await state.connection.sendRawTransaction(signedTransaction.serialize());
+    
+    console.log('📝 Land purchase transaction signature:', signature);
+    
+    // Confirm with server
+    const response = await fetch('/api/purchase-land', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: state.address,
+        signature: signature,
+        landCostSol: landCost
+      })
+    });
+    
+    const result = await response.json();
+    
     if (result.success) {
+      console.log('✅ Land purchase confirmed by server:', result);
+      
       $('#landMsg').textContent = '✅ Land purchased successfully!';
       $('#landMsg').style.color = '#4CAF50';
       
-      // Close the mandatory modal
-      const landModal = $('#landModal');
-      if (landModal) {
-        landModal.style.display = 'none';
-      }
+      // Hide the mandatory modal
+      hideMandatoryLandModal();
+      
+      // Update wallet balance
+      await updateWalletBalance();
       
       // Refresh status
-      refreshStatus(true);
+      await refreshStatus(true);
+      
+      console.log('🎉 Land purchase complete - user now has access!');
+      
     } else {
-      throw new Error(result.error || 'Land purchase failed');
+      throw new Error(result.error || 'Land purchase verification failed');
     }
-  })
-  .catch(error => {
+    
+  } catch (error) {
     console.error('❌ Land purchase failed:', error);
     $('#landMsg').textContent = `❌ Land purchase failed: ${error.message}`;
     $('#landMsg').style.color = '#f44336';
-  });
+    
+    // Clear message after 5 seconds
+    setTimeout(() => {
+      $('#landMsg').textContent = '';
+    }, 5000);
+  }
 }
 
 // 📋 Copy Functions
