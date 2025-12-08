@@ -620,6 +620,416 @@ function autoCheckReferralCompletion() {
   console.log('🎁 Referral completion check available in full version');
 }
 
+// 🏪 Gold Store Modal Functions
+function openGoldStoreModal() {
+  console.log('🏪 Opening Gold Store Modal...');
+  const modal = $('#goldStoreModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    updateGoldStoreModal();
+  }
+}
+
+function closeGoldStoreModal(event) {
+  console.log('🏪 Closing Gold Store Modal...');
+  if (event && event.target !== event.currentTarget && !event.target.classList.contains('modal-close-btn')) {
+    return; // Don't close if clicking inside modal content
+  }
+  const modal = $('#goldStoreModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+function updateGoldStoreModal() {
+  if (state.status && state.status.inventory) {
+    $('#modal-silver-owned-count').textContent = `${state.status.inventory.silver || 0} pickaxes`;
+    $('#modal-gold-owned-count').textContent = `${state.status.inventory.gold || 0} pickaxes`;
+  }
+}
+
+function buyPickaxeWithGold(pickaxeType, goldCost) {
+  if (!state.address) {
+    alert('Please connect your wallet first');
+    return;
+  }
+
+  const currentGold = state.status.gold || 0;
+  if (currentGold < goldCost) {
+    alert(`Not enough gold! You need ${goldCost.toLocaleString()} gold but only have ${currentGold.toLocaleString()}`);
+    return;
+  }
+
+  console.log(`🛒 Buying ${pickaxeType} pickaxe with ${goldCost} gold...`);
+  
+  // This would connect to your gold purchase API
+  fetch('/api/buy-with-gold', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      address: state.address,
+      pickaxeType: pickaxeType,
+      goldCost: goldCost
+    })
+  })
+  .then(response => response.json())
+  .then(result => {
+    if (result.success) {
+      $('#modalStoreMsg').textContent = `✅ Successfully purchased ${pickaxeType} pickaxe with gold!`;
+      $('#modalStoreMsg').style.color = '#4CAF50';
+      
+      // Update display
+      refreshStatus(true);
+      updateGoldStoreModal();
+    } else {
+      throw new Error(result.error || 'Purchase failed');
+    }
+  })
+  .catch(error => {
+    console.error('❌ Gold purchase failed:', error);
+    $('#modalStoreMsg').textContent = `❌ Purchase failed: ${error.message}`;
+    $('#modalStoreMsg').style.color = '#f44336';
+  });
+}
+
+// 💰 Sell Gold Function
+async function sellGold() {
+  if (!state.address) {
+    alert('Please connect your wallet first');
+    return;
+  }
+
+  const goldToSell = parseInt($('#goldToSell').value) || 0;
+  if (goldToSell <= 0) {
+    alert('Please enter a valid amount of gold to sell');
+    return;
+  }
+
+  const currentGold = state.status.gold || 0;
+  if (goldToSell > currentGold) {
+    alert(`Not enough gold! You have ${currentGold.toLocaleString()} gold available`);
+    return;
+  }
+
+  if (!state.config) {
+    alert('Configuration not loaded. Please refresh the page.');
+    return;
+  }
+
+  if (goldToSell < state.config.minSellGold) {
+    alert(`Minimum sell amount is ${state.config.minSellGold.toLocaleString()} gold`);
+    return;
+  }
+
+  try {
+    console.log(`💰 Selling ${goldToSell} gold...`);
+    
+    const response = await fetch('/api/sell-working-final', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: state.address,
+        goldAmount: goldToSell
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      const solAmount = (goldToSell * state.config.goldPriceSol).toFixed(6);
+      $('#sellMsg').textContent = `✅ Successfully sold ${goldToSell.toLocaleString()} gold for ${solAmount} SOL! Pending admin approval.`;
+      $('#sellMsg').style.color = '#4CAF50';
+      $('#goldToSell').value = '';
+      
+      // Refresh status to show updated gold
+      await refreshStatus(true);
+    } else {
+      throw new Error(result.error || 'Sell failed');
+    }
+  } catch (error) {
+    console.error('❌ Sell failed:', error);
+    $('#sellMsg').textContent = `❌ Sell failed: ${error.message}`;
+    $('#sellMsg').style.color = '#f44336';
+  }
+}
+
+// ❓ How It Works Modal Functions
+function showHowItWorksModal() {
+  console.log('❓ Showing How It Works Modal...');
+  const modal = $('#howItWorksModal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+function hideHowItWorksModal() {
+  console.log('❓ Hiding How It Works Modal...');
+  const modal = $('#howItWorksModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+// 📈 Promoters Modal Functions
+function showPromotersModal() {
+  console.log('📈 Showing Promoters Modal...');
+  const modal = $('#promotersModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    updatePromotersStatus();
+  }
+}
+
+function closePromotersModal() {
+  console.log('📈 Closing Promoters Modal...');
+  const modal = $('#promotersModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+function updatePromotersStatus() {
+  const walletConnected = !!state.address;
+  const hasLand = false; // Would check land status
+  
+  $('#walletStatusPromoters').textContent = walletConnected ? '✅ Connected' : '❌ Not Connected';
+  $('#walletStatusPromoters').style.color = walletConnected ? '#4CAF50' : '#f44336';
+  
+  $('#landStatusPromoters').textContent = hasLand ? '✅ Owned' : '❌ No Land';
+  $('#landStatusPromoters').style.color = hasLand ? '#4CAF50' : '#f44336';
+  
+  if (walletConnected && hasLand) {
+    $('#promotersRequirement').style.display = 'none';
+    $('#promotersLinkSection').style.display = 'block';
+    $('#promotersLink').value = `https://gold-mining-game-serverless.vercel.app/?ref=${state.address}`;
+  } else {
+    $('#promotersRequirement').style.display = 'block';
+    $('#promotersLinkSection').style.display = 'none';
+  }
+}
+
+// ⚔️ Battlezone Modal Functions
+function showBattlezoneModal() {
+  console.log('⚔️ Showing Battlezone Modal...');
+  const modal = $('#battlezoneModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    startBattlezoneCountdown();
+  }
+}
+
+function closeBattlezoneModal() {
+  console.log('⚔️ Closing Battlezone Modal...');
+  const modal = $('#battlezoneModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+function startBattlezoneCountdown() {
+  const targetDate = new Date('December 10, 2025 00:00:00 UTC').getTime();
+  
+  const countdown = setInterval(() => {
+    const now = new Date().getTime();
+    const distance = targetDate - now;
+    
+    if (distance < 0) {
+      clearInterval(countdown);
+      return;
+    }
+    
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+    
+    $('#days').textContent = days.toString().padStart(3, '0');
+    $('#hours').textContent = hours.toString().padStart(2, '0');
+    $('#minutes').textContent = minutes.toString().padStart(2, '0');
+    $('#seconds').textContent = seconds.toString().padStart(2, '0');
+  }, 1000);
+}
+
+function joinWaitlistBattlezone() {
+  alert('Thanks for your interest in Battlezone! You will be notified when it launches.');
+}
+
+// 🎄 V2.0 Christmas Modal Functions
+function showV2Modal() {
+  console.log('🎄 Showing V2.0 Christmas Modal...');
+  const modal = $('#v2ComingSoonModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    startChristmasCountdown();
+  }
+}
+
+function closeV2Modal() {
+  console.log('🎄 Closing V2.0 Christmas Modal...');
+  const modal = $('#v2ComingSoonModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+function startChristmasCountdown() {
+  // Christmas countdown functionality
+  console.log('🎄 Starting Christmas countdown...');
+}
+
+// 🎁 Referral Modal Functions  
+function showReferralModal() {
+  console.log('🎁 Showing Referral Modal...');
+  const modal = $('#referralModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    updateReferralStatus();
+  }
+}
+
+function closeReferralModal() {
+  console.log('🎁 Closing Referral Modal...');
+  const modal = $('#referralModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+function updateReferralStatus() {
+  const walletConnected = !!state.address;
+  const hasLand = false; // Would check land status
+  
+  $('#walletStatusReferral').textContent = walletConnected ? '✅ Connected' : '❌ Not Connected';
+  $('#walletStatusReferral').style.color = walletConnected ? '#4CAF50' : '#f44336';
+  
+  $('#landStatusReferral').textContent = hasLand ? '✅ Owned' : '❌ No Land';
+  $('#landStatusReferral').style.color = hasLand ? '#4CAF50' : '#f44336';
+  
+  if (walletConnected && hasLand) {
+    $('#referralRequirement').style.display = 'none';
+    $('#referralLinkSection').style.display = 'block';
+    $('#referralLink').value = `https://gold-mining-game-serverless.vercel.app/?ref=${state.address}`;
+  } else {
+    $('#referralRequirement').style.display = 'block';
+    $('#referralLinkSection').style.display = 'none';
+  }
+}
+
+// 🏞️ Land Purchase Functions
+function purchaseLand() {
+  if (!state.address) {
+    alert('Please connect your wallet first');
+    return;
+  }
+  
+  console.log('🏞️ Starting land purchase...');
+  
+  // This would connect to your land purchase API
+  fetch('/api/purchase-land', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      address: state.address
+    })
+  })
+  .then(response => response.json())
+  .then(result => {
+    if (result.success) {
+      $('#landMsg').textContent = '✅ Land purchased successfully!';
+      $('#landMsg').style.color = '#4CAF50';
+      
+      // Close the mandatory modal
+      const landModal = $('#landModal');
+      if (landModal) {
+        landModal.style.display = 'none';
+      }
+      
+      // Refresh status
+      refreshStatus(true);
+    } else {
+      throw new Error(result.error || 'Land purchase failed');
+    }
+  })
+  .catch(error => {
+    console.error('❌ Land purchase failed:', error);
+    $('#landMsg').textContent = `❌ Land purchase failed: ${error.message}`;
+    $('#landMsg').style.color = '#f44336';
+  });
+}
+
+// 📋 Copy Functions
+function copyPromotersLink() {
+  const linkInput = $('#promotersLink');
+  if (linkInput) {
+    linkInput.select();
+    document.execCommand('copy');
+    alert('Promoter link copied to clipboard!');
+  }
+}
+
+function copyReferralLink() {
+  const linkInput = $('#referralLink');
+  if (linkInput) {
+    linkInput.select();
+    document.execCommand('copy');
+    alert('Referral link copied to clipboard!');
+  }
+}
+
+// 📱 Social Sharing Functions
+function sharePromotersOnTwitter() {
+  const text = "🚀 Earn 5-50 SOL daily promoting this amazing gold mining game!";
+  const url = $('#promotersLink').value || 'https://gold-mining-game-serverless.vercel.app';
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+  window.open(twitterUrl, '_blank');
+}
+
+function sharePromotersOnFacebook() {
+  const url = $('#promotersLink').value || 'https://gold-mining-game-serverless.vercel.app';
+  const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+  window.open(facebookUrl, '_blank');
+}
+
+function sharePromotersOnLinkedIn() {
+  const url = $('#promotersLink').value || 'https://gold-mining-game-serverless.vercel.app';
+  const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+  window.open(linkedinUrl, '_blank');
+}
+
+function copyPromotersForInstagram() {
+  const text = "🚀 Earn 5-50 SOL daily promoting this amazing gold mining game! " + ($('#promotersLink').value || 'https://gold-mining-game-serverless.vercel.app');
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Text copied for Instagram! Paste it in your Instagram post.');
+  });
+}
+
+function copyPromotersForTikTok() {
+  const text = "🚀 Earn 5-50 SOL daily promoting this amazing gold mining game! " + ($('#promotersLink').value || 'https://gold-mining-game-serverless.vercel.app');
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Text copied for TikTok! Paste it in your TikTok video description.');
+  });
+}
+
+// 📥 Banner Download Functions
+function downloadBanner(type) {
+  const bannerUrls = {
+    'square': '/assets/banners/banner-square.png',
+    'wide': '/assets/banners/banner-wide.png', 
+    'story': '/assets/banners/banner-vertical.png',
+    'youtube': '/assets/banners/banner-youtube.png'
+  };
+  
+  const url = bannerUrls[type];
+  if (url) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `banner-${type}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+}
+
 // 🚀 Initialize the game when page loads
 window.addEventListener('DOMContentLoaded', async function() {
   console.log('🚀 Initializing Complete Optimized Gold Mining Game...');
@@ -634,5 +1044,71 @@ window.addEventListener('DOMContentLoaded', async function() {
     console.log('✅ Connect button event listener added');
   }
   
-  console.log('🎉 Game initialization complete!');
+  // Setup sell button event listener
+  const sellBtn = $('#sellBtn');
+  if (sellBtn) {
+    sellBtn.addEventListener('click', sellGold);
+    console.log('✅ Sell button event listener added');
+  }
+  
+  // Setup modal button event listeners
+  const referBtn = $('#referBtn');
+  if (referBtn) {
+    referBtn.addEventListener('click', showReferralModal);
+  }
+  
+  const v2ComingSoonBtn = $('#v2ComingSoonBtn');
+  if (v2ComingSoonBtn) {
+    v2ComingSoonBtn.addEventListener('click', showV2Modal);
+  }
+  
+  // Setup modal close listeners
+  const closeModal = $('#closeModal');
+  if (closeModal) {
+    closeModal.addEventListener('click', closeReferralModal);
+  }
+  
+  // Setup copy button listeners
+  const copyLinkBtn = $('#copyLinkBtn');
+  if (copyLinkBtn) {
+    copyLinkBtn.addEventListener('click', copyReferralLink);
+  }
+  
+  const copyPromotersLinkBtn = $('#copyPromotersLinkBtn');
+  if (copyPromotersLinkBtn) {
+    copyPromotersLinkBtn.addEventListener('click', copyPromotersLink);
+  }
+  
+  // Setup social share button listeners for referral modal
+  const shareX = $('#shareX');
+  if (shareX) {
+    shareX.addEventListener('click', () => {
+      const text = "🚀 Join this amazing gold mining game and earn SOL!";
+      const url = $('#referralLink').value || 'https://gold-mining-game-serverless.vercel.app';
+      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+      window.open(twitterUrl, '_blank');
+    });
+  }
+  
+  const shareDiscord = $('#shareDiscord');
+  if (shareDiscord) {
+    shareDiscord.addEventListener('click', () => {
+      const text = "🚀 Join this amazing gold mining game and earn SOL! " + ($('#referralLink').value || 'https://gold-mining-game-serverless.vercel.app');
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Link copied! Paste it in Discord.');
+      });
+    });
+  }
+  
+  const shareTelegram = $('#shareTelegram');
+  if (shareTelegram) {
+    shareTelegram.addEventListener('click', () => {
+      const text = "🚀 Join this amazing gold mining game and earn SOL!";
+      const url = $('#referralLink').value || 'https://gold-mining-game-serverless.vercel.app';
+      const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+      window.open(telegramUrl, '_blank');
+    });
+  }
+  
+  console.log('🎉 Game initialization complete with ALL modal and button functions!');
 });
