@@ -231,15 +231,11 @@ async function connectWallet() {
   }
 }
 
-// 🛒 Buy pickaxe function
+// 🛒 Buy pickaxe function (EXACT COPY FROM WORKING VERSION)
 async function buyPickaxe(pickaxeType) {
   if (!state.address) {
-    alert('Please connect your wallet first');
-    return;
-  }
-
-  if (!state.config) {
-    alert('Configuration not loaded. Please refresh the page.');
+    $('#shopMsg').textContent = 'Please connect your wallet first!';
+    $('#shopMsg').style.color = '#f44336';
     return;
   }
 
@@ -249,78 +245,109 @@ async function buyPickaxe(pickaxeType) {
     const quantityInput = $(`#qty-${pickaxeType}`);
     const quantity = parseInt(quantityInput?.value) || 1;
     
-    const costPerPickaxe = state.config.pickaxes[pickaxeType].costSol;
-    const totalCost = costPerPickaxe * quantity;
+    $('#shopMsg').textContent = `Creating ${pickaxeType} pickaxe transaction...`;
+    $('#shopMsg').style.color = '#2196F3';
     
-    console.log(`💰 Total cost: ${totalCost} SOL for ${quantity}x ${pickaxeType}`);
-    
-    // Check if Solana Web3 library is loaded
-    if (typeof solanaWeb3 === 'undefined') {
-      throw new Error('Solana library not loaded. Please refresh the page.');
-    }
-    
-    // Create transaction
-    const fromPubkey = new solanaWeb3.PublicKey(state.address);
-    const treasuryAddress = state.config.treasuryPublicKey || state.config.treasury;
-    const toPubkey = new solanaWeb3.PublicKey(treasuryAddress);
-    
-    const transaction = new solanaWeb3.Transaction().add(
-      solanaWeb3.SystemProgram.transfer({
-        fromPubkey,
-        toPubkey,
-        lamports: Math.floor(totalCost * solanaWeb3.LAMPORTS_PER_SOL)
-      })
-    );
-    
-    const { blockhash } = await state.connection.getLatestBlockhash();
-    transaction.recentBlockhash = blockhash;
-    transaction.feePayer = fromPubkey;
-    
-    const signedTransaction = await state.wallet.signTransaction(transaction);
-    const signature = await state.connection.sendRawTransaction(signedTransaction.serialize());
-    
-    console.log('📝 Transaction signature:', signature);
-    
-    // Confirm with server
-    const response = await fetch('/api/purchase-confirm', {
+    // Build transaction (SERVER CREATES THE TRANSACTION)
+    const r1 = await fetch('/api/purchase-tx', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        address: state.address,
-        pickaxeType,
-        quantity,
-        signature,
-        totalCostSol: totalCost
-      })
+      body: JSON.stringify({ address: state.address, pickaxeType, quantity }),
+    });
+    const j1 = await r1.json();
+    if (j1.error) throw new Error(j1.error);
+
+    const txBytes = Uint8Array.from(atob(j1.transaction), c => c.charCodeAt(0));
+    const tx = solanaWeb3.Transaction.from(txBytes);
+
+    // Sign and send (NO CLIENT-SIDE BUFFER NEEDED!)
+    $('#shopMsg').textContent = 'Please sign the transaction in your wallet...';
+    $('#shopMsg').style.color = '#FF9800';
+    
+    const sig = await state.wallet.signAndSendTransaction(tx);
+    $('#shopMsg').textContent = `Transaction submitted: ${sig.signature.slice(0, 8)}...`;
+    $('#shopMsg').style.color = '#2196F3';
+
+    // Confirm with server
+    const r2 = await fetch('/api/purchase-confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: state.address, pickaxeType, quantity, signature: sig.signature }),
     });
     
-    const result = await response.json();
-    
-    if (result.success) {
-      console.log('✅ Purchase confirmed by server:', result);
-      
-      // Show success message
-      $('#shopMsg').textContent = `✅ Successfully purchased ${quantity}x ${pickaxeType} pickaxe!`;
-      $('#shopMsg').style.color = '#4CAF50';
-      
-      // Clear message after 3 seconds
-      setTimeout(() => {
-        $('#shopMsg').textContent = '';
-      }, 3000);
-      
-      // Refresh status to show new pickaxes
-      await refreshStatus(true);
-      
-      // Update wallet balance
-      await updateWalletBalance();
-      
-    } else {
-      throw new Error(result.error || 'Purchase verification failed');
+    if (!r2.ok) {
+      const errorText = await r2.text();
+      throw new Error(`Purchase confirmation failed: ${errorText}`);
     }
+    
+    const responseText = await r2.text();
+    let j2;
+    try {
+      j2 = JSON.parse(responseText);
+    } catch (parseError) {
+      throw new Error(`Invalid response from server: ${responseText.substring(0, 100)}`);
+    }
+    
+    if (j2.error) throw new Error(j2.error);
+
+    $('#shopMsg').textContent = `✅ Successfully purchased ${quantity}x ${pickaxeType} pickaxe!`;
+    $('#shopMsg').style.color = '#4CAF50';
+    
+    // Update inventory optimistically
+    const predictedInventory = { ...state.status.inventory };
+    predictedInventory[pickaxeType] = (predictedInventory[pickaxeType] || 0) + quantity;
+    
+    // Update UI immediately
+    state.status.inventory = predictedInventory;
+    updateDisplay({
+      gold: state.status.gold,
+      inventory: predictedInventory,
+      checkpoint: state.checkpoint
+    });
+    
+    // Update with server response
+    if (j2.inventory) {
+      state.status.inventory = j2.inventory;
+      updateDisplay({
+        gold: state.status.gold,
+        inventory: j2.inventory,
+        checkpoint: j2.checkpoint
+      });
+    }
+    
+    // Update checkpoint for mining
+    if (j2.checkpoint) {
+      state.checkpoint = {
+        total_mining_power: j2.checkpoint.total_mining_power || j2.totalRate,
+        checkpoint_timestamp: j2.checkpoint.checkpoint_timestamp || Math.floor(Date.now() / 1000),
+        last_checkpoint_gold: j2.checkpoint.last_checkpoint_gold || j2.gold || state.status.gold
+      };
+      
+      // Start mining if we have mining power
+      if (state.checkpoint.total_mining_power > 0) {
+        startCheckpointGoldLoop();
+      }
+    }
+    
+    // Update wallet balance
+    await updateWalletBalance();
+    
+    // Clear success message after 3 seconds
+    setTimeout(() => {
+      $('#shopMsg').textContent = '';
+    }, 3000);
     
   } catch (error) {
     console.error('❌ Purchase failed:', error);
-    $('#shopMsg').textContent = `❌ Purchase failed: ${error.message}`;
+    
+    let errorMessage = error.message;
+    if (error.message.includes('User rejected')) {
+      errorMessage = 'Transaction cancelled by user';
+    } else if (error.message.includes('insufficient funds')) {
+      errorMessage = 'Insufficient SOL balance for purchase';
+    }
+    
+    $('#shopMsg').textContent = `❌ Purchase failed: ${errorMessage}`;
     $('#shopMsg').style.color = '#f44336';
     
     // Clear message after 5 seconds
