@@ -255,19 +255,19 @@ async function buyPickaxe(pickaxeType) {
     console.log(`💰 Total cost: ${totalCost} SOL for ${quantity}x ${pickaxeType}`);
     
     // Check if Solana Web3 library is loaded
-    if (typeof window.solanaWeb3 === 'undefined') {
+    if (typeof solanaWeb3 === 'undefined') {
       throw new Error('Solana library not loaded. Please refresh the page.');
     }
     
     // Create transaction
-    const fromPubkey = new window.solanaWeb3.PublicKey(state.address);
-    const toPubkey = new window.solanaWeb3.PublicKey(state.config.treasuryPublicKey);
+    const fromPubkey = new solanaWeb3.PublicKey(state.address);
+    const toPubkey = new solanaWeb3.PublicKey(state.config.treasuryPublicKey);
     
-    const transaction = new window.solanaWeb3.Transaction().add(
-      window.solanaWeb3.SystemProgram.transfer({
+    const transaction = new solanaWeb3.Transaction().add(
+      solanaWeb3.SystemProgram.transfer({
         fromPubkey,
         toPubkey,
-        lamports: Math.floor(totalCost * window.solanaWeb3.LAMPORTS_PER_SOL)
+        lamports: Math.floor(totalCost * solanaWeb3.LAMPORTS_PER_SOL)
       })
     );
     
@@ -337,16 +337,16 @@ async function updateWalletBalance() {
   
   try {
     // Check if Solana Web3 library is loaded
-    if (typeof window.solanaWeb3 === 'undefined') {
+    if (typeof solanaWeb3 === 'undefined') {
       console.error('Solana Web3 library not loaded');
       state.solBalance = 'Error';
       updateConnectButtonDisplay();
       return;
     }
     
-    const publicKey = new window.solanaWeb3.PublicKey(state.address);
+    const publicKey = new solanaWeb3.PublicKey(state.address);
     const balance = await state.connection.getBalance(publicKey);
-    const solBalance = (balance / window.solanaWeb3.LAMPORTS_PER_SOL).toFixed(3);
+    const solBalance = (balance / solanaWeb3.LAMPORTS_PER_SOL).toFixed(3);
     state.solBalance = solBalance;
     
     updateConnectButtonDisplay();
@@ -1254,7 +1254,7 @@ async function purchaseLand() {
   }
   
   // Check if Solana Web3 library is loaded
-  if (typeof window.solanaWeb3 === 'undefined') {
+  if (typeof solanaWeb3 === 'undefined') {
     console.error('❌ Solana Web3 library not loaded');
     $('#landMsg').textContent = '❌ Loading blockchain library... Please wait a moment.';
     $('#landMsg').style.color = '#FF9800';
@@ -1262,7 +1262,7 @@ async function purchaseLand() {
     // Try to wait for the library to load
     await waitForSolanaWeb3();
     
-    if (typeof window.solanaWeb3 === 'undefined') {
+    if (typeof solanaWeb3 === 'undefined') {
       $('#landMsg').textContent = '❌ Blockchain library failed to load. Please refresh the page.';
       $('#landMsg').style.color = '#f44336';
       return;
@@ -1289,8 +1289,8 @@ async function purchaseLand() {
     console.log('🏦 Treasury address:', state.config.treasuryPublicKey);
     
     // Check wallet balance first
-    const balance = await state.connection.getBalance(new window.solanaWeb3.PublicKey(state.address));
-    const solBalance = balance / window.solanaWeb3.LAMPORTS_PER_SOL;
+    const balance = await state.connection.getBalance(new solanaWeb3.PublicKey(state.address));
+    const solBalance = balance / solanaWeb3.LAMPORTS_PER_SOL;
     console.log('💳 Current balance:', solBalance, 'SOL');
     
     if (solBalance < landCost + 0.001) { // Add small buffer for transaction fee
@@ -1298,17 +1298,17 @@ async function purchaseLand() {
     }
     
     // Create transaction for land purchase
-    const fromPubkey = new window.solanaWeb3.PublicKey(state.address);
-    const toPubkey = new window.solanaWeb3.PublicKey(state.config.treasuryPublicKey);
+    const fromPubkey = new solanaWeb3.PublicKey(state.address);
+    const toPubkey = new solanaWeb3.PublicKey(state.config.treasuryPublicKey);
     
     console.log('📤 Creating transaction from:', fromPubkey.toString());
     console.log('📥 Creating transaction to:', toPubkey.toString());
     
-    const transaction = new window.solanaWeb3.Transaction().add(
-      window.solanaWeb3.SystemProgram.transfer({
+    const transaction = new solanaWeb3.Transaction().add(
+      solanaWeb3.SystemProgram.transfer({
         fromPubkey,
         toPubkey,
-        lamports: Math.floor(landCost * window.solanaWeb3.LAMPORTS_PER_SOL)
+        lamports: Math.floor(landCost * solanaWeb3.LAMPORTS_PER_SOL)
       })
     );
     
@@ -1475,7 +1475,7 @@ function downloadBanner(type) {
 // 🔄 Wait for Solana Web3 library to load
 function waitForSolanaWeb3() {
   return new Promise((resolve) => {
-    if (typeof window.solanaWeb3 !== 'undefined') {
+    if (typeof solanaWeb3 !== 'undefined') {
       console.log('✅ Solana Web3 library already loaded');
       resolve();
       return;
@@ -1483,7 +1483,7 @@ function waitForSolanaWeb3() {
     
     console.log('⏳ Waiting for Solana Web3 library to load...');
     const checkInterval = setInterval(() => {
-      if (typeof window.solanaWeb3 !== 'undefined') {
+      if (typeof solanaWeb3 !== 'undefined') {
         console.log('✅ Solana Web3 library loaded successfully');
         clearInterval(checkInterval);
         resolve();
