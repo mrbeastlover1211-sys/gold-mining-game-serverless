@@ -898,7 +898,8 @@ async function checkLandStatusAndShowPopup() {
   if (landFlag.hasLand === true && (now - landFlag.lastChecked) < state.landFlags.cacheExpiry) {
     console.log('✅ Land ownership confirmed from cache - no API call needed');
     hideMandatoryLandModal();
-    updatePromotersStatus(); // Safe to update UI
+    // REMOVED: updatePromotersStatus() - This was triggering infinite loops!
+    console.log('🚩 Skipping promoters update to prevent infinite loop');
     return;
   }
   
@@ -933,7 +934,8 @@ async function checkLandStatusAndShowPopup() {
     } else {
       console.log('✅ User owns land - access granted');
       hideMandatoryLandModal();
-      updatePromotersStatus(); // Safe to update UI since we have confirmed land status
+      // REMOVED: updatePromotersStatus() - Prevents infinite loops after land purchase
+      console.log('🚩 Land confirmed - skipping promoters update to prevent loops');
     }
     
   } catch (error) {
