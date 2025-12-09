@@ -1,7 +1,7 @@
 // 🚀 COMPLETE OPTIMIZED Gold Mining Game - All Features Included
 // Ultra-efficient client supporting 500K+ users with full functionality
 
-// Global state management with land ownership flag system
+// Global state management with SMART FLAG SYSTEM
 let state = {
   connection: null,
   config: null,
@@ -13,14 +13,142 @@ let state = {
   goldUpdateInterval: null,
   checkpoint: null,
   solBalance: 0,
-  consecutiveErrors: 0,
+  consecutiveErrors: 0
+};
+
+// 🚩 SMART LAND STATUS CACHE - 3-LAYER SYSTEM TO PREVENT INFINITE LOOPS
+const LAND_STATUS_CACHE = {
+  // Layer 1: Memory flag (fastest - 5 minutes)
+  memoryCache: new Map(),
   
-  // 🚩 LAND OWNERSHIP FLAG SYSTEM - PREVENTS INFINITE API CALLS
-  landFlags: {
-    hasLand: null,          // null = unknown, true = has land, false = no land
-    lastChecked: 0,         // timestamp of last check
-    isChecking: false,      // prevent multiple simultaneous checks
-    cacheExpiry: 300000     // 5 minutes cache (300,000ms)
+  // Layer 2: localStorage (persistent - 10 minutes)
+  CACHE_KEY_PREFIX: 'gm_land_status_',
+  MEMORY_EXPIRY: 5 * 60 * 1000,    // 5 minutes
+  STORAGE_EXPIRY: 10 * 60 * 1000,   // 10 minutes
+  
+  // Layer 3: API call control
+  apiCallInProgress: false,
+  
+  // Generate cache key for localStorage
+  getCacheKey(address) {
+    return this.CACHE_KEY_PREFIX + address;
+  },
+  
+  // MAIN FUNCTION: Check land status with cascading fallbacks
+  async checkLandStatus(address) {
+    if (!address) {
+      console.log('🚩 SMART CACHE: No address provided');
+      return null;
+    }
+    
+    const shortAddr = address.slice(0, 8) + '...';
+    const now = Date.now();
+    
+    // 🎯 LAYER 1: Check memory cache first (fastest)
+    if (this.memoryCache.has(address)) {
+      const memoryData = this.memoryCache.get(address);
+      
+      if (now - memoryData.timestamp < this.MEMORY_EXPIRY) {
+        console.log(`🚩 LAYER 1 (Memory): ${shortAddr} land status = ${memoryData.hasLand} (cached)`);
+        return memoryData.hasLand;
+      } else {
+        console.log(`🚩 LAYER 1 (Memory): Cache expired for ${shortAddr}`);
+        this.memoryCache.delete(address);
+      }
+    } else {
+      console.log(`🚩 LAYER 1 (Memory): No cache for ${shortAddr}`);
+    }
+    
+    // 🎯 LAYER 2: Check localStorage cache (persistent)
+    try {
+      const cacheKey = this.getCacheKey(address);
+      const storedData = localStorage.getItem(cacheKey);
+      
+      if (storedData) {
+        const parsed = JSON.parse(storedData);
+        
+        if (now - parsed.timestamp < this.STORAGE_EXPIRY) {
+          console.log(`🚩 LAYER 2 (Storage): ${shortAddr} land status = ${parsed.hasLand} (cached)`);
+          
+          // Restore to memory cache
+          this.memoryCache.set(address, parsed);
+          return parsed.hasLand;
+        } else {
+          console.log(`🚩 LAYER 2 (Storage): Cache expired for ${shortAddr}`);
+          localStorage.removeItem(cacheKey);
+        }
+      } else {
+        console.log(`🚩 LAYER 2 (Storage): No cache for ${shortAddr}`);
+      }
+    } catch (error) {
+      console.log(`🚩 LAYER 2 (Storage): Error reading cache for ${shortAddr}:`, error);
+    }
+    
+    // 🎯 LAYER 3: API call (only if both caches failed)
+    if (this.apiCallInProgress) {
+      console.log(`🚩 LAYER 3 (API): Call already in progress for ${shortAddr}, waiting...`);
+      return null;
+    }
+    
+    console.log(`🚩 LAYER 3 (API): Making fresh API call for ${shortAddr}...`);
+    this.apiCallInProgress = true;
+    
+    try {
+      const response = await fetch(`/api/land-status?address=${encodeURIComponent(address)}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log(`🚩 LAYER 3 (API): Fresh data for ${shortAddr}:`, result);
+      
+      // Update all cache layers with fresh data
+      this.updateAllLayers(address, result.hasLand);
+      
+      return result.hasLand;
+      
+    } catch (error) {
+      console.error(`🚩 LAYER 3 (API): Failed for ${shortAddr}:`, error);
+      return null;
+    } finally {
+      this.apiCallInProgress = false;
+    }
+  },
+  
+  // Update all cache layers with fresh data
+  updateAllLayers(address, hasLand) {
+    const timestamp = Date.now();
+    const data = { hasLand, timestamp };
+    
+    // Update memory cache
+    this.memoryCache.set(address, data);
+    console.log(`🚩 MEMORY UPDATED: ${address.slice(0, 8)}... = ${hasLand}`);
+    
+    // Update localStorage cache
+    try {
+      const cacheKey = this.getCacheKey(address);
+      localStorage.setItem(cacheKey, JSON.stringify(data));
+      console.log(`🚩 STORAGE UPDATED: ${address.slice(0, 8)}... = ${hasLand}`);
+    } catch (error) {
+      console.log(`🚩 STORAGE UPDATE FAILED: ${error.message}`);
+    }
+  },
+  
+  // Force update when land is purchased
+  setLandStatus(address, hasLand) {
+    console.log(`🚩 FORCE UPDATE: ${address.slice(0, 8)}... = ${hasLand} (manual)`);
+    this.updateAllLayers(address, hasLand);
+  },
+  
+  // Clear cache for address (on wallet switch)
+  clearCache(address) {
+    this.memoryCache.delete(address);
+    try {
+      localStorage.removeItem(this.getCacheKey(address));
+      console.log(`🚩 CACHE CLEARED: ${address.slice(0, 8)}...`);
+    } catch (error) {
+      console.log(`🚩 CACHE CLEAR FAILED: ${error.message}`);
+    }
   }
 };
 
@@ -883,67 +1011,36 @@ function handleWalletDisconnect() {
   console.log('✅ Wallet disconnect handled');
 }
 
-// 🏞️ SMART LAND STATUS CHECK - WITH FLAG SYSTEM TO PREVENT INFINITE CALLS
+// 🏞️ SMART LAND STATUS CHECK - PREVENTS ALL INFINITE LOOPS
 async function checkLandStatusAndShowPopup() {
   if (!state.address) {
     console.log('🏞️ No wallet connected, skipping land check');
     return;
   }
   
-  // 🚩 CHECK FLAG FIRST - PREVENT INFINITE API CALLS
-  const landFlag = getLandOwnershipFlag(state.address);
-  const now = Date.now();
+  console.log('🚩 SMART LAND CHECK: Starting 3-layer check...');
   
-  // If we already know they have land and it's recent, skip API call
-  if (landFlag.hasLand === true && (now - landFlag.lastChecked) < state.landFlags.cacheExpiry) {
-    console.log('✅ Land ownership confirmed from cache - no API call needed');
+  // Use smart cache system with fallbacks
+  const hasLand = await LAND_STATUS_CACHE.checkLandStatus(state.address);
+  
+  if (hasLand === null) {
+    console.log('🚩 SMART LAND CHECK: Could not determine status, using safe fallback');
+    showMandatoryLandModal(); // Safe fallback if all checks fail
+    return;
+  }
+  
+  // Update UI based on cached/fresh result
+  if (hasLand) {
+    console.log('✅ SMART LAND CHECK: User has land - hiding modal');
     hideMandatoryLandModal();
-    updatePromotersStatus(); // Safe to update UI
-    return;
-  }
-  
-  // If we already know they DON'T have land and it's recent, show modal immediately
-  if (landFlag.hasLand === false && (now - landFlag.lastChecked) < state.landFlags.cacheExpiry) {
-    console.log('🚨 No land confirmed from cache - showing modal');
+  } else {
+    console.log('🚨 SMART LAND CHECK: User needs land - showing modal');
     showMandatoryLandModal();
-    return;
   }
   
-  // Prevent multiple simultaneous checks
-  if (state.landFlags.isChecking) {
-    console.log('🔄 Land check already in progress - skipping duplicate call');
-    return;
-  }
-  
-  try {
-    state.landFlags.isChecking = true;
-    console.log('🏞️ Checking land ownership status via API...');
-    
-    const response = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
-    const result = await response.json();
-    
-    console.log('🏞️ Land status API result:', result);
-    
-    // 🚩 UPDATE FLAG SYSTEM WITH RESULT
-    setLandOwnershipFlag(state.address, result.hasLand);
-    
-    if (!result.hasLand) {
-      console.log('🚨 User does not own land - showing mandatory purchase modal');
-      showMandatoryLandModal();
-    } else {
-      console.log('✅ User owns land - access granted');
-      hideMandatoryLandModal();
-      updatePromotersStatus(); // Safe to update UI since we have confirmed land status
-    }
-    
-  } catch (error) {
-    console.error('❌ Failed to check land status:', error);
-    // If API fails, don't update cache, try again later
-    console.log('🚨 API error - will retry later');
-    showMandatoryLandModal(); // Safe fallback
-  } finally {
-    state.landFlags.isChecking = false;
-  }
+  // 🚩 CRITICAL: NO updatePromotersStatus() call here!
+  // This prevents the infinite loop chain: Land → Promoters → Land → Promoters...
+  console.log('🚩 SMART LAND CHECK: Complete - NO promoter update to prevent infinite loops');
 }
 
 // 🚩 GET LAND OWNERSHIP FLAG FROM CACHE
@@ -1344,29 +1441,18 @@ async function updatePromotersStatus() {
   const walletConnected = !!state.address;
   let hasLand = false;
   
-  // 🚩 CHECK LAND FLAG FIRST - PREVENT UNNECESSARY API CALLS
+  // 🚩 USE SMART CACHE - NO INFINITE LOOPS POSSIBLE
   if (walletConnected) {
-    const landFlag = getLandOwnershipFlag(state.address);
-    const now = Date.now();
+    console.log('📈 SMART PROMOTER UPDATE: Using intelligent cache...');
     
-    // Use cached flag if available and fresh
-    if (landFlag.hasLand !== null && (now - landFlag.lastChecked) < state.landFlags.cacheExpiry) {
-      hasLand = landFlag.hasLand;
-      console.log('📦 Using cached land status for promoters:', hasLand);
+    // Use the smart cache system (memory → localStorage → API)
+    hasLand = await LAND_STATUS_CACHE.checkLandStatus(state.address);
+    
+    if (hasLand === null) {
+      console.log('⚠️ Could not determine land status for promoters, defaulting to false');
+      hasLand = false;
     } else {
-      // Only call API if cache is stale
-      try {
-        console.log('🔄 Checking land status for promoters (cache stale)...');
-        const response = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
-        const result = await response.json();
-        hasLand = result.hasLand || false;
-        
-        // 🚩 UPDATE FLAG WITH FRESH DATA
-        setLandOwnershipFlag(state.address, hasLand);
-      } catch (error) {
-        console.log('⚠️ Could not check land status for promoters modal');
-        hasLand = false;
-      }
+      console.log('📦 SMART PROMOTER: Got land status from cache system:', hasLand);
     }
   }
   
@@ -1477,29 +1563,18 @@ async function updateReferralStatus() {
   const walletConnected = !!state.address;
   let hasLand = false;
   
-  // 🚩 CHECK LAND FLAG FIRST - PREVENT UNNECESSARY API CALLS  
+  // 🚩 USE SMART CACHE - NO INFINITE LOOPS POSSIBLE
   if (walletConnected) {
-    const landFlag = getLandOwnershipFlag(state.address);
-    const now = Date.now();
+    console.log('🎁 SMART REFERRAL UPDATE: Using intelligent cache...');
     
-    // Use cached flag if available and fresh
-    if (landFlag.hasLand !== null && (now - landFlag.lastChecked) < state.landFlags.cacheExpiry) {
-      hasLand = landFlag.hasLand;
-      console.log('📦 Using cached land status for referral:', hasLand);
+    // Use the smart cache system (memory → localStorage → API)
+    hasLand = await LAND_STATUS_CACHE.checkLandStatus(state.address);
+    
+    if (hasLand === null) {
+      console.log('⚠️ Could not determine land status for referral, defaulting to false');
+      hasLand = false;
     } else {
-      // Only call API if cache is stale
-      try {
-        console.log('🔄 Checking land status for referral (cache stale)...');
-        const response = await fetch(`/api/land-status?address=${encodeURIComponent(state.address)}`);
-        const result = await response.json();
-        hasLand = result.hasLand || false;
-        
-        // 🚩 UPDATE FLAG WITH FRESH DATA
-        setLandOwnershipFlag(state.address, hasLand);
-      } catch (error) {
-        console.log('⚠️ Could not check land status for referral modal');
-        hasLand = false;
-      }
+      console.log('📦 SMART REFERRAL: Got land status from cache system:', hasLand);
     }
   }
   
@@ -1576,9 +1651,9 @@ async function purchaseLand() {
     $('#landMsg').textContent = '✅ Land purchased successfully!';
     $('#landMsg').style.color = '#4CAF50';
     
-    // 🚩 CRITICAL: SET LAND FLAG TO TRUE AFTER PURCHASE
-    setLandOwnershipFlag(state.address, true);
-    console.log('🚩 Land ownership flag set to TRUE after successful purchase');
+    // 🚩 CRITICAL: UPDATE SMART CACHE AFTER PURCHASE
+    LAND_STATUS_CACHE.setLandStatus(state.address, true);
+    console.log('🚩 Smart cache updated: User now has land after purchase');
     
     // Hide the mandatory modal
     hideMandatoryLandModal();
