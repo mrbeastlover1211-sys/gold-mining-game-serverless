@@ -989,20 +989,14 @@ function setLandOwnershipFlag(address, hasLand) {
   syncLandFlagToDatabase(address, hasLand);
 }
 
-// 🔄 SYNC LAND FLAG TO DATABASE (NON-BLOCKING)
+// 🔄 SYNC LAND FLAG TO DATABASE (NON-BLOCKING) - DISABLED FOR NOW
 async function syncLandFlagToDatabase(address, hasLand) {
-  try {
-    // Non-blocking database sync
-    fetch('/api/sync-land-flag', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ address, hasLand, timestamp: Date.now() })
-    }).catch(error => {
-      console.log('⚠️ Database sync failed (non-critical):', error.message);
-    });
-  } catch (error) {
-    // Silent fail - cache is primary source of truth
-  }
+  // DISABLED: API endpoint doesn't exist yet
+  // Cache-only approach is sufficient for preventing infinite loops
+  console.log('📝 Land flag would sync to database:', { address: address.slice(0,8) + '...', hasLand });
+  
+  // TODO: Create /api/sync-land-flag endpoint later if needed
+  // For now, localStorage cache is sufficient to prevent infinite loops
 }
 
 // 🔄 RESET LAND FLAG WHEN WALLET CHANGES
