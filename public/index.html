@@ -31,6 +31,239 @@
     console.log('🔧 Buffer.from available:', typeof Buffer.from);
     console.log('🔧 Buffer.alloc available:', typeof Buffer.alloc);
   </script>
+  
+  <!-- 🚩 EMBEDDED SMART CACHE SYSTEM - PERMANENT INFINITE LOOP PREVENTION -->
+  <script>
+    console.log('🚩 EMBEDDED SMART CACHE: Loading infinite loop prevention system...');
+    
+    // 🚩 SMART LAND STATUS CACHE - 3-LAYER SYSTEM EMBEDDED IN HTML
+    window.EMBEDDED_LAND_CACHE = {
+      // Layer 1: Memory cache (fastest - 5 minutes)
+      memoryCache: new Map(),
+      
+      // Layer 2: localStorage (persistent - 10 minutes)
+      CACHE_KEY_PREFIX: 'gm_land_embedded_',
+      MEMORY_EXPIRY: 5 * 60 * 1000,    // 5 minutes
+      STORAGE_EXPIRY: 10 * 60 * 1000,   // 10 minutes
+      
+      // Layer 3: API call control
+      apiCallInProgress: false,
+      
+      // Generate cache key for localStorage
+      getCacheKey(address) {
+        return this.CACHE_KEY_PREFIX + address;
+      },
+      
+      // MAIN FUNCTION: Check land status with cascading fallbacks
+      async checkLandStatus(address) {
+        if (!address) {
+          console.log('🚩 EMBEDDED: No address provided');
+          return null;
+        }
+        
+        const shortAddr = address.slice(0, 8) + '...';
+        const now = Date.now();
+        
+        // 🎯 LAYER 1: Check memory cache first (fastest)
+        if (this.memoryCache.has(address)) {
+          const memoryData = this.memoryCache.get(address);
+          
+          if (now - memoryData.timestamp < this.MEMORY_EXPIRY) {
+            console.log(`🚩 EMBEDDED LAYER 1: ${shortAddr} land status = ${memoryData.hasLand} (cached)`);
+            return memoryData.hasLand;
+          } else {
+            console.log(`🚩 EMBEDDED LAYER 1: Cache expired for ${shortAddr}`);
+            this.memoryCache.delete(address);
+          }
+        }
+        
+        // 🎯 LAYER 2: Check localStorage cache (persistent)
+        try {
+          const cacheKey = this.getCacheKey(address);
+          const storedData = localStorage.getItem(cacheKey);
+          
+          if (storedData) {
+            const parsed = JSON.parse(storedData);
+            
+            if (now - parsed.timestamp < this.STORAGE_EXPIRY) {
+              console.log(`🚩 EMBEDDED LAYER 2: ${shortAddr} land status = ${parsed.hasLand} (cached)`);
+              
+              // Restore to memory cache
+              this.memoryCache.set(address, parsed);
+              return parsed.hasLand;
+            } else {
+              console.log(`🚩 EMBEDDED LAYER 2: Cache expired for ${shortAddr}`);
+              localStorage.removeItem(cacheKey);
+            }
+          }
+        } catch (error) {
+          console.log(`🚩 EMBEDDED LAYER 2: Error reading cache for ${shortAddr}:`, error);
+        }
+        
+        // 🎯 LAYER 3: API call (only if both caches failed)
+        if (this.apiCallInProgress) {
+          console.log(`🚩 EMBEDDED LAYER 3: API call already in progress for ${shortAddr}`);
+          return null;
+        }
+        
+        console.log(`🚩 EMBEDDED LAYER 3: Making fresh API call for ${shortAddr}...`);
+        this.apiCallInProgress = true;
+        
+        try {
+          const response = await fetch(`/api/land-status?address=${encodeURIComponent(address)}`);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          const result = await response.json();
+          console.log(`🚩 EMBEDDED LAYER 3: Fresh data for ${shortAddr}:`, result);
+          
+          // Update all cache layers with fresh data
+          this.updateAllLayers(address, result.hasLand);
+          
+          return result.hasLand;
+          
+        } catch (error) {
+          console.error(`🚩 EMBEDDED LAYER 3: API failed for ${shortAddr}:`, error);
+          return null;
+        } finally {
+          this.apiCallInProgress = false;
+        }
+      },
+      
+      // Update all cache layers with fresh data
+      updateAllLayers(address, hasLand) {
+        const timestamp = Date.now();
+        const data = { hasLand, timestamp };
+        
+        // Update memory cache
+        this.memoryCache.set(address, data);
+        console.log(`🚩 EMBEDDED MEMORY: ${address.slice(0, 8)}... = ${hasLand}`);
+        
+        // Update localStorage cache
+        try {
+          const cacheKey = this.getCacheKey(address);
+          localStorage.setItem(cacheKey, JSON.stringify(data));
+          console.log(`🚩 EMBEDDED STORAGE: ${address.slice(0, 8)}... = ${hasLand}`);
+        } catch (error) {
+          console.log(`🚩 EMBEDDED STORAGE: Update failed - ${error.message}`);
+        }
+      },
+      
+      // Force update when land is purchased
+      setLandStatus(address, hasLand) {
+        console.log(`🚩 EMBEDDED FORCE: ${address.slice(0, 8)}... = ${hasLand} (manual)`);
+        this.updateAllLayers(address, hasLand);
+      }
+    };
+    
+    // 🛡️ EMBEDDED FUNCTION OVERRIDE SYSTEM
+    window.EMBEDDED_OVERRIDE = {
+      isActive: false,
+      
+      // Override problematic functions once they load
+      activateOverrides() {
+        if (this.isActive) return;
+        this.isActive = true;
+        
+        console.log('🛡️ EMBEDDED: Activating function overrides...');
+        
+        // Override checkLandStatusAndShowPopup with smart cache
+        if (typeof window.checkLandStatusAndShowPopup === 'function') {
+          console.log('🔧 EMBEDDED: Overriding checkLandStatusAndShowPopup');
+          
+          window.checkLandStatusAndShowPopup = async function() {
+            if (!state?.address) {
+              console.log('🚩 EMBEDDED: No wallet connected');
+              return;
+            }
+            
+            console.log('🚩 EMBEDDED: Smart land check starting...');
+            
+            const hasLand = await window.EMBEDDED_LAND_CACHE.checkLandStatus(state.address);
+            
+            if (hasLand === null) {
+              console.log('🚩 EMBEDDED: Cannot determine status, safe fallback');
+              if (typeof showMandatoryLandModal === 'function') showMandatoryLandModal();
+              return;
+            }
+            
+            if (hasLand) {
+              console.log('✅ EMBEDDED: User has land - hiding modal');
+              if (typeof hideMandatoryLandModal === 'function') hideMandatoryLandModal();
+            } else {
+              console.log('🚨 EMBEDDED: User needs land - showing modal');
+              if (typeof showMandatoryLandModal === 'function') showMandatoryLandModal();
+            }
+            
+            console.log('🚩 EMBEDDED: Land check complete - NO promoter triggers');
+          };
+        }
+        
+        // Override updatePromotersStatus with smart cache
+        if (typeof window.updatePromotersStatus === 'function') {
+          console.log('🔧 EMBEDDED: Overriding updatePromotersStatus');
+          
+          window.updatePromotersStatus = async function() {
+            if (!state?.address) return;
+            
+            console.log('📈 EMBEDDED: Smart promoter update...');
+            const hasLand = await window.EMBEDDED_LAND_CACHE.checkLandStatus(state.address);
+            
+            // Update promoter UI without triggering more checks
+            const landStatusEl = document.getElementById('landStatusPromoters');
+            if (landStatusEl) {
+              landStatusEl.textContent = hasLand ? '✅ Owned' : '❌ No Land';
+              landStatusEl.style.color = hasLand ? '#4CAF50' : '#f44336';
+            }
+            
+            console.log('📈 EMBEDDED: Promoter update complete - NO land check triggered');
+          };
+        }
+        
+        // Override updateReferralStatus with smart cache
+        if (typeof window.updateReferralStatus === 'function') {
+          console.log('🔧 EMBEDDED: Overriding updateReferralStatus');
+          
+          window.updateReferralStatus = async function() {
+            if (!state?.address) return;
+            
+            console.log('🎁 EMBEDDED: Smart referral update...');
+            const hasLand = await window.EMBEDDED_LAND_CACHE.checkLandStatus(state.address);
+            
+            // Update referral UI without triggering more checks
+            const landStatusEl = document.getElementById('landStatusReferral');
+            if (landStatusEl) {
+              landStatusEl.textContent = hasLand ? '✅ Owned' : '❌ No Land';
+              landStatusEl.style.color = hasLand ? '#4CAF50' : '#f44336';
+            }
+            
+            console.log('🎁 EMBEDDED: Referral update complete - NO land check triggered');
+          };
+        }
+        
+        console.log('✅ EMBEDDED: All function overrides active');
+      }
+    };
+    
+    // Activate overrides after main.js loads
+    setTimeout(() => {
+      window.EMBEDDED_OVERRIDE.activateOverrides();
+    }, 1000);
+    
+    // Also try activation every 2 seconds for the first 10 seconds
+    let activationAttempts = 0;
+    const activationInterval = setInterval(() => {
+      activationAttempts++;
+      window.EMBEDDED_OVERRIDE.activateOverrides();
+      
+      if (activationAttempts >= 5) {
+        clearInterval(activationInterval);
+      }
+    }, 2000);
+    
+    console.log('✅ EMBEDDED SMART CACHE: Infinite loop prevention system loaded');
+  </script>
   <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
 </head>
 <body>

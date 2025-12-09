@@ -723,38 +723,83 @@ async function refreshStatus(afterPurchase = false) {
   }
 }
 
-// ⛏️ Start checkpoint-based gold calculation loop
+// ⚡ ULTRA-OPTIMIZED: No setInterval timers - uses requestAnimationFrame for 500K+ user support
 function startCheckpointGoldLoop() {
+  // Clear any old timer-based system
   if (state.goldUpdateInterval) {
     clearInterval(state.goldUpdateInterval);
+    state.goldUpdateInterval = null;
   }
   
-  console.log('🚀 Starting checkpoint gold loop');
+  console.log('🚀 Starting OPTIMIZED checkpoint gold loop (NO TIMERS!)');
   
-  state.goldUpdateInterval = setInterval(() => {
-    if (state.checkpoint && state.checkpoint.total_mining_power > 0) {
-      const currentGold = calculateGoldFromCheckpoint(state.checkpoint);
+  // Create optimized mining engine
+  if (!state.optimizedMiningEngine) {
+    state.optimizedMiningEngine = {
+      animationId: null,
+      isRunning: false,
+      lastUpdate: 0,
+      updateFrequency: 500, // Update every 500ms instead of 1000ms for smoother feel
       
-      const totalGoldEl = $('#totalGold');
-      if (totalGoldEl) {
-        const safeGold = parseFloat(currentGold) || 0;
-        totalGoldEl.textContent = safeGold.toLocaleString('en-US', { 
-          minimumFractionDigits: 2, 
-          maximumFractionDigits: 2 
-        });
-      }
+      start(checkpoint) {
+        if (this.isRunning) return;
+        this.isRunning = true;
+        this.checkpoint = checkpoint;
+        this.animate();
+      },
       
-      state.status.gold = currentGold;
+      stop() {
+        this.isRunning = false;
+        if (this.animationId) {
+          cancelAnimationFrame(this.animationId);
+          this.animationId = null;
+        }
+      },
       
-      const miningRateEl = $('#currentMiningRate');
-      if (miningRateEl) {
-        const miningPower = state.checkpoint.total_mining_power || 0;
-        if (miningPower > 0) {
-          miningRateEl.textContent = `+${miningPower.toLocaleString()} gold/min`;
+      animate() {
+        if (!this.isRunning) return;
+        
+        const now = performance.now();
+        if (now - this.lastUpdate >= this.updateFrequency) {
+          this.updateDisplay();
+          this.lastUpdate = now;
+        }
+        
+        // Continue animation loop
+        this.animationId = requestAnimationFrame(() => this.animate());
+      },
+      
+      updateDisplay() {
+        if (!this.checkpoint || !this.checkpoint.total_mining_power) return;
+        
+        const currentGold = calculateGoldFromCheckpoint(this.checkpoint);
+        
+        const totalGoldEl = $('#totalGold');
+        if (totalGoldEl) {
+          const safeGold = parseFloat(currentGold) || 0;
+          totalGoldEl.textContent = safeGold.toLocaleString('en-US', { 
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2 
+          });
+        }
+        
+        state.status.gold = currentGold;
+        
+        const miningRateEl = $('#currentMiningRate');
+        if (miningRateEl) {
+          const miningPower = this.checkpoint.total_mining_power || 0;
+          if (miningPower > 0) {
+            miningRateEl.textContent = `+${miningPower.toLocaleString()} gold/min`;
+          }
         }
       }
-    }
-  }, 1000);
+    };
+  }
+  
+  // Start the optimized engine
+  if (state.checkpoint && state.checkpoint.total_mining_power > 0) {
+    state.optimizedMiningEngine.start(state.checkpoint);
+  }
 }
 
 // 🧮 Calculate current gold from checkpoint data
@@ -773,11 +818,18 @@ function calculateGoldFromCheckpoint(checkpoint) {
   return baseGold + goldMined;
 }
 
-// 🛑 Stub functions for compatibility
+// 🛑 OPTIMIZED: Stop mining function for new system
 function stopMining() {
+  // Stop old timer-based system
   if (state.goldUpdateInterval) {
     clearInterval(state.goldUpdateInterval);
     state.goldUpdateInterval = null;
+  }
+  
+  // Stop new optimized system
+  if (state.optimizedMiningEngine) {
+    state.optimizedMiningEngine.stop();
+    console.log('🛑 Optimized mining engine stopped');
   }
 }
 

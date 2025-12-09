@@ -731,30 +731,82 @@ function startCheckpointGoldLoop() {
   
   console.log('🚀 Starting checkpoint gold loop');
   
-  state.goldUpdateInterval = setInterval(() => {
-    if (state.checkpoint && state.checkpoint.total_mining_power > 0) {
-      const currentGold = calculateGoldFromCheckpoint(state.checkpoint);
+  // 🚨 EMERGENCY FIX: Replace setInterval with optimized requestAnimationFrame
+  console.log('🚀 EMERGENCY: Using optimized mining system - NO setInterval!');
+  
+  // Clear any old interval
+  if (state.goldUpdateInterval) {
+    clearInterval(state.goldUpdateInterval);
+    state.goldUpdateInterval = null;
+  }
+  
+  // Create optimized mining engine (NO TIMERS!)
+  if (!state.optimizedMiningEngine) {
+    state.optimizedMiningEngine = {
+      animationId: null,
+      isRunning: false,
+      lastUpdate: 0,
+      updateFrequency: 1000, // Update every 1 second
       
-      const totalGoldEl = $('#totalGold');
-      if (totalGoldEl) {
-        const safeGold = parseFloat(currentGold) || 0;
-        totalGoldEl.textContent = safeGold.toLocaleString('en-US', { 
-          minimumFractionDigits: 2, 
-          maximumFractionDigits: 2 
-        });
-      }
+      start(checkpoint) {
+        if (this.isRunning) return;
+        this.isRunning = true;
+        this.checkpoint = checkpoint;
+        this.animate();
+      },
       
-      state.status.gold = currentGold;
+      stop() {
+        this.isRunning = false;
+        if (this.animationId) {
+          cancelAnimationFrame(this.animationId);
+          this.animationId = null;
+        }
+      },
       
-      const miningRateEl = $('#currentMiningRate');
-      if (miningRateEl) {
-        const miningPower = state.checkpoint.total_mining_power || 0;
-        if (miningPower > 0) {
-          miningRateEl.textContent = `+${miningPower.toLocaleString()} gold/min`;
+      animate() {
+        if (!this.isRunning) return;
+        
+        const now = performance.now();
+        if (now - this.lastUpdate >= this.updateFrequency) {
+          this.updateDisplay();
+          this.lastUpdate = now;
+        }
+        
+        // Continue animation loop
+        this.animationId = requestAnimationFrame(() => this.animate());
+      },
+      
+      updateDisplay() {
+        if (!this.checkpoint || !this.checkpoint.total_mining_power) return;
+        
+        const currentGold = calculateGoldFromCheckpoint(this.checkpoint);
+        
+        const totalGoldEl = $('#totalGold');
+        if (totalGoldEl) {
+          const safeGold = parseFloat(currentGold) || 0;
+          totalGoldEl.textContent = safeGold.toLocaleString('en-US', { 
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2 
+          });
+        }
+        
+        state.status.gold = currentGold;
+        
+        const miningRateEl = $('#currentMiningRate');
+        if (miningRateEl) {
+          const miningPower = this.checkpoint.total_mining_power || 0;
+          if (miningPower > 0) {
+            miningRateEl.textContent = `+${miningPower.toLocaleString()} gold/min`;
+          }
         }
       }
-    }
-  }, 1000);
+    };
+  }
+  
+  // Start the optimized engine
+  if (state.checkpoint && state.checkpoint.total_mining_power > 0) {
+    state.optimizedMiningEngine.start(state.checkpoint);
+  }
 }
 
 // 🧮 Calculate current gold from checkpoint data
@@ -1437,9 +1489,26 @@ function closePromotersModal() {
   }
 }
 
+// 🚨 EMERGENCY FIX: Add infinite loop protection
+let isUpdatingPromoters = false;
+let lastPromoterUpdate = 0;
+
 async function updatePromotersStatus() {
-  const walletConnected = !!state.address;
-  let hasLand = false;
+  const now = Date.now();
+  
+  // PREVENT INFINITE LOOPS - Only allow one update per 5 seconds
+  if (isUpdatingPromoters || (now - lastPromoterUpdate) < 5000) {
+    console.log('🛑 EMERGENCY: Blocked promoter update to prevent infinite loops');
+    return;
+  }
+  
+  isUpdatingPromoters = true;
+  lastPromoterUpdate = now;
+  console.log('🔒 EMERGENCY: Promoter update locked - preventing loops');
+  
+  try {
+    const walletConnected = !!state.address;
+    let hasLand = false;
   
   // 🚩 USE SMART CACHE - NO INFINITE LOOPS POSSIBLE
   if (walletConnected) {
@@ -1469,6 +1538,13 @@ async function updatePromotersStatus() {
   } else {
     $('#promotersRequirement').style.display = 'block';
     $('#promotersLinkSection').style.display = 'none';
+  }
+  } finally {
+    // Always unlock after 3 seconds
+    setTimeout(() => {
+      isUpdatingPromoters = false;
+      console.log('🔓 EMERGENCY: Promoter update protection reset');
+    }, 3000);
   }
 }
 

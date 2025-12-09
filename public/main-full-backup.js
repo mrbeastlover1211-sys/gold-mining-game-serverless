@@ -4296,29 +4296,42 @@ function checkLandViaInventory() {
   return false;
 }
 
-// Enhanced land detection function
+// 🚩 DISABLED: This function was causing infinite loops and massive API costs
 window.detectLandStatus = function() {
-  console.log('🔍 Running comprehensive land detection...');
+  console.log('🛑 Land detection DISABLED - preventing infinite loops and API cost explosion!');
   
-  // Method 1: Check via inventory
-  if (checkLandViaInventory()) {
+  // DO NOT run any land detection here - it causes recursive loops!
+  // Land status is already properly checked in the main game system
+  return false;
+};
+
+// 🚩 INFINITE LOOP FIX: Prevent recursive calls that cost money
+let isUpdatingPromoters = false;
+let lastPromoterUpdate = 0;
+const originalUpdatePromotersStatus = updatePromotersStatus;
+updatePromotersStatus = function() {
+  const now = Date.now();
+  
+  // PREVENT INFINITE LOOP - Only allow one update per 5 seconds
+  if (isUpdatingPromoters || (now - lastPromoterUpdate) < 5000) {
+    console.log('🛑 Blocked infinite promoters loop - saving API costs');
     return;
   }
   
-  // Method 2: Check via API
-  checkActualLandStatus();
-};
-
-// Update the promoters status function to use better detection
-const originalUpdatePromotersStatus = updatePromotersStatus;
-updatePromotersStatus = function() {
-  // First try to detect land status
-  detectLandStatus();
+  isUpdatingPromoters = true;
+  lastPromoterUpdate = now;
+  console.log('🔒 Promoters update started - loop protection active');
   
-  // Wait a bit then run original function
-  setTimeout(() => {
+  try {
+    // Run original function only once, NO detectLandStatus call!
     originalUpdatePromotersStatus();
-  }, 500);
+  } finally {
+    // Always unlock after 3 seconds
+    setTimeout(() => {
+      isUpdatingPromoters = false;
+      console.log('🔓 Promoters update protection reset');
+    }, 3000);
+  }
 };
 
 console.log('🏠 Enhanced land detection system activated');
