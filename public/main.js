@@ -1489,7 +1489,24 @@ function closePromotersModal() {
   }
 }
 
+// 🚨 EMERGENCY FIX: Add infinite loop protection
+let isUpdatingPromoters = false;
+let lastPromoterUpdate = 0;
+
 async function updatePromotersStatus() {
+  const now = Date.now();
+  
+  // PREVENT INFINITE LOOPS - Only allow one update per 10 seconds
+  if (isUpdatingPromoters || (now - lastPromoterUpdate) < 10000) {
+    console.log('🛑 EMERGENCY: Blocked promoter update to prevent infinite loops and API costs');
+    return;
+  }
+  
+  isUpdatingPromoters = true;
+  lastPromoterUpdate = now;
+  console.log('🔒 EMERGENCY: Promoter update started with 10-second protection');
+  
+  try {
   const walletConnected = !!state.address;
   let hasLand = false;
   
@@ -1521,6 +1538,16 @@ async function updatePromotersStatus() {
   } else {
     $('#promotersRequirement').style.display = 'block';
     $('#promotersLinkSection').style.display = 'none';
+  }
+  
+  } catch (error) {
+    console.error('❌ EMERGENCY: Error in updatePromotersStatus:', error);
+  } finally {
+    // Always unlock after 5 seconds to prevent permanent blocking
+    setTimeout(() => {
+      isUpdatingPromoters = false;
+      console.log('🔓 EMERGENCY: Promoter update protection reset after 5 seconds');
+    }, 5000);
   }
 }
 
