@@ -271,7 +271,7 @@ function changeQuantity(pickaxeType, delta) {
   input.value = newValue;
 }
 
-// 🔗 Connect wallet function
+// 🔗 CLEAN WALLET CONNECTION - Simple Logic Flow
 async function connectWallet() {
   console.log('🔗 Connecting wallet...');
   
@@ -291,42 +291,35 @@ async function connectWallet() {
     
     const address = account.toString();
     
-    // Check if this is a different wallet than before
+    // 🔄 WALLET SWITCH DETECTION - Clear old state if switching wallets
     const previousAddress = state.address;
     if (previousAddress && previousAddress !== address) {
       console.log(`🔄 Wallet switched from ${previousAddress.slice(0, 8)}... to ${address.slice(0, 8)}...`);
       
-      // Clear any existing popups
-      const existingModal = document.getElementById('mandatoryLandModal');
-      if (existingModal) {
-        existingModal.remove();
-      }
-      
-      // Stop existing mining and polling
+      // Clear old wallet's cache and state
+      LAND_STATUS_CACHE.clearCache(previousAddress);
+      hideMandatoryLandModal();
       stopMining();
       stopStatusPolling();
     }
     
+    // 📝 SET NEW WALLET STATE
     state.wallet = provider;
     state.address = address;
     localStorage.setItem('gm_address', address);
     
     console.log('✅ Wallet connected:', address.slice(0, 8) + '...');
     
-    // Update balance first
+    // 💰 UPDATE WALLET BALANCE
     await updateWalletBalance();
-    
-    // Update connect button to show wallet info
     updateConnectButtonDisplay();
     
-    // Load user data
-    console.log('📊 Loading initial user data from database...');
+    // 📊 LOAD USER DATA FROM DATABASE
+    console.log('📊 Loading user data from database...');
     const userData = await loadInitialUserData();
     
     if (userData) {
-      console.log('✅ User data loaded:', userData);
-      
-      // Update the display with loaded data
+      // Update display with loaded data
       updateDisplay({
         gold: userData.last_checkpoint_gold || 0,
         inventory: userData.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 },
@@ -337,29 +330,45 @@ async function connectWallet() {
         }
       });
       
-      // Store checkpoint for real-time updates
       state.checkpoint = {
         total_mining_power: userData.total_mining_power || 0,
         checkpoint_timestamp: userData.checkpoint_timestamp,
         last_checkpoint_gold: userData.last_checkpoint_gold || 0
       };
       
-      console.log('🎉 User data displayed and mining engine ready!');
+      console.log('✅ User data loaded and displayed');
     } else {
       console.log('ℹ️ New user - starting with empty state');
       updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
     }
     
-    // Check land status immediately after wallet connection
-    console.log('🔍 Checking land ownership immediately after wallet connection...');
-    await checkLandStatusAndShowPopup();
+    // 🏞️ STEP 1: CHECK LAND STATUS FROM API
+    console.log('🔍 Step 1: Checking land status from API...');
+    const hasLand = await LAND_STATUS_CACHE.checkLandStatus(address);
     
-    // Auto-check for referral completion after wallet connection
+    if (hasLand === true) {
+      // ✅ USER HAS LAND
+      console.log('✅ User has land - updating UI');
+      LAND_STATUS_CACHE.setLandStatus(address, true);
+      hideMandatoryLandModal();
+      
+      // 📱 STEP 2: UPDATE REFER & EARN + PROMOTER POPUPS (show share links)
+      setTimeout(() => {
+        updateReferralStatus(); // Show share link
+        updatePromotersStatus(); // Show share link
+      }, 500);
+      
+    } else {
+      // ❌ USER NEEDS LAND
+      console.log('❌ User needs land - showing purchase popup');
+      LAND_STATUS_CACHE.setLandStatus(address, false);
+      showMandatoryLandModal();
+      
+      // Don't show share links until they buy land
+    }
+    
+    // 🎁 CHECK REFERRAL COMPLETION
     await autoCheckReferralCompletion();
-    
-    // Check land status immediately after wallet connection
-    console.log('🔍 Checking land ownership immediately after wallet connection...');
-    await checkLandStatusAndShowPopup();
     
   } catch (e) {
     console.error('❌ Wallet connection failed:', e);
@@ -909,9 +918,22 @@ async function autoReconnectWallet() {
           updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
         }
         
-        // Check land status after auto-reconnect
-        console.log('🔍 Checking land ownership after auto-reconnect...');
-        await checkLandStatusAndShowPopup();
+        // 🏞️ CHECK LAND STATUS AFTER AUTO-RECONNECT
+        console.log('🔍 Checking land status after auto-reconnect...');
+        const hasLand = await LAND_STATUS_CACHE.checkLandStatus(savedAddress);
+        
+        if (hasLand === true) {
+          console.log('✅ Auto-reconnect: User has land');
+          hideMandatoryLandModal();
+          // Show share links
+          setTimeout(() => {
+            updateReferralStatus();
+            updatePromotersStatus();
+          }, 500);
+        } else {
+          console.log('❌ Auto-reconnect: User needs land');
+          showMandatoryLandModal();
+        }
         
         // Setup wallet switch detection
         setupWalletSwitchDetection(provider);
@@ -956,9 +978,22 @@ async function autoReconnectWallet() {
             }
           }
           
-          // Check land status after silent reconnect
-          console.log('🔍 Checking land ownership after silent reconnect...');
-          await checkLandStatusAndShowPopup();
+          // 🏞️ CHECK LAND STATUS AFTER SILENT RECONNECT
+          console.log('🔍 Checking land status after silent reconnect...');
+          const hasLand = await LAND_STATUS_CACHE.checkLandStatus(savedAddress);
+          
+          if (hasLand === true) {
+            console.log('✅ Silent reconnect: User has land');
+            hideMandatoryLandModal();
+            // Show share links
+            setTimeout(() => {
+              updateReferralStatus();
+              updatePromotersStatus();
+            }, 500);
+          } else {
+            console.log('❌ Silent reconnect: User needs land');
+            showMandatoryLandModal();
+          }
           
           setupWalletSwitchDetection(provider);
           
@@ -994,29 +1029,30 @@ function setupWalletSwitchDetection(provider) {
   });
 }
 
-// 🔄 Handle wallet switch
+// 🔄 CLEAN WALLET SWITCH HANDLER
 async function handleWalletSwitch(newAddress, provider) {
   const previousAddress = state.address;
   
-  console.log(`🔄 Handling wallet switch from ${previousAddress?.slice(0, 8)}... to ${newAddress.slice(0, 8)}...`);
+  console.log(`🔄 Wallet switch: ${previousAddress?.slice(0, 8)}... → ${newAddress.slice(0, 8)}...`);
   
-  // Stop existing mining and polling
+  // 🧹 CLEAN UP OLD WALLET STATE
   stopMining();
   stopStatusPolling();
+  if (previousAddress) {
+    LAND_STATUS_CACHE.clearCache(previousAddress);
+  }
+  hideMandatoryLandModal();
   
-  // 🚩 RESET LAND FLAGS FOR NEW WALLET
-  resetLandFlagForNewWallet(newAddress);
-  
-  // Update state
+  // 📝 SET NEW WALLET STATE
   state.wallet = provider;
   state.address = newAddress;
   localStorage.setItem('gm_address', newAddress);
   
-  // Update UI
+  // 💰 UPDATE UI FOR NEW WALLET
   await updateWalletBalance();
   updateConnectButtonDisplay();
   
-  // Load new user data
+  // 📊 LOAD NEW WALLET DATA
   const userData = await loadInitialUserData();
   if (userData) {
     updateDisplay({
@@ -1037,7 +1073,26 @@ async function handleWalletSwitch(newAddress, provider) {
     updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
   }
   
-  console.log('✅ Wallet switch handled successfully');
+  // 🏞️ CHECK LAND STATUS FOR NEW WALLET
+  console.log('🔍 Checking land status for new wallet...');
+  const hasLand = await LAND_STATUS_CACHE.checkLandStatus(newAddress);
+  
+  if (hasLand === true) {
+    console.log('✅ New wallet has land');
+    LAND_STATUS_CACHE.setLandStatus(newAddress, true);
+    hideMandatoryLandModal();
+    // Show share links
+    setTimeout(() => {
+      updateReferralStatus();
+      updatePromotersStatus();
+    }, 500);
+  } else {
+    console.log('❌ New wallet needs land');
+    LAND_STATUS_CACHE.setLandStatus(newAddress, false);
+    showMandatoryLandModal();
+  }
+  
+  console.log('✅ Wallet switch completed');
 }
 
 // 🔄 Handle wallet disconnect
@@ -1063,64 +1118,12 @@ function handleWalletDisconnect() {
   console.log('✅ Wallet disconnect handled');
 }
 
-// 🚨 EMERGENCY FIX: Prevent infinite land status checks that trigger after referral links + land purchase
-let isCheckingLandStatus = false;
-let lastLandStatusCheck = 0;
-
-// 🏞️ SMART LAND STATUS CHECK - PREVENTS ALL INFINITE LOOPS
-async function checkLandStatusAndShowPopup() {
-  const now = Date.now();
-  
-  // 🚨 PREVENT INFINITE LOOPS - Only allow land status check once per 15 seconds
-  if (isCheckingLandStatus || (now - lastLandStatusCheck) < 15000) {
-    console.log('🛑 EMERGENCY: Blocked land status check to prevent infinite loops and API costs');
-    return;
-  }
-  
-  if (!state.address) {
-    console.log('🏞️ No wallet connected, skipping land check');
-    return;
-  }
-  
-  isCheckingLandStatus = true;
-  lastLandStatusCheck = now;
-  console.log('🔒 EMERGENCY: Land status check started with 15-second protection');
-  
-  try {
-    console.log('🚩 SMART LAND CHECK: Starting 3-layer check...');
-    
-    // Use smart cache system with fallbacks
-    const hasLand = await LAND_STATUS_CACHE.checkLandStatus(state.address);
-    
-    if (hasLand === null) {
-      console.log('🚩 SMART LAND CHECK: Could not determine status, using safe fallback');
-      showMandatoryLandModal(); // Safe fallback if all checks fail
-      return;
-    }
-    
-    // Update UI based on cached/fresh result
-    if (hasLand) {
-      console.log('✅ SMART LAND CHECK: User has land - hiding modal');
-      hideMandatoryLandModal();
-    } else {
-      console.log('🚨 SMART LAND CHECK: User needs land - showing modal');
-      showMandatoryLandModal();
-    }
-    
-    // 🚩 CRITICAL: NO updatePromotersStatus() call here!
-    // This prevents the infinite loop chain: Land → Promoters → Land → Promoters...
-    console.log('🚩 SMART LAND CHECK: Complete - NO promoter update to prevent infinite loops');
-    
-  } catch (error) {
-    console.error('❌ EMERGENCY: Error in land status check:', error);
-  } finally {
-    // Always unlock after 10 seconds to prevent permanent blocking
-    setTimeout(() => {
-      isCheckingLandStatus = false;
-      console.log('🔓 EMERGENCY: Land status check protection reset');
-    }, 10000);
-  }
-}
+// ✅ REMOVED OLD COMPLEX LAND STATUS CHECK FUNCTION
+// The new clean logic is now handled directly in:
+// - connectWallet()
+// - handleWalletSwitch() 
+// - autoReconnectWallet()
+// This prevents infinite loops and API calls
 
 // 🚩 GET LAND OWNERSHIP FLAG FROM CACHE
 function getLandOwnershipFlag(address) {
@@ -1175,33 +1178,9 @@ async function syncLandFlagToDatabase(address, hasLand) {
   // For now, localStorage cache is sufficient to prevent infinite loops
 }
 
-// 🔄 RESET LAND FLAG WHEN WALLET CHANGES
-function resetLandFlagForNewWallet(newAddress) {
-  console.log('🔄 Wallet changed - resetting land flags');
-  
-  // Clear previous wallet's cache if different
-  state.landFlags.hasLand = null;
-  state.landFlags.lastChecked = 0;
-  state.landFlags.isChecking = false;
-  
-  // Check cache for new wallet
-  const landFlag = getLandOwnershipFlag(newAddress);
-  
-  if (landFlag.hasLand !== null && (Date.now() - landFlag.lastChecked) < state.landFlags.cacheExpiry) {
-    console.log('✅ Found cached land status for new wallet');
-    state.landFlags.hasLand = landFlag.hasLand;
-    state.landFlags.lastChecked = landFlag.lastChecked;
-    
-    // Update UI immediately without API call
-    if (landFlag.hasLand) {
-      hideMandatoryLandModal();
-    } else {
-      showMandatoryLandModal();
-    }
-  } else {
-    console.log('🔍 No valid cache for new wallet - will check API when needed');
-  }
-}
+// ✅ REMOVED OLD COMPLEX LAND FLAG RESET FUNCTION
+// Land flag reset is now handled simply by:
+// LAND_STATUS_CACHE.clearCache(previousAddress) in handleWalletSwitch()
 
 // 🚨 Show mandatory land purchase modal
 function showMandatoryLandModal() {
@@ -1757,21 +1736,21 @@ async function purchaseLand() {
     $('#landMsg').textContent = '✅ Land purchased successfully!';
     $('#landMsg').style.color = '#4CAF50';
     
-    // 🚩 CRITICAL: UPDATE SMART CACHE AFTER PURCHASE
+    // 🚩 CRITICAL FIX: Update cache and database status
     LAND_STATUS_CACHE.setLandStatus(state.address, true);
-    console.log('🚩 Smart cache updated: User now has land after purchase');
+    console.log('🚩 Cache updated: User now has land after purchase');
     
     // Hide the mandatory modal
     hideMandatoryLandModal();
     
+    // Update UI to reflect land ownership (show share links)
+    setTimeout(() => {
+      updatePromotersStatus(); // Show promoter share link
+      updateReferralStatus();  // Show referral share link
+    }, 1000);
+    
     // Update wallet balance
     await updateWalletBalance();
-    
-    // Update UI to reflect land ownership (with protection against infinite loops)
-    setTimeout(() => {
-      updatePromotersStatus();
-      updateReferralStatus();
-    }, 1000);
     
     // Refresh status
     await refreshStatus(true);
