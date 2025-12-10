@@ -1516,18 +1516,18 @@ async function updatePromotersStatus() {
   const walletConnected = !!state.address;
   let hasLand = false;
   
-  // 🚩 USE SMART CACHE - NO INFINITE LOOPS POSSIBLE
+  // 🚩 CACHE-ONLY CHECK - NO API CALLS
   if (walletConnected) {
-    console.log('📈 SMART PROMOTER UPDATE: Using intelligent cache...');
+    console.log('📈 PROMOTER UPDATE: Using memory cache only (no API)...');
     
-    // Use the smart cache system (memory → localStorage → API)
-    hasLand = await LAND_STATUS_CACHE.checkLandStatus(state.address);
-    
-    if (hasLand === null) {
-      console.log('⚠️ Could not determine land status for promoters, defaulting to false');
-      hasLand = false;
+    // Check ONLY memory cache - never trigger API calls
+    const cachedData = LAND_STATUS_CACHE.memoryCache.get(state.address);
+    if (cachedData) {
+      hasLand = cachedData.hasLand;
+      console.log('📦 PROMOTER: Cache shows hasLand =', hasLand);
     } else {
-      console.log('📦 SMART PROMOTER: Got land status from cache system:', hasLand);
+      console.log('📦 PROMOTER: No cache found, assuming false');
+      hasLand = false;
     }
   }
   
@@ -1648,18 +1648,18 @@ async function updateReferralStatus() {
   const walletConnected = !!state.address;
   let hasLand = false;
   
-  // 🚩 USE SMART CACHE - NO INFINITE LOOPS POSSIBLE
+  // 🚩 CACHE-ONLY CHECK - NO API CALLS
   if (walletConnected) {
-    console.log('🎁 SMART REFERRAL UPDATE: Using intelligent cache...');
+    console.log('🎁 REFERRAL UPDATE: Using memory cache only (no API)...');
     
-    // Use the smart cache system (memory → localStorage → API)
-    hasLand = await LAND_STATUS_CACHE.checkLandStatus(state.address);
-    
-    if (hasLand === null) {
-      console.log('⚠️ Could not determine land status for referral, defaulting to false');
-      hasLand = false;
+    // Check ONLY memory cache - never trigger API calls
+    const cachedData = LAND_STATUS_CACHE.memoryCache.get(state.address);
+    if (cachedData) {
+      hasLand = cachedData.hasLand;
+      console.log('📦 REFERRAL: Cache shows hasLand =', hasLand);
     } else {
-      console.log('📦 SMART REFERRAL: Got land status from cache system:', hasLand);
+      console.log('📦 REFERRAL: No cache found, assuming false');
+      hasLand = false;
     }
   }
   
