@@ -84,15 +84,44 @@ function startOptimizedMining() {
   // Update display immediately
   updateMiningDisplay();
   
-  // Start display update loop (every 1 second for smooth UI)
-  window.miningDisplayInterval = setInterval(() => {
-    updateMiningDisplay();
-  }, 1000);
+  // 🚨 EMERGENCY FIX: Replace setInterval with requestAnimationFrame to prevent infinite loops
+  console.log('🛑 EMERGENCY: Mining engine setInterval DISABLED - using optimized system');
   
-  // Sync with server every 30 seconds (instead of every second)
-  window.miningSyncInterval = setInterval(() => {
-    syncWithServer();
-  }, 30000);
+  // Clear any existing intervals
+  if (window.miningDisplayInterval) {
+    clearInterval(window.miningDisplayInterval);
+    window.miningDisplayInterval = null;
+  }
+  if (window.miningSyncInterval) {
+    clearInterval(window.miningSyncInterval);
+    window.miningSyncInterval = null;
+  }
+  
+  // Use requestAnimationFrame instead of setInterval (prevents infinite loops)
+  let lastDisplayUpdate = 0;
+  let lastSyncUpdate = 0;
+  
+  function optimizedMiningLoop() {
+    const now = performance.now();
+    
+    // Update display every 1000ms (1 second)
+    if (now - lastDisplayUpdate >= 1000) {
+      updateMiningDisplay();
+      lastDisplayUpdate = now;
+    }
+    
+    // Sync with server every 30000ms (30 seconds)
+    if (now - lastSyncUpdate >= 30000) {
+      syncWithServer();
+      lastSyncUpdate = now;
+    }
+    
+    // Continue loop with requestAnimationFrame (much more CPU efficient)
+    requestAnimationFrame(optimizedMiningLoop);
+  }
+  
+  // Start the optimized loop (NO setInterval!)
+  optimizedMiningLoop();
   
   console.log('✅ Optimized mining started with rate:', window.miningState.totalRate, 'gold/min');
 }
