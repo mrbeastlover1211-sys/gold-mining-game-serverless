@@ -1063,36 +1063,63 @@ function handleWalletDisconnect() {
   console.log('✅ Wallet disconnect handled');
 }
 
+// 🚨 EMERGENCY FIX: Prevent infinite land status checks that trigger after referral links + land purchase
+let isCheckingLandStatus = false;
+let lastLandStatusCheck = 0;
+
 // 🏞️ SMART LAND STATUS CHECK - PREVENTS ALL INFINITE LOOPS
 async function checkLandStatusAndShowPopup() {
+  const now = Date.now();
+  
+  // 🚨 PREVENT INFINITE LOOPS - Only allow land status check once per 15 seconds
+  if (isCheckingLandStatus || (now - lastLandStatusCheck) < 15000) {
+    console.log('🛑 EMERGENCY: Blocked land status check to prevent infinite loops and API costs');
+    return;
+  }
+  
   if (!state.address) {
     console.log('🏞️ No wallet connected, skipping land check');
     return;
   }
   
-  console.log('🚩 SMART LAND CHECK: Starting 3-layer check...');
+  isCheckingLandStatus = true;
+  lastLandStatusCheck = now;
+  console.log('🔒 EMERGENCY: Land status check started with 15-second protection');
   
-  // Use smart cache system with fallbacks
-  const hasLand = await LAND_STATUS_CACHE.checkLandStatus(state.address);
-  
-  if (hasLand === null) {
-    console.log('🚩 SMART LAND CHECK: Could not determine status, using safe fallback');
-    showMandatoryLandModal(); // Safe fallback if all checks fail
-    return;
+  try {
+    console.log('🚩 SMART LAND CHECK: Starting 3-layer check...');
+    
+    // Use smart cache system with fallbacks
+    const hasLand = await LAND_STATUS_CACHE.checkLandStatus(state.address);
+    
+    if (hasLand === null) {
+      console.log('🚩 SMART LAND CHECK: Could not determine status, using safe fallback');
+      showMandatoryLandModal(); // Safe fallback if all checks fail
+      return;
+    }
+    
+    // Update UI based on cached/fresh result
+    if (hasLand) {
+      console.log('✅ SMART LAND CHECK: User has land - hiding modal');
+      hideMandatoryLandModal();
+    } else {
+      console.log('🚨 SMART LAND CHECK: User needs land - showing modal');
+      showMandatoryLandModal();
+    }
+    
+    // 🚩 CRITICAL: NO updatePromotersStatus() call here!
+    // This prevents the infinite loop chain: Land → Promoters → Land → Promoters...
+    console.log('🚩 SMART LAND CHECK: Complete - NO promoter update to prevent infinite loops');
+    
+  } catch (error) {
+    console.error('❌ EMERGENCY: Error in land status check:', error);
+  } finally {
+    // Always unlock after 10 seconds to prevent permanent blocking
+    setTimeout(() => {
+      isCheckingLandStatus = false;
+      console.log('🔓 EMERGENCY: Land status check protection reset');
+    }, 10000);
   }
-  
-  // Update UI based on cached/fresh result
-  if (hasLand) {
-    console.log('✅ SMART LAND CHECK: User has land - hiding modal');
-    hideMandatoryLandModal();
-  } else {
-    console.log('🚨 SMART LAND CHECK: User needs land - showing modal');
-    showMandatoryLandModal();
-  }
-  
-  // 🚩 CRITICAL: NO updatePromotersStatus() call here!
-  // This prevents the infinite loop chain: Land → Promoters → Land → Promoters...
-  console.log('🚩 SMART LAND CHECK: Complete - NO promoter update to prevent infinite loops');
 }
 
 // 🚩 GET LAND OWNERSHIP FLAG FROM CACHE
