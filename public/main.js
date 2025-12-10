@@ -1767,6 +1767,12 @@ async function purchaseLand() {
     // Update wallet balance
     await updateWalletBalance();
     
+    // Update UI to reflect land ownership (with protection against infinite loops)
+    setTimeout(() => {
+      updatePromotersStatus();
+      updateReferralStatus();
+    }, 1000);
+    
     // Refresh status
     await refreshStatus(true);
     

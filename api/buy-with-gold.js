@@ -106,6 +106,23 @@ export default async function handler(req, res) {
     
     console.log(`✅ ${address.slice(0, 8)}... bought ${pickaxeType} pickaxe for ${goldCost} gold`);
     
+    // Auto-trigger referral completion after pickaxe purchase
+    try {
+      const baseUrl = req.headers.origin || process.env.VERCEL_URL || 'http://localhost:3000';
+      const completeReferralResponse = await fetch(`${baseUrl}/api/complete-referral`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address })
+      });
+      
+      if (completeReferralResponse.ok) {
+        const referralResult = await completeReferralResponse.json();
+        console.log('🎁 Auto-referral completion result:', referralResult);
+      }
+    } catch (referralError) {
+      console.log('⚠️ Auto-referral completion failed (non-critical):', referralError.message);
+    }
+    
     // Create inventory object for response
     const inventory = {
       silver: user.silver_pickaxes || 0,
