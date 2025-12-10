@@ -29,6 +29,11 @@ const LAND_STATUS_CACHE = {
   // Layer 3: API call control
   apiCallInProgress: false,
   
+  // 🚨 NUCLEAR CIRCUIT BREAKER - Prevent infinite loops completely
+  apiCallCount: 0,
+  maxApiCallsPerMinute: 3,
+  lastApiCallReset: 0,
+  
   // Generate cache key for localStorage
   getCacheKey(address) {
     return this.CACHE_KEY_PREFIX + address;
@@ -90,7 +95,20 @@ const LAND_STATUS_CACHE = {
       return null;
     }
     
-    console.log(`🚩 LAYER 3 (API): Making fresh API call for ${shortAddr}...`);
+    // 🚨 NUCLEAR CIRCUIT BREAKER - Prevent infinite API calls
+    const currentTime = Date.now();
+    if (currentTime - this.lastApiCallReset > 60000) { // Reset every minute
+      this.apiCallCount = 0;
+      this.lastApiCallReset = currentTime;
+    }
+    
+    if (this.apiCallCount >= this.maxApiCallsPerMinute) {
+      console.log(`🚨 CIRCUIT BREAKER: Too many API calls (${this.apiCallCount}/${this.maxApiCallsPerMinute}), blocking for 1 minute`);
+      return null;
+    }
+    
+    this.apiCallCount++;
+    console.log(`🚩 LAYER 3 (API): Making API call ${this.apiCallCount}/${this.maxApiCallsPerMinute} for ${shortAddr}...`);
     this.apiCallInProgress = true;
     
     try {
@@ -342,7 +360,7 @@ async function connectWallet() {
       updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
     }
     
-    // 🏞️ STEP 1: CHECK LAND STATUS FROM API
+    // 🏞️ STEP 1: CHECK LAND STATUS FROM API (ONLY ON WALLET CONNECT)
     console.log('🔍 Step 1: Checking land status from API...');
     const hasLand = await LAND_STATUS_CACHE.checkLandStatus(address);
     
@@ -918,9 +936,16 @@ async function autoReconnectWallet() {
           updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
         }
         
-        // 🏞️ CHECK LAND STATUS AFTER AUTO-RECONNECT
-        console.log('🔍 Checking land status after auto-reconnect...');
-        const hasLand = await LAND_STATUS_CACHE.checkLandStatus(savedAddress);
+        // 🏞️ CHECK LAND STATUS AFTER AUTO-RECONNECT (CACHE ONLY)
+        console.log('🔍 Checking land status after auto-reconnect (cache only)...');
+        const cachedData = LAND_STATUS_CACHE.memoryCache.get(savedAddress);
+        let hasLand = cachedData ? cachedData.hasLand : null;
+        
+        // If no cache, make ONE API call
+        if (hasLand === null) {
+          console.log('📡 No cache found, making single API call...');
+          hasLand = await LAND_STATUS_CACHE.checkLandStatus(savedAddress);
+        }
         
         if (hasLand === true) {
           console.log('✅ Auto-reconnect: User has land');
@@ -978,9 +1003,16 @@ async function autoReconnectWallet() {
             }
           }
           
-          // 🏞️ CHECK LAND STATUS AFTER SILENT RECONNECT
-          console.log('🔍 Checking land status after silent reconnect...');
-          const hasLand = await LAND_STATUS_CACHE.checkLandStatus(savedAddress);
+          // 🏞️ CHECK LAND STATUS AFTER SILENT RECONNECT (CACHE ONLY)
+          console.log('🔍 Checking land status after silent reconnect (cache only)...');
+          const cachedData = LAND_STATUS_CACHE.memoryCache.get(savedAddress);
+          let hasLand = cachedData ? cachedData.hasLand : null;
+          
+          // If no cache, make ONE API call
+          if (hasLand === null) {
+            console.log('📡 No cache found, making single API call...');
+            hasLand = await LAND_STATUS_CACHE.checkLandStatus(savedAddress);
+          }
           
           if (hasLand === true) {
             console.log('✅ Silent reconnect: User has land');
@@ -1073,9 +1105,16 @@ async function handleWalletSwitch(newAddress, provider) {
     updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
   }
   
-  // 🏞️ CHECK LAND STATUS FOR NEW WALLET
-  console.log('🔍 Checking land status for new wallet...');
-  const hasLand = await LAND_STATUS_CACHE.checkLandStatus(newAddress);
+  // 🏞️ CHECK LAND STATUS FOR NEW WALLET (CACHE ONLY)
+  console.log('🔍 Checking land status for new wallet (cache only)...');
+  const cachedData = LAND_STATUS_CACHE.memoryCache.get(newAddress);
+  let hasLand = cachedData ? cachedData.hasLand : null;
+  
+  // If no cache, make ONE API call
+  if (hasLand === null) {
+    console.log('📡 No cache found for new wallet, making single API call...');
+    hasLand = await LAND_STATUS_CACHE.checkLandStatus(newAddress);
+  }
   
   if (hasLand === true) {
     console.log('✅ New wallet has land');
