@@ -1291,10 +1291,19 @@ async function autoCheckReferralCompletion() {
       // Show success notification
       showReferralCompletionNotification(result);
       
-      // Refresh user data to show updated rewards
+      // Update display without triggering land status checks
       setTimeout(() => {
         if (state.address) {
-          refreshStatus(true);
+          console.log('🎁 Referral completed - updating display without land checks');
+          // Just reload user data directly without refreshStatus to avoid infinite loops
+          loadInitialUserData().then(userData => {
+            if (userData) {
+              updateDisplay({
+                gold: userData.last_checkpoint_gold || 0,
+                inventory: userData.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 }
+              });
+            }
+          });
         }
       }, 2000);
       
