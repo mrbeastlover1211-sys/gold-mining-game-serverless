@@ -1,0 +1,4 @@
+Cache bust timestamp: 1765366800000
+Deployment ID: d1265a1
+Fixed files: main-fixed.js
+Purpose: Force CDN refresh for infinite loop fixes
