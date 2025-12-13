@@ -1568,16 +1568,11 @@ async function updatePromotersStatus() {
   const walletConnected = hasValidWallet && hasValidAddress;
   let hasLand = false;
   
-  console.log('📈 PROMOTER UPDATE: Enhanced wallet check -', {
-    hasWallet: !!state.wallet,
-    hasValidWallet,
+  console.log('📈 PROMOTER UPDATE: Simple wallet check -', {
     hasAddress: !!state.address,
-    hasValidAddress,
-    phantomConnected,
-    walletIsConnected: state.wallet?.isConnected,
-    publicKey: state.wallet?.publicKey?.toString() || window.solana?.publicKey?.toString(),
+    addressLength: state.address?.length,
     stateAddress: state.address?.slice(0, 8) + '...',
-    finalWalletConnected: walletConnected
+    walletConnected: walletConnected
   });
   
   // 🚩 CACHE-ONLY CHECK - NO API CALLS
@@ -1749,16 +1744,11 @@ async function updateReferralStatus() {
   const walletConnected = hasValidWallet && hasValidAddress;
   let hasLand = false;
   
-  console.log('🎁 REFERRAL UPDATE: Enhanced wallet check -', {
-    hasWallet: !!state.wallet,
-    hasValidWallet,
+  console.log('🎁 REFERRAL UPDATE: Simple wallet check -', {
     hasAddress: !!state.address,
-    hasValidAddress,
-    phantomConnected,
-    walletIsConnected: state.wallet?.isConnected,
-    publicKey: state.wallet?.publicKey?.toString() || window.solana?.publicKey?.toString(),
+    addressLength: state.address?.length,
     stateAddress: state.address?.slice(0, 8) + '...',
-    finalWalletConnected: walletConnected
+    walletConnected: walletConnected
   });
   
   // 🚩 CACHE-ONLY CHECK - NO API CALLS
