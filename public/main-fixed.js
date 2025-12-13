@@ -1561,17 +1561,15 @@ async function updatePromotersStatus() {
   console.log('🔒 EMERGENCY: Promoter update started with 10-second protection');
   
   try {
-  // 🔍 ENHANCED WALLET CONNECTION CHECK - Multiple validation methods
-  const phantomConnected = window.solana?.isConnected || window.phantom?.solana?.isConnected;
-  const hasValidWallet = !!(state.wallet && state.wallet.isConnected);
-  const hasValidAddress = !!(state.address && state.address.length > 20);
-  const walletConnected = hasValidWallet && hasValidAddress;
+  // 🔍 REAL-TIME WALLET CHECK - Works on refresh and wallet changes
+  const currentAddress = state.address || window.solana?.publicKey?.toString() || window.phantom?.solana?.publicKey?.toString();
+  const walletConnected = !!(currentAddress && currentAddress.length > 20);
   let hasLand = false;
   
-  console.log('📈 PROMOTER UPDATE: Simple wallet check -', {
-    hasAddress: !!state.address,
-    addressLength: state.address?.length,
+  console.log('📈 PROMOTER UPDATE: Real-time wallet check -', {
     stateAddress: state.address?.slice(0, 8) + '...',
+    phantomAddress: window.solana?.publicKey?.toString()?.slice(0, 8) + '...',
+    currentAddress: currentAddress?.slice(0, 8) + '...',
     walletConnected: walletConnected
   });
   
@@ -1579,16 +1577,16 @@ async function updatePromotersStatus() {
   if (walletConnected) {
     console.log('📈 PROMOTER UPDATE: Using memory cache only (no API)...');
     
-    // Check ONLY memory cache - never trigger API calls
-    const cachedData = LAND_STATUS_CACHE.memoryCache.get(state.address);
+    // Check cache with current address (not state.address)
+    const cachedData = LAND_STATUS_CACHE.memoryCache.get(currentAddress);
     if (cachedData && cachedData.hasLand !== undefined) {
       hasLand = cachedData.hasLand;
       console.log('📦 PROMOTER: Cache shows hasLand =', hasLand);
     } else {
       console.log('📦 PROMOTER: No valid cache found, checking localStorage...');
-      // Try localStorage as backup
+      // Try localStorage as backup with current address
       try {
-        const storageKey = `${LAND_STATUS_CACHE.CACHE_KEY_PREFIX}${state.address}`;
+        const storageKey = `${LAND_STATUS_CACHE.CACHE_KEY_PREFIX}${currentAddress}`;
         const stored = localStorage.getItem(storageKey);
         if (stored) {
           const data = JSON.parse(stored);
@@ -1737,14 +1735,15 @@ function closeReferralModal() {
 }
 
 async function updateReferralStatus() {
-  // 🔍 SIMPLE WALLET CONNECTION CHECK - Just check what we need
-  const walletConnected = !!(state.address && state.address.length > 20);
+  // 🔍 REAL-TIME WALLET CHECK - Works on refresh and wallet changes
+  const currentAddress = state.address || window.solana?.publicKey?.toString() || window.phantom?.solana?.publicKey?.toString();
+  const walletConnected = !!(currentAddress && currentAddress.length > 20);
   let hasLand = false;
   
-  console.log('🎁 REFERRAL UPDATE: Simple wallet check -', {
-    hasAddress: !!state.address,
-    addressLength: state.address?.length,
+  console.log('🎁 REFERRAL UPDATE: Real-time wallet check -', {
     stateAddress: state.address?.slice(0, 8) + '...',
+    phantomAddress: window.solana?.publicKey?.toString()?.slice(0, 8) + '...',
+    currentAddress: currentAddress?.slice(0, 8) + '...',
     walletConnected: walletConnected
   });
   
@@ -1752,16 +1751,16 @@ async function updateReferralStatus() {
   if (walletConnected) {
     console.log('🎁 REFERRAL UPDATE: Using memory cache only (no API)...');
     
-    // Check ONLY memory cache - never trigger API calls
-    const cachedData = LAND_STATUS_CACHE.memoryCache.get(state.address);
+    // Check cache with current address (not state.address)
+    const cachedData = LAND_STATUS_CACHE.memoryCache.get(currentAddress);
     if (cachedData && cachedData.hasLand !== undefined) {
       hasLand = cachedData.hasLand;
       console.log('📦 REFERRAL: Cache shows hasLand =', hasLand);
     } else {
       console.log('📦 REFERRAL: No valid cache found, checking localStorage...');
-      // Try localStorage as backup
+      // Try localStorage as backup with current address
       try {
-        const storageKey = `${LAND_STATUS_CACHE.CACHE_KEY_PREFIX}${state.address}`;
+        const storageKey = `${LAND_STATUS_CACHE.CACHE_KEY_PREFIX}${currentAddress}`;
         const stored = localStorage.getItem(storageKey);
         if (stored) {
           const data = JSON.parse(stored);
@@ -1792,7 +1791,7 @@ async function updateReferralStatus() {
       const response = await fetch('/api/generate-dynamic-referral', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ referrerAddress: state.address })
+        body: JSON.stringify({ referrerAddress: currentAddress })
       });
       
       const data = await response.json();
@@ -1800,11 +1799,11 @@ async function updateReferralStatus() {
         $('#referralLink').value = data.referralLink;
         console.log('🚀 Dynamic referral link:', data.referralLink);
       } else {
-        $('#referralLink').value = `${window.location.origin}/?ref=${state.address}`;
+        $('#referralLink').value = `${window.location.origin}/?ref=${currentAddress}`;
       }
     } catch (error) {
       console.log('⚠️ Using fallback referral link');
-      $('#referralLink').value = `${window.location.origin}/?ref=${state.address}`;
+      $('#referralLink').value = `${window.location.origin}/?ref=${currentAddress}`;
     }
   } else {
     $('#referralRequirement').style.display = 'block';
