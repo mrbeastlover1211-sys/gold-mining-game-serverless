@@ -1561,14 +1561,23 @@ async function updatePromotersStatus() {
   console.log('🔒 EMERGENCY: Promoter update started with 10-second protection');
   
   try {
-  const walletConnected = !!(state.wallet && state.address);
+  // 🔍 ENHANCED WALLET CONNECTION CHECK - Multiple validation methods
+  const phantomConnected = window.solana?.isConnected || window.phantom?.solana?.isConnected;
+  const hasValidWallet = !!(state.wallet && state.wallet.isConnected);
+  const hasValidAddress = !!(state.address && state.address.length > 20);
+  const walletConnected = hasValidWallet && hasValidAddress;
   let hasLand = false;
   
-  console.log('📈 PROMOTER UPDATE: Wallet check -', {
+  console.log('📈 PROMOTER UPDATE: Enhanced wallet check -', {
     hasWallet: !!state.wallet,
+    hasValidWallet,
     hasAddress: !!state.address,
-    address: state.address?.slice(0, 8) + '...',
-    walletConnected
+    hasValidAddress,
+    phantomConnected,
+    walletIsConnected: state.wallet?.isConnected,
+    publicKey: state.wallet?.publicKey?.toString() || window.solana?.publicKey?.toString(),
+    stateAddress: state.address?.slice(0, 8) + '...',
+    finalWalletConnected: walletConnected
   });
   
   // 🚩 CACHE-ONLY CHECK - NO API CALLS
@@ -1733,14 +1742,23 @@ function closeReferralModal() {
 }
 
 async function updateReferralStatus() {
-  const walletConnected = !!(state.wallet && state.address);
+  // 🔍 ENHANCED WALLET CONNECTION CHECK - Multiple validation methods
+  const phantomConnected = window.solana?.isConnected || window.phantom?.solana?.isConnected;
+  const hasValidWallet = !!(state.wallet && state.wallet.isConnected);
+  const hasValidAddress = !!(state.address && state.address.length > 20);
+  const walletConnected = hasValidWallet && hasValidAddress;
   let hasLand = false;
   
-  console.log('🎁 REFERRAL UPDATE: Wallet check -', {
+  console.log('🎁 REFERRAL UPDATE: Enhanced wallet check -', {
     hasWallet: !!state.wallet,
+    hasValidWallet,
     hasAddress: !!state.address,
-    address: state.address?.slice(0, 8) + '...',
-    walletConnected
+    hasValidAddress,
+    phantomConnected,
+    walletIsConnected: state.wallet?.isConnected,
+    publicKey: state.wallet?.publicKey?.toString() || window.solana?.publicKey?.toString(),
+    stateAddress: state.address?.slice(0, 8) + '...',
+    finalWalletConnected: walletConnected
   });
   
   // 🚩 CACHE-ONLY CHECK - NO API CALLS
@@ -2016,14 +2034,9 @@ async function checkAndTrackReferral() {
     if (referrerAddress && referrerAddress.length > 20) {
       console.log('🎁 Referral detected from:', referrerAddress.slice(0, 8) + '...');
       
-      // Track the referral session
-      const response = await fetch('/api/track-referral', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          referrer_address: referrerAddress,
-          timestamp: Math.floor(Date.now() / 1000)
-        })
+      // Track the referral session (using GET method as expected by API)
+      const response = await fetch(`/api/track-referral?ref=${encodeURIComponent(referrerAddress)}`, {
+        method: 'GET'
       });
       
       const result = await response.json();
