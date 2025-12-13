@@ -1588,7 +1588,25 @@ async function updatePromotersStatus() {
   if (walletConnected && hasLand) {
     $('#promotersRequirement').style.display = 'none';
     $('#promotersLinkSection').style.display = 'block';
-    $('#promotersLink').value = `https://gold-mining-game-serverless.vercel.app/?ref=${state.address}`;
+    // 🚀 Generate dynamic promoter link with latest deployment
+    try {
+      const response = await fetch('/api/generate-dynamic-referral', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ referrerAddress: state.address })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        $('#promotersLink').value = data.referralLink;
+        console.log('🚀 Dynamic promoter link:', data.referralLink);
+      } else {
+        $('#promotersLink').value = `${window.location.origin}/?ref=${state.address}`;
+      }
+    } catch (error) {
+      console.log('⚠️ Using fallback promoter link');
+      $('#promotersLink').value = `${window.location.origin}/?ref=${state.address}`;
+    }
   } else {
     $('#promotersRequirement').style.display = 'block';
     $('#promotersLinkSection').style.display = 'none';
@@ -1720,7 +1738,25 @@ async function updateReferralStatus() {
   if (walletConnected && hasLand) {
     $('#referralRequirement').style.display = 'none';
     $('#referralLinkSection').style.display = 'block';
-    $('#referralLink').value = `https://gold-mining-game-serverless.vercel.app/?ref=${state.address}`;
+    // 🚀 Generate dynamic referral link with latest deployment
+    try {
+      const response = await fetch('/api/generate-dynamic-referral', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ referrerAddress: state.address })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        $('#referralLink').value = data.referralLink;
+        console.log('🚀 Dynamic referral link:', data.referralLink);
+      } else {
+        $('#referralLink').value = `${window.location.origin}/?ref=${state.address}`;
+      }
+    } catch (error) {
+      console.log('⚠️ Using fallback referral link');
+      $('#referralLink').value = `${window.location.origin}/?ref=${state.address}`;
+    }
   } else {
     $('#referralRequirement').style.display = 'block';
     $('#referralLinkSection').style.display = 'none';
@@ -2076,7 +2112,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   const shareDiscord = $('#shareDiscord');
   if (shareDiscord) {
     shareDiscord.addEventListener('click', () => {
-      const text = "🚀 Join this amazing gold mining game and earn SOL! " + ($('#referralLink').value || 'https://gold-mining-game-serverless.vercel.app');
+      const text = "🚀 Join this amazing gold mining game and earn SOL! " + ($('#referralLink').value || `${window.location.origin}/?ref=${state.address || 'signup'}`);
       navigator.clipboard.writeText(text).then(() => {
         alert('Link copied! Paste it in Discord.');
       });
