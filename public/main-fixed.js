@@ -1561,8 +1561,15 @@ async function updatePromotersStatus() {
   console.log('🔒 EMERGENCY: Promoter update started with 10-second protection');
   
   try {
-  const walletConnected = !!state.address;
+  const walletConnected = !!(state.wallet && state.address);
   let hasLand = false;
+  
+  console.log('📈 PROMOTER UPDATE: Wallet check -', {
+    hasWallet: !!state.wallet,
+    hasAddress: !!state.address,
+    address: state.address?.slice(0, 8) + '...',
+    walletConnected
+  });
   
   // 🚩 CACHE-ONLY CHECK - NO API CALLS
   if (walletConnected) {
@@ -1570,13 +1577,28 @@ async function updatePromotersStatus() {
     
     // Check ONLY memory cache - never trigger API calls
     const cachedData = LAND_STATUS_CACHE.memoryCache.get(state.address);
-    if (cachedData) {
+    if (cachedData && cachedData.hasLand !== undefined) {
       hasLand = cachedData.hasLand;
       console.log('📦 PROMOTER: Cache shows hasLand =', hasLand);
     } else {
-      console.log('📦 PROMOTER: No cache found, assuming false');
-      hasLand = false;
+      console.log('📦 PROMOTER: No valid cache found, checking localStorage...');
+      // Try localStorage as backup
+      try {
+        const storageKey = `${LAND_STATUS_CACHE.CACHE_KEY_PREFIX}${state.address}`;
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
+          const data = JSON.parse(stored);
+          if (data && data.hasLand !== undefined) {
+            hasLand = data.hasLand;
+            console.log('📦 PROMOTER: localStorage shows hasLand =', hasLand);
+          }
+        }
+      } catch (e) {
+        console.log('📦 PROMOTER: localStorage check failed, assuming false');
+      }
     }
+  } else {
+    console.log('⚠️ PROMOTER: Wallet not properly connected');
   }
   
   $('#walletStatusPromoters').textContent = walletConnected ? '✅ Connected' : '❌ Not Connected';
@@ -1711,8 +1733,15 @@ function closeReferralModal() {
 }
 
 async function updateReferralStatus() {
-  const walletConnected = !!state.address;
+  const walletConnected = !!(state.wallet && state.address);
   let hasLand = false;
+  
+  console.log('🎁 REFERRAL UPDATE: Wallet check -', {
+    hasWallet: !!state.wallet,
+    hasAddress: !!state.address,
+    address: state.address?.slice(0, 8) + '...',
+    walletConnected
+  });
   
   // 🚩 CACHE-ONLY CHECK - NO API CALLS
   if (walletConnected) {
@@ -1720,13 +1749,28 @@ async function updateReferralStatus() {
     
     // Check ONLY memory cache - never trigger API calls
     const cachedData = LAND_STATUS_CACHE.memoryCache.get(state.address);
-    if (cachedData) {
+    if (cachedData && cachedData.hasLand !== undefined) {
       hasLand = cachedData.hasLand;
       console.log('📦 REFERRAL: Cache shows hasLand =', hasLand);
     } else {
-      console.log('📦 REFERRAL: No cache found, assuming false');
-      hasLand = false;
+      console.log('📦 REFERRAL: No valid cache found, checking localStorage...');
+      // Try localStorage as backup
+      try {
+        const storageKey = `${LAND_STATUS_CACHE.CACHE_KEY_PREFIX}${state.address}`;
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
+          const data = JSON.parse(stored);
+          if (data && data.hasLand !== undefined) {
+            hasLand = data.hasLand;
+            console.log('📦 REFERRAL: localStorage shows hasLand =', hasLand);
+          }
+        }
+      } catch (e) {
+        console.log('📦 REFERRAL: localStorage check failed, assuming false');
+      }
     }
+  } else {
+    console.log('⚠️ REFERRAL: Wallet not properly connected');
   }
   
   $('#walletStatusReferral').textContent = walletConnected ? '✅ Connected' : '❌ Not Connected';
