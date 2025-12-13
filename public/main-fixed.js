@@ -1737,11 +1737,8 @@ function closeReferralModal() {
 }
 
 async function updateReferralStatus() {
-  // 🔍 ENHANCED WALLET CONNECTION CHECK - Multiple validation methods
-  const phantomConnected = window.solana?.isConnected || window.phantom?.solana?.isConnected;
-  const hasValidWallet = !!(state.wallet && state.wallet.isConnected);
-  const hasValidAddress = !!(state.address && state.address.length > 20);
-  const walletConnected = hasValidWallet && hasValidAddress;
+  // 🔍 SIMPLE WALLET CONNECTION CHECK - Just check what we need
+  const walletConnected = !!(state.address && state.address.length > 20);
   let hasLand = false;
   
   console.log('🎁 REFERRAL UPDATE: Simple wallet check -', {
