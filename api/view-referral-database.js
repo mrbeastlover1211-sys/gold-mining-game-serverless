@@ -1,16 +1,11 @@
 // 👁️ VIEW REFERRAL DATABASE - Direct database viewer for address storage
+import { getPool } from '../database.js';
+
 export default async function handler(req, res) {
   try {
     console.log('👁️ Viewing referral database contents...');
     
-    const { Pool } = await import('pg');
-    
-    const pool = new Pool({
-      connectionString: "postgresql://neondb_owner:npg_2OmoVZ9uDnqA@ep-jolly-breeze-a4icmodb-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require",
-      ssl: { rejectUnauthorized: false },
-      max: 2
-    });
-    
+    const pool = await getPool();
     const client = await pool.connect();
     
     const { address } = req.query;

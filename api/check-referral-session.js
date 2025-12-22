@@ -1,4 +1,6 @@
 // 🔍 CHECK REFERRAL SESSION - Find referrer from session when wallet connects
+import { getPool } from '../database.js';
+
 export default async function handler(req, res) {
   try {
     console.log('🔍 Checking referral session...');
@@ -36,15 +38,8 @@ export default async function handler(req, res) {
       });
     }
     
-    // Check database for referral visit
-    const { Pool } = await import('pg');
-    
-    const pool = new Pool({
-      connectionString: "postgresql://neondb_owner:npg_2OmoVZ9uDnqA@ep-jolly-breeze-a4icmodb-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require",
-      ssl: { rejectUnauthorized: false },
-      max: 2
-    });
-    
+    // Check database for referral visit using shared pool
+    const pool = await getPool();
     const client = await pool.connect();
     
     try {
@@ -117,7 +112,6 @@ export default async function handler(req, res) {
       console.log('📋 Referral session linked to wallet address');
       
       client.release();
-      await pool.end();
       
       return res.json({
         success: true,

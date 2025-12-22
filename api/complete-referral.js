@@ -1,4 +1,6 @@
 // ✅ COMPLETE REFERRAL - v4 FINAL FIX - Automatic rewards working
+import { getPool } from '../database.js';
+
 export default async function handler(req, res) {
   try {
     console.log('🎁 Processing referral completion...');
@@ -17,14 +19,7 @@ export default async function handler(req, res) {
     
     console.log('👤 Checking referral completion for:', address.slice(0, 8) + '...');
     
-    const { Pool } = await import('pg');
-    
-    const pool = new Pool({
-      connectionString: "postgresql://neondb_owner:npg_2OmoVZ9uDnqA@ep-jolly-breeze-a4icmodb-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require",
-      ssl: { rejectUnauthorized: false },
-      max: 2
-    });
-    
+    const pool = await getPool();
     const client = await pool.connect();
     
     try {
@@ -228,7 +223,6 @@ export default async function handler(req, res) {
       }
       
       client.release();
-      await pool.end();
       
       return res.json({
         success: true,
