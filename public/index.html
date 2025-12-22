@@ -320,12 +320,18 @@
               try {
                 const statsRes = await fetch(`/api/referral-status?address=${currentAddress}`);
                 const statsData = await statsRes.json();
-                if (statsData.success) {
+                if (statsData.success && statsData.referrer_stats) {
                   const totalEl = document.getElementById('totalReferrals');
-                  if (totalEl) totalEl.textContent = statsData.referralCount || 0;
+                  if (totalEl) totalEl.textContent = statsData.referrer_stats.total_referrals || 0;
+                  
+                  console.log('📊 Referral stats updated:', {
+                    total: statsData.referrer_stats.total_referrals,
+                    completed: statsData.referrer_stats.completed_referrals,
+                    pending: statsData.referrer_stats.pending_referrals
+                  });
                 }
               } catch (e) {
-                console.log('⚠️ EMBEDDED: Could not fetch referral stats');
+                console.log('⚠️ EMBEDDED: Could not fetch referral stats:', e);
               }
             } else {
               if (req) req.style.display = 'block';
