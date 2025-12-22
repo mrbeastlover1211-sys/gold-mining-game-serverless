@@ -1409,9 +1409,13 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
     return;
   }
 
-  const currentGold = state.status.gold || 0;
+  // Calculate current gold including mined gold (same as UI display)
+  const currentGold = state.checkpoint ? calculateGoldFromCheckpoint(state.checkpoint) : (state.status.gold || 0);
+  
+  console.log(`💰 Current gold check: ${currentGold.toFixed(2)} (checkpoint-based), need: ${goldCost}`);
+  
   if (currentGold < goldCost) {
-    alert(`Not enough gold! You need ${goldCost.toLocaleString()} gold but only have ${currentGold.toLocaleString()}`);
+    alert(`Not enough gold! You need ${goldCost.toLocaleString()} gold but only have ${currentGold.toFixed(0).toLocaleString()}`);
     return;
   }
 
