@@ -316,22 +316,41 @@
                 if (input) input.value = `${window.location.origin}/?ref=${currentAddress}`;
               }
               
-              // Update referral stats
-              try {
-                const statsRes = await fetch(`/api/referral-status?address=${currentAddress}`);
-                const statsData = await statsRes.json();
-                if (statsData.success && statsData.referrer_stats) {
-                  const totalEl = document.getElementById('totalReferrals');
-                  if (totalEl) totalEl.textContent = statsData.referrer_stats.total_referrals || 0;
-                  
-                  console.log('📊 Referral stats updated:', {
-                    total: statsData.referrer_stats.total_referrals,
-                    completed: statsData.referrer_stats.completed_referrals,
-                    pending: statsData.referrer_stats.pending_referrals
-                  });
+              // Update referral stats (with 60-second cache)
+              const cacheKey = `referral_stats_${currentAddress}`;
+              const cachedData = sessionStorage.getItem(cacheKey);
+              const cacheTime = sessionStorage.getItem(`${cacheKey}_time`);
+              const now = Date.now();
+              
+              // Use cache if less than 60 seconds old
+              if (cachedData && cacheTime && (now - parseInt(cacheTime)) < 60000) {
+                const statsData = JSON.parse(cachedData);
+                const totalEl = document.getElementById('totalReferrals');
+                if (totalEl) totalEl.textContent = statsData.referrer_stats.total_referrals || 0;
+                console.log('📊 Referral stats from cache:', statsData.referrer_stats);
+              } else {
+                // Fetch fresh data
+                try {
+                  const statsRes = await fetch(`/api/referral-status?address=${currentAddress}`);
+                  const statsData = await statsRes.json();
+                  if (statsData.success && statsData.referrer_stats) {
+                    // Update UI
+                    const totalEl = document.getElementById('totalReferrals');
+                    if (totalEl) totalEl.textContent = statsData.referrer_stats.total_referrals || 0;
+                    
+                    // Cache for 60 seconds
+                    sessionStorage.setItem(cacheKey, JSON.stringify(statsData));
+                    sessionStorage.setItem(`${cacheKey}_time`, now.toString());
+                    
+                    console.log('📊 Referral stats updated:', {
+                      total: statsData.referrer_stats.total_referrals,
+                      completed: statsData.referrer_stats.completed_referrals,
+                      pending: statsData.referrer_stats.pending_referrals
+                    });
+                  }
+                } catch (e) {
+                  console.log('⚠️ EMBEDDED: Could not fetch referral stats:', e);
                 }
-              } catch (e) {
-                console.log('⚠️ EMBEDDED: Could not fetch referral stats:', e);
               }
             } else {
               if (req) req.style.display = 'block';
