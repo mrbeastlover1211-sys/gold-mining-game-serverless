@@ -276,6 +276,7 @@ export default async function handler(req, res) {
     
   } catch (error) {
     console.error('❌ Complete referral error:', error);
+    if (client) client.release();
     return res.json({
       success: false,
       error: error.message,

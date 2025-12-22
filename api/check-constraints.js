@@ -32,7 +32,6 @@ export default async function handler(req, res) {
     console.log('🔒 PostgreSQL constraint definition:', pgConstraints.rows);
     
     client.release();
-    await pool.end();
     
     return res.json({
       test: 'check_constraints',

@@ -33,7 +33,6 @@ export default async function handler(req, res) {
       console.log('Found transactions:', transactions.rows.length);
       
       client.release();
-      await pool.end();
       
       return res.json({
         status: 'transaction_check',

@@ -90,6 +90,7 @@ export default async function handler(req, res) {
     
   } catch (error) {
     console.error('❌ Link referral session error:', error);
+    if (client) client.release();
     return res.json({
       success: false,
       error: error.message

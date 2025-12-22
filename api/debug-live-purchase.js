@@ -29,7 +29,6 @@ export default async function handler(req, res) {
     `, [address]);
     
     client.release();
-    await pool.end();
     
     return res.json({
       debug_type: 'live_purchase_check',

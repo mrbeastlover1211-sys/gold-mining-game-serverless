@@ -27,7 +27,6 @@ export default async function handler(req, res) {
     console.log('📋 Full table schema:', columns.rows);
     
     client.release();
-    await pool.end();
     
     // Test data we're trying to insert
     const address = 'CAAKbU2dz8LWe1CVntbShBHuL8JtpLMztzSuMboP8YLG';
