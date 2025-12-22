@@ -1453,6 +1453,59 @@ body::before {
   font-weight: 500;
 }
 
+.pickaxe-roi {
+  font-size: 7px;
+  font-weight: 700;
+  margin-top: 3px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  display: inline-block;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  animation: roiPulse 2s ease-in-out infinite;
+}
+
+.pickaxe-roi.roi-slow {
+  background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
+  color: white;
+  border: 1px solid rgba(255, 107, 107, 0.4);
+}
+
+.pickaxe-roi.roi-medium {
+  background: linear-gradient(135deg, #ffd93d 0%, #f59f00 100%);
+  color: #1a1a1a;
+  border: 1px solid rgba(255, 217, 61, 0.6);
+}
+
+.pickaxe-roi.roi-fast {
+  background: linear-gradient(135deg, #51cf66 0%, #2f9e44 100%);
+  color: white;
+  border: 1px solid rgba(81, 207, 102, 0.4);
+}
+
+.pickaxe-roi.roi-instant {
+  background: linear-gradient(135deg, #00d4aa 0%, #00a884 100%);
+  color: white;
+  border: 1px solid rgba(0, 212, 170, 0.4);
+  animation: roiGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes roiPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+@keyframes roiGlow {
+  0%, 100% { 
+    box-shadow: 0 2px 6px rgba(0, 212, 170, 0.3);
+  }
+  50% { 
+    box-shadow: 0 3px 15px rgba(0, 212, 170, 0.8), 0 0 25px rgba(0, 212, 170, 0.4);
+    transform: scale(1.05);
+  }
+}
+
 .pickaxe-price {
   font-size: 9px;
   color: var(--secondary);
