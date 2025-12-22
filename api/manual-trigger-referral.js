@@ -38,7 +38,7 @@ export default async function handler(req, res) {
       const alreadyRewarded = await client.query(`
         SELECT * FROM referrals 
         WHERE referred_address = $1 
-        AND status = 'completed_referral'
+        AND status IN ('completed', 'active', 'completed_referral')
       `, [referredAddress]);
       
       if (alreadyRewarded.rows.length > 0) {
@@ -86,23 +86,23 @@ export default async function handler(req, res) {
         });
       }
       
-      // Give reward
+      // Give reward (ensure numeric conversion)
       const currentReferrals = referrerData.total_referrals || 0;
       const rewardPickaxeType = 'silver';
       const rewardPickaxeCount = 1;
       
       referrerData.total_referrals = currentReferrals + 1;
-      referrerData.referral_rewards_earned = (referrerData.referral_rewards_earned || 0) + 0.01;
-      referrerData.silver_pickaxes = (referrerData.silver_pickaxes || 0) + rewardPickaxeCount;
-      referrerData.total_mining_power = (referrerData.total_mining_power || 0) + 1;
+      referrerData.referral_rewards_earned = parseFloat(referrerData.referral_rewards_earned || 0) + 0.01;
+      referrerData.silver_pickaxes = parseInt(referrerData.silver_pickaxes || 0) + rewardPickaxeCount;
+      referrerData.total_mining_power = parseInt(referrerData.total_mining_power || 0) + 1;
       
       await saveUserOptimized(referrerAddress, referrerData);
       
-      // Create referral record
+      // Create referral record (use 'completed' status)
       await client.query(`
         INSERT INTO referrals (referrer_address, referred_address, reward_amount, reward_type, status)
         VALUES ($1, $2, $3, $4, $5)
-      `, [referrerAddress, referredAddress, 0.01, 'sol', 'completed_referral']);
+      `, [referrerAddress, referredAddress, 0.01, 'sol', 'completed']);
       
       client.release();
       
