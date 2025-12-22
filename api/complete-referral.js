@@ -1,5 +1,5 @@
 // ✅ COMPLETE REFERRAL - v4 FINAL FIX - Automatic rewards working
-import { getPool, getUserOptimized, saveUserOptimized } from '../database.js';
+import { pool, getUserOptimized, saveUserOptimized } from '../database.js';
 
 export default async function handler(req, res) {
   try {
@@ -19,7 +19,6 @@ export default async function handler(req, res) {
     
     console.log('👤 Checking referral completion for:', address.slice(0, 8) + '...');
     
-    const pool = await getPool();
     const client = await pool.connect();
     
     try {

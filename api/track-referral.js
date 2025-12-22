@@ -31,8 +31,7 @@ export default async function handler(req, res) {
     });
     
     // Store in database using shared pool
-    const { getPool } = await import('../database.js');
-    const pool = await getPool();
+    const { pool } = await import('../database.js');
     const client = await pool.connect();
     
     // Create referral_visits table if it doesn't exist

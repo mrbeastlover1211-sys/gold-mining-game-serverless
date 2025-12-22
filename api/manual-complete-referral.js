@@ -1,8 +1,7 @@
 // 🎁 MANUAL COMPLETE REFERRAL - Direct referral completion bypassing schema issues
-import { getPool } from '../database.js';
+import { pool } from '../database.js';
 
 export default async function handler(req, res) {
-  const pool = await getPool();
   const client = await pool.connect();
   
   try {

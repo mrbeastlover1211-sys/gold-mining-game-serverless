@@ -1,5 +1,5 @@
 // 🔗 LINK REFERRAL SESSION - Create session from localStorage backup
-import { getPool } from '../database.js';
+import { pool } from '../database.js';
 
 export default async function handler(req, res) {
   try {
@@ -25,7 +25,6 @@ export default async function handler(req, res) {
       });
     }
     
-    const pool = await getPool();
     const client = await pool.connect();
     
     try {

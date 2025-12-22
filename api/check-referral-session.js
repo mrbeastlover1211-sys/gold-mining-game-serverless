@@ -1,5 +1,5 @@
 // 🔍 CHECK REFERRAL SESSION - Find referrer from session when wallet connects
-import { getPool } from '../database.js';
+import { pool } from '../database.js';
 
 export default async function handler(req, res) {
   try {
@@ -39,7 +39,6 @@ export default async function handler(req, res) {
     }
     
     // Check database for referral visit using shared pool
-    const pool = await getPool();
     const client = await pool.connect();
     
     try {

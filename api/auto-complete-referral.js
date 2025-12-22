@@ -1,5 +1,5 @@
 // 🤖 AUTO COMPLETE REFERRAL - Automatic referral completion without manual intervention
-import { getPool } from '../database.js';
+import { pool } from '../database.js';
 
 export default async function handler(req, res) {
   try {
@@ -17,7 +17,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing wallet address' });
     }
     
-    const pool = await getPool();
     const client = await pool.connect();
     
     try {

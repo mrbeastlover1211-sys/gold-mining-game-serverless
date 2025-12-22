@@ -1,11 +1,10 @@
 // 👁️ VIEW REFERRAL DATABASE - Direct database viewer for address storage
-import { getPool } from '../database.js';
+import { pool } from '../database.js';
 
 export default async function handler(req, res) {
   try {
     console.log('👁️ Viewing referral database contents...');
     
-    const pool = await getPool();
     const client = await pool.connect();
     
     const { address } = req.query;

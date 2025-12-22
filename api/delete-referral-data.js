@@ -1,8 +1,7 @@
 // 🗑️ DELETE REFERRAL DATA - Simple direct deletion
-import { getPool } from '../database.js';
+import { pool } from '../database.js';
 
 export default async function handler(req, res) {
-  const pool = await getPool();
   const client = await pool.connect();
   
   try {

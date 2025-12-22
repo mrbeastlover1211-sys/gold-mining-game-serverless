@@ -1,11 +1,10 @@
 // 🔍 DEBUG REFERRAL SYSTEM - Find what's wrong
-import { getPool } from '../database.js';
+import { pool } from '../database.js';
 
 export default async function handler(req, res) {
   try {
     console.log('🔍 Debugging referral system...');
     
-    const pool = await getPool();
     const client = await pool.connect();
     
     console.log('📊 Checking referrals table...');
