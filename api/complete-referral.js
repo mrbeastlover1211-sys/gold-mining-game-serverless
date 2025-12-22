@@ -31,7 +31,7 @@ export default async function handler(req, res) {
         AND NOT EXISTS (
           SELECT 1 FROM referrals 
           WHERE referrals.referred_address = $1 
-          AND referrals.status = 'completed_referral'
+          AND referrals.status IN ('completed', 'active', 'completed_referral')
         )
       `, [address]);
       
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
         const alreadyCompleted = await client.query(`
           SELECT * FROM referrals 
           WHERE referred_address = $1 
-          AND status = 'completed_referral'
+          AND status IN ('completed', 'active', 'completed_referral')
         `, [address]);
         
         if (alreadyCompleted.rows.length > 0) {
@@ -206,12 +206,12 @@ export default async function handler(req, res) {
       // Update referrer using same system as status API
       console.log('🎁 Distributing rewards to referrer...');
       
-      // Update referrer data
+      // Update referrer data (ensure numeric conversion)
       referrerData.total_referrals = currentReferrals + 1;
-      referrerData.referral_rewards_earned = (referrerData.referral_rewards_earned || 0) + 0.01;
-      referrerData[`${rewardPickaxeType}_pickaxes`] = (referrerData[`${rewardPickaxeType}_pickaxes`] || 0) + rewardPickaxeCount;
-      referrerData.last_checkpoint_gold = (referrerData.last_checkpoint_gold || 0) + goldReward;
-      referrerData.total_mining_power = (referrerData.total_mining_power || 0) + additionalMiningPower;
+      referrerData.referral_rewards_earned = parseFloat(referrerData.referral_rewards_earned || 0) + 0.01;
+      referrerData[`${rewardPickaxeType}_pickaxes`] = parseInt(referrerData[`${rewardPickaxeType}_pickaxes`] || 0) + rewardPickaxeCount;
+      referrerData.last_checkpoint_gold = parseFloat(referrerData.last_checkpoint_gold || 0) + goldReward;
+      referrerData.total_mining_power = parseInt(referrerData.total_mining_power || 0) + additionalMiningPower;
       
       // Save updated referrer data
       try {
@@ -231,15 +231,24 @@ export default async function handler(req, res) {
         WHERE session_id = $1
       `, [referralVisit.session_id]);
       
-      // 7. Create referral record for tracking
+      // 7. Create referral record for tracking (use 'completed' or 'active' based on schema constraint)
       try {
         await client.query(`
           INSERT INTO referrals (referrer_address, referred_address, reward_amount, reward_type, status)
           VALUES ($1, $2, $3, $4, $5)
-        `, [referrerAddress, address, 0.01, 'sol', 'completed_referral']);
+        `, [referrerAddress, address, 0.01, 'sol', 'completed']);
         console.log('✅ Referral record created');
       } catch (referralRecordError) {
-        console.log('ℹ️ Referral record creation info:', referralRecordError.message);
+        // Try with 'active' if 'completed' fails
+        try {
+          await client.query(`
+            INSERT INTO referrals (referrer_address, referred_address, reward_amount, reward_type, status)
+            VALUES ($1, $2, $3, $4, $5)
+          `, [referrerAddress, address, 0.01, 'sol', 'active']);
+          console.log('✅ Referral record created with active status');
+        } catch (retryError) {
+          console.log('ℹ️ Referral record creation failed:', retryError.message);
+        }
       }
       
       client.release();
