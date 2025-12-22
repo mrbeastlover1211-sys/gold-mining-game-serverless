@@ -30,15 +30,9 @@ export default async function handler(req, res) {
       timestamp: timestamp
     });
     
-    // Store in database
-    const { Pool } = await import('pg');
-    
-    const pool = new Pool({
-      connectionString: "postgresql://neondb_owner:npg_2OmoVZ9uDnqA@ep-jolly-breeze-a4icmodb-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require",
-      ssl: { rejectUnauthorized: false },
-      max: 2
-    });
-    
+    // Store in database using shared pool
+    const { getPool } = await import('../database.js');
+    const pool = await getPool();
     const client = await pool.connect();
     
     // Create referral_visits table if it doesn't exist
@@ -107,7 +101,6 @@ export default async function handler(req, res) {
     }
     
     client.release();
-    await pool.end();
     
     // Return tracking pixel (1x1 transparent GIF)
     const pixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');

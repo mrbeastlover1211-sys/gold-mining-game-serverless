@@ -1,5 +1,5 @@
 // ✅ COMPLETE REFERRAL - v4 FINAL FIX - Automatic rewards working
-import { getPool } from '../database.js';
+import { getPool, getUserOptimized, saveUserOptimized } from '../database.js';
 
 export default async function handler(req, res) {
   try {
@@ -112,7 +112,6 @@ export default async function handler(req, res) {
       
       let referrerData;
       try {
-        const { getUserOptimized } = await import('../database.js');
         referrerData = await getUserOptimized(referrerAddress, false);
         
         console.log('📊 Referrer lookup result:', {
@@ -194,7 +193,6 @@ export default async function handler(req, res) {
       
       // Save updated referrer data
       try {
-        const { saveUserOptimized } = await import('../database.js');
         await saveUserOptimized(referrerAddress, referrerData);
         console.log('✅ Referrer rewards distributed successfully');
       } catch (saveError) {
