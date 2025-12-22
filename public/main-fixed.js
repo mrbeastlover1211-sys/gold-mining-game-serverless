@@ -1433,9 +1433,47 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
       $('#modalStoreMsg').textContent = `✅ Successfully purchased ${pickaxeType} pickaxe with gold!`;
       $('#modalStoreMsg').style.color = '#4CAF50';
       
-      // Update display
+      // Update state and UI immediately with the new gold value from API
+      if (result.newGold !== undefined) {
+        state.status.gold = result.newGold;
+        
+        // Update checkpoint with new gold value for mining calculations
+        if (result.checkpoint) {
+          state.checkpoint = {
+            total_mining_power: result.checkpoint.total_mining_power,
+            checkpoint_timestamp: result.checkpoint.checkpoint_timestamp,
+            last_checkpoint_gold: result.checkpoint.last_checkpoint_gold
+          };
+          
+          // Restart mining engine with updated checkpoint
+          if (state.optimizedMiningEngine && state.checkpoint.total_mining_power > 0) {
+            state.optimizedMiningEngine.checkpoint = state.checkpoint;
+          }
+        }
+        
+        // Update inventory if returned
+        if (result.inventory) {
+          state.status.inventory = result.inventory;
+        }
+        
+        // Update UI with new values
+        updateDisplay({
+          gold: result.newGold,
+          inventory: result.inventory || state.status.inventory,
+          checkpoint: state.checkpoint
+        });
+        
+        console.log(`✅ Gold deducted: ${currentGold.toFixed(2)} → ${result.newGold.toFixed(2)}`);
+      }
+      
+      // Also refresh from server to ensure consistency
       refreshStatus(true);
       updateGoldStoreModal();
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        $('#modalStoreMsg').textContent = '';
+      }, 3000);
     } else {
       throw new Error(result.error || 'Purchase failed');
     }
@@ -1444,6 +1482,11 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
     console.error('❌ Gold purchase failed:', error);
     $('#modalStoreMsg').textContent = `❌ Purchase failed: ${error.message}`;
     $('#modalStoreMsg').style.color = '#f44336';
+    
+    // Clear error message after 5 seconds
+    setTimeout(() => {
+      $('#modalStoreMsg').textContent = '';
+    }, 5000);
   });
 }
 
