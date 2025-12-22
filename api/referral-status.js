@@ -1,5 +1,5 @@
 // 📊 REFERRAL STATUS API - Check referral statistics and eligibility
-import { getPool } from '../database.js';
+import { pool } from '../database.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   console.log('📊 Checking referral status for:', address.slice(0, 8) + '...');
 
   try {
-    const pool = await getPool();
+    // pool already imported
     const client = await pool.connect();
 
     try {

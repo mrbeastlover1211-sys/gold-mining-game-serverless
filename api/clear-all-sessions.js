@@ -1,5 +1,5 @@
 // 🗑️ CLEAR ALL REFERRAL SESSIONS - Fresh Start
-import { getPool } from '../database.js';
+import { pool } from '../database.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   try {
     console.log('🗑️ Clearing ALL referral sessions for fresh start...');
     
-    const pool = await getPool();
+    // pool already imported
     const client = await pool.connect();
 
     try {

@@ -1,5 +1,5 @@
 // 🧪 MANUAL REFERRAL TEST - Test the referral system manually
-import { getPool } from '../database.js';
+import { pool } from '../database.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   console.log('🧪 Manual referral test:', { referrer_address, referee_address, action });
 
   try {
-    const pool = await getPool();
+    // pool already imported
     const client = await pool.connect();
 
     try {

@@ -1,5 +1,5 @@
 // 🗑️ FORCE CLEAR ALL LAND OWNERSHIP - Complete Database Reset
-import { getPool } from '../database.js';
+import { pool } from '../database.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   try {
     console.log('🗑️ Starting COMPLETE land ownership clearing...');
     
-    const pool = await getPool();
+    // pool already imported
     const startTime = Date.now();
     
     // 1. Clear memory cache completely
@@ -113,7 +113,7 @@ export default async function handler(req, res) {
 // Test endpoint - call this to verify clearing worked
 export async function verifyLandClearing() {
   try {
-    const pool = await getPool();
+    // pool already imported
     
     const result = await pool.query(`
       SELECT 

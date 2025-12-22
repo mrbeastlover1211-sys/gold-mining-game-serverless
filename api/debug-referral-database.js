@@ -1,5 +1,5 @@
 // 🔍 DEBUG REFERRAL DATABASE - Check actual database state
-import { getPool } from '../database.js';
+import { pool } from '../database.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   console.log('🔍 DEBUG: Checking referral database state...');
 
   try {
-    const pool = await getPool();
+    // pool already imported
     const client = await pool.connect();
 
     try {

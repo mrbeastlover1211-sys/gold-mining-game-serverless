@@ -1,5 +1,5 @@
 // 🎁 COMPLETE REFERRAL SYSTEM - Recreated with proper session tracking and rewards
-import { getPool } from '../database.js';
+import { pool } from '../database.js';
 
 export default async function handler(req, res) {
   console.log('🎁 Complete Referral System Handler');
@@ -35,7 +35,7 @@ async function handleGetReferralStatus(query, res) {
 
   console.log('🔍 Checking referral status for:', address.slice(0, 8) + '...');
 
-  const pool = await getPool();
+  // pool already imported
   const client = await pool.connect();
 
   try {
@@ -132,7 +132,7 @@ async function handleCompleteReferral(body, res) {
   console.log('🎁 Processing referral completion for:', address.slice(0, 8) + '...', 
               'Force:', force, 'Trigger:', trigger);
 
-  const pool = await getPool();
+  // pool already imported
   const client = await pool.connect();
 
   try {
