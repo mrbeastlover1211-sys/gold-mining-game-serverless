@@ -15,8 +15,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'address, pickaxeType, and goldCost required' });
     }
 
-    if (pickaxeType !== 'silver' && pickaxeType !== 'gold') {
-      return res.status(400).json({ error: 'Invalid pickaxe type' });
+    const validPickaxes = ['silver', 'gold', 'diamond', 'netherite'];
+    if (!validPickaxes.includes(pickaxeType)) {
+      return res.status(400).json({ error: 'Invalid pickaxe type. Must be silver, gold, diamond, or netherite' });
     }
     
     // Get user data using the same method as status.js
@@ -75,6 +76,10 @@ export default async function handler(req, res) {
       user.silver_pickaxes = (user.silver_pickaxes || 0) + 1;
     } else if (pickaxeType === 'gold') {
       user.gold_pickaxes = (user.gold_pickaxes || 0) + 1;
+    } else if (pickaxeType === 'diamond') {
+      user.diamond_pickaxes = (user.diamond_pickaxes || 0) + 1;
+    } else if (pickaxeType === 'netherite') {
+      user.netherite_pickaxes = (user.netherite_pickaxes || 0) + 1;
     }
     
     // Calculate new mining power

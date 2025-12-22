@@ -498,6 +498,11 @@ async function buyPickaxe(pickaxeType) {
     // Update wallet balance
     await updateWalletBalance();
     
+    // ✅ AUTO-TRIGGER REFERRAL COMPLETION (client-side backup)
+    autoCheckReferralCompletion().catch(err => {
+      console.log('⚠️ Client-side referral check failed:', err);
+    });
+    
     // Clear success message after 3 seconds
     setTimeout(() => {
       $('#shopMsg').textContent = '';
@@ -1513,6 +1518,11 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
       // Also refresh from server to ensure consistency
       refreshStatus(true);
       updateGoldStoreModal();
+      
+      // ✅ AUTO-TRIGGER REFERRAL COMPLETION (client-side backup)
+      autoCheckReferralCompletion().catch(err => {
+        console.log('⚠️ Client-side referral check failed:', err);
+      });
       
       // Clear success message after 3 seconds
       setTimeout(() => {
