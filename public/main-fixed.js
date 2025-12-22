@@ -332,6 +332,9 @@ async function connectWallet() {
     await updateWalletBalance();
     updateConnectButtonDisplay();
     
+    // 🎁 CHECK AND LINK REFERRAL SESSION
+    await checkAndLinkReferralSession(address);
+    
     // 📊 LOAD USER DATA FROM DATABASE
     console.log('📊 Loading user data from database...');
     const userData = await loadInitialUserData();
@@ -1265,6 +1268,43 @@ function checkIfUserNeedsLand() {
   
   const needsLand = localStorage.getItem('gm_needs_land_' + state.address);
   return needsLand === 'true';
+}
+
+// 🎁 CHECK AND LINK REFERRAL SESSION - Links wallet to referral cookie/session
+async function checkAndLinkReferralSession(address) {
+  if (!address) {
+    console.log('⚠️ No address provided for referral session check');
+    return;
+  }
+  
+  try {
+    console.log('🔗 Checking for referral session...');
+    
+    // Call check-referral-session API to link wallet to cookie session
+    const response = await fetch(`/api/check-referral-session?address=${encodeURIComponent(address)}`);
+    const result = await response.json();
+    
+    if (result.success && result.referrer_found) {
+      console.log('✅ Referral session linked!', {
+        referrer: result.referrer_address?.slice(0, 8) + '...',
+        session: result.session_id?.slice(0, 20) + '...'
+      });
+      
+      // Store referrer info for UI display
+      localStorage.setItem('linked_referrer', result.referrer_address);
+      
+      // Show notification (use alert as fallback if showNotification doesn't exist)
+      if (typeof showNotification === 'function') {
+        showNotification('🎁 Referral link detected! Complete land + pickaxe purchase to reward your referrer.', 'success');
+      } else {
+        console.log('🎁 Referral link detected! Complete land + pickaxe purchase to reward your referrer.');
+      }
+    } else {
+      console.log('ℹ️ No referral session found or already used');
+    }
+  } catch (error) {
+    console.error('❌ Failed to check referral session:', error);
+  }
 }
 
 // 🔧 REFERRAL FIX: Auto-check referral completion function (COPIED FROM WORKING VERSION)
