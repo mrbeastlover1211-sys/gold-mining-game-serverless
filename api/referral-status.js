@@ -23,8 +23,8 @@ export default async function handler(req, res) {
       const referrerStats = await client.query(`
         SELECT 
           COUNT(*) as total_referrals,
-          COALESCE(SUM(CASE WHEN reward_given = true THEN 1 ELSE 0 END), 0) as completed_referrals,
-          COALESCE(SUM(CASE WHEN reward_given = true THEN gold_rewarded ELSE 0 END), 0) as total_gold_earned
+          COALESCE(SUM(CASE WHEN status IN ('completed', 'active') THEN 1 ELSE 0 END), 0) as completed_referrals,
+          COALESCE(SUM(CASE WHEN status IN ('completed', 'active') THEN reward_amount ELSE 0 END), 0) as total_gold_earned
         FROM referrals 
         WHERE referrer_address = $1
       `, [address]);
@@ -33,8 +33,8 @@ export default async function handler(req, res) {
       const refereeStatus = await client.query(`
         SELECT r.*, rv.referrer_address, rv.session_id
         FROM referrals r
-        RIGHT JOIN referral_visits rv ON rv.converted_address = r.referee_address
-        WHERE r.referee_address = $1 OR rv.converted_address = $1
+        RIGHT JOIN referral_visits rv ON rv.converted_address = r.referred_address
+        WHERE r.referred_address = $1 OR rv.converted_address = $1
         ORDER BY COALESCE(r.created_at, rv.converted_timestamp) DESC
         LIMIT 1
       `, [address]);
@@ -49,8 +49,8 @@ export default async function handler(req, res) {
           AND rv.expires_at > CURRENT_TIMESTAMP
           AND NOT EXISTS (
             SELECT 1 FROM referrals r 
-            WHERE r.referee_address = rv.converted_address 
-              AND r.reward_given = true
+            WHERE r.referred_address = rv.converted_address 
+              AND r.status IN ('completed', 'active')
           )
       `, [address]);
 
@@ -82,8 +82,8 @@ export default async function handler(req, res) {
         was_referred: wasReferred,
         referral_details: wasReferred ? {
           referrer_address: refereeStatus.rows[0].referrer_address,
-          reward_given: refereeStatus.rows[0].reward_given || false,
-          gold_received: parseFloat(refereeStatus.rows[0].gold_rewarded || 0),
+          reward_given: refereeStatus.rows[0].status === 'completed' || refereeStatus.rows[0].status === 'active',
+          gold_received: parseFloat(refereeStatus.rows[0].reward_amount || 0),
           session_id: refereeStatus.rows[0].session_id
         } : null,
         pending_sessions: pendingSessions.rows.map(session => ({
