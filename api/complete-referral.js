@@ -28,14 +28,37 @@ export default async function handler(req, res) {
         WHERE converted_address = $1 
         AND converted = true
         AND expires_at > CURRENT_TIMESTAMP
+        AND NOT EXISTS (
+          SELECT 1 FROM referrals 
+          WHERE referrals.referred_address = $1 
+          AND referrals.status = 'completed_referral'
+        )
       `, [address]);
       
       if (pendingReferral.rows.length === 0) {
-        console.log('ℹ️ No pending referral found');
+        // Check if referral was already completed
+        const alreadyCompleted = await client.query(`
+          SELECT * FROM referrals 
+          WHERE referred_address = $1 
+          AND status = 'completed_referral'
+        `, [address]);
+        
+        if (alreadyCompleted.rows.length > 0) {
+          console.log('✅ Referral already completed for this user');
+          return res.json({
+            success: true,
+            referral_completed: true,
+            already_rewarded: true,
+            message: 'Referral was already completed and rewarded',
+            referrer_address: alreadyCompleted.rows[0].referrer_address
+          });
+        }
+        
+        console.log('ℹ️ No pending referral found - user may not have used a referral link');
         return res.json({
           success: true,
           referral_completed: false,
-          message: 'No pending referral found'
+          message: 'No pending referral found - user did not use a referral link'
         });
       }
       
