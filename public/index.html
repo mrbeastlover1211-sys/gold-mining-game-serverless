@@ -267,19 +267,72 @@
           console.log('🔧 EMBEDDED: Overriding updateReferralStatus');
           
           window.updateReferralStatus = async function() {
-            if (!state?.address) return;
+            const currentAddress = (window.state && window.state.address) || window.solana?.publicKey?.toString() || window.phantom?.solana?.publicKey?.toString() || null;
+            const walletConnected = !!(currentAddress && currentAddress.length > 20);
             
-            console.log('🎁 EMBEDDED: Smart referral update...');
-            const hasLand = await window.EMBEDDED_LAND_CACHE.checkLandStatus(state.address);
+            console.log('🎁 EMBEDDED: Smart referral update...', { walletConnected, current: currentAddress?.slice(0,8)+'...' });
             
-            // Update referral UI without triggering more checks
+            // Update wallet status indicator regardless of land
+            const walletStatusEl = document.getElementById('walletStatusReferral');
+            if (walletStatusEl) {
+              walletStatusEl.textContent = walletConnected ? '✅ Connected' : '❌ Not Connected';
+              walletStatusEl.style.color = walletConnected ? '#4CAF50' : '#f44336';
+            }
+            
+            // If not connected, show requirements and exit
+            if (!walletConnected) {
+              const req = document.getElementById('referralRequirement');
+              const link = document.getElementById('referralLinkSection');
+              if (req) req.style.display = 'block';
+              if (link) link.style.display = 'none';
+              console.log('⚠️ EMBEDDED: Wallet not connected - referral UI set to requirements');
+              return;
+            }
+            
+            // Connected: check land via embedded cache using currentAddress
+            const hasLand = await window.EMBEDDED_LAND_CACHE.checkLandStatus(currentAddress);
+            
+            // Update land status UI
             const landStatusEl = document.getElementById('landStatusReferral');
             if (landStatusEl) {
               landStatusEl.textContent = hasLand ? '✅ Owned' : '❌ No Land';
               landStatusEl.style.color = hasLand ? '#4CAF50' : '#f44336';
             }
             
-            console.log('🎁 EMBEDDED: Referral update complete - NO land check triggered');
+            // Toggle sections
+            const req = document.getElementById('referralRequirement');
+            const link = document.getElementById('referralLinkSection');
+            if (hasLand) {
+              if (req) req.style.display = 'none';
+              if (link) link.style.display = 'block';
+              // Fill link with dynamic or fallback
+              try {
+                const res = await fetch('/api/generate-dynamic-referral', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ referrerAddress: currentAddress }) });
+                const data = await res.json();
+                const input = document.getElementById('referralLink');
+                if (input) input.value = data?.success && data?.referralLink ? data.referralLink : `${window.location.origin}/?ref=${currentAddress}`;
+              } catch (e) {
+                const input = document.getElementById('referralLink');
+                if (input) input.value = `${window.location.origin}/?ref=${currentAddress}`;
+              }
+              
+              // Update referral stats
+              try {
+                const statsRes = await fetch(`/api/referral-status?address=${currentAddress}`);
+                const statsData = await statsRes.json();
+                if (statsData.success) {
+                  const totalEl = document.getElementById('totalReferrals');
+                  if (totalEl) totalEl.textContent = statsData.referralCount || 0;
+                }
+              } catch (e) {
+                console.log('⚠️ EMBEDDED: Could not fetch referral stats');
+              }
+            } else {
+              if (req) req.style.display = 'block';
+              if (link) link.style.display = 'none';
+            }
+            
+            console.log('🎁 EMBEDDED: Referral update complete - NO extra API land checks');
           };
         }
         
