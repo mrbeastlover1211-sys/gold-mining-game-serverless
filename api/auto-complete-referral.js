@@ -1,4 +1,6 @@
 // 🤖 AUTO COMPLETE REFERRAL - Automatic referral completion without manual intervention
+import { getPool } from '../database.js';
+
 export default async function handler(req, res) {
   try {
     console.log('🤖 Auto completing referral...');
@@ -15,14 +17,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing wallet address' });
     }
     
-    const { Pool } = await import('pg');
-    
-    const pool = new Pool({
-      connectionString: "postgresql://neondb_owner:npg_2OmoVZ9uDnqA@ep-jolly-breeze-a4icmodb-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require",
-      ssl: { rejectUnauthorized: false },
-      max: 2
-    });
-    
+    const pool = await getPool();
     const client = await pool.connect();
     
     try {
@@ -171,7 +166,6 @@ export default async function handler(req, res) {
       throw queryError;
     } finally {
       client.release();
-      await pool.end();
     }
     
   } catch (error) {
