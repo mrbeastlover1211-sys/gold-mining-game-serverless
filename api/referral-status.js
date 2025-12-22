@@ -19,14 +19,15 @@ export default async function handler(req, res) {
     const client = await pool.connect();
 
     try {
-      // Get user's referral statistics (as referrer)
+      // Get user's referral statistics (as referrer) - only count completed referrals
       const referrerStats = await client.query(`
         SELECT 
           COUNT(*) as total_referrals,
-          COALESCE(SUM(CASE WHEN status IN ('completed', 'active') THEN 1 ELSE 0 END), 0) as completed_referrals,
-          COALESCE(SUM(CASE WHEN status IN ('completed', 'active') THEN reward_amount ELSE 0 END), 0) as total_gold_earned
+          COUNT(*) as completed_referrals,
+          COALESCE(SUM(reward_amount), 0) as total_gold_earned
         FROM referrals 
-        WHERE referrer_address = $1
+        WHERE referrer_address = $1 
+          AND status IN ('completed', 'active')
       `, [address]);
 
       // Check if user was referred (as referee)
