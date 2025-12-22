@@ -95,19 +95,26 @@ export default async function handler(req, res) {
     
     // Auto-trigger referral completion after pickaxe purchase
     try {
-      const baseUrl = req.headers.origin || process.env.VERCEL_URL || 'http://localhost:3000';
+      const baseUrl = `https://${req.headers.host}` || process.env.VERCEL_URL || 'http://localhost:3000';
+      console.log('🎁 Attempting referral completion at:', `${baseUrl}/api/complete-referral`);
+      
       const completeReferralResponse = await fetch(`${baseUrl}/api/complete-referral`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address })
       });
       
-      if (completeReferralResponse.ok) {
-        const referralResult = await completeReferralResponse.json();
-        console.log('🎁 Auto-referral completion result:', referralResult);
+      const referralResult = await completeReferralResponse.json();
+      console.log('🎁 Auto-referral completion result:', {
+        status: completeReferralResponse.status,
+        result: referralResult
+      });
+      
+      if (!completeReferralResponse.ok) {
+        console.error('⚠️ Referral completion returned non-OK status:', completeReferralResponse.status);
       }
     } catch (referralError) {
-      console.log('⚠️ Auto-referral completion failed (non-critical):', referralError.message);
+      console.error('⚠️ Auto-referral completion failed (non-critical):', referralError);
     }
     
     // Create inventory object for response
