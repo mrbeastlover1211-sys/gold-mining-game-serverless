@@ -1331,10 +1331,11 @@ async function autoCheckReferralCompletion() {
     
     const result = await response.json();
     
-    if (result.success && result.referral_completed) {
-      console.log('🎉 REFERRAL COMPLETED!', result);
+    // Only show notification if NEW reward was given (not if already rewarded)
+    if (result.success && result.referral_completed && !result.already_rewarded) {
+      console.log('🎉 REFERRAL COMPLETED - NEW REWARD GIVEN!', result);
       
-      // Show success notification
+      // Show success notification only for new rewards
       showReferralCompletionNotification(result);
       
       // Update display without triggering land status checks
@@ -1353,6 +1354,8 @@ async function autoCheckReferralCompletion() {
         }
       }, 2000);
       
+    } else if (result.success && result.already_rewarded) {
+      console.log('ℹ️ Referral already completed previously - no new reward given');
     } else if (result.success && !result.referral_completed) {
       console.log('ℹ️ No referral completion needed:', result.message);
     } else {
