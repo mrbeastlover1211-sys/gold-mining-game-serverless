@@ -239,7 +239,20 @@ export default async function handler(req, res) {
         `, [referrerAddress, address, 0.01, 'sol', 'completed']);
         console.log('✅ Referral record created');
       } catch (referralRecordError) {
-        // Try with 'active' if 'completed' fails
+        // Check if it's a unique constraint violation (23505 = duplicate key)
+        if (referralRecordError.code === '23505') {
+          console.log('ℹ️ Referral already completed for this user (duplicate prevented by database)');
+          client.release();
+          return res.json({
+            success: true,
+            referral_completed: true,
+            already_rewarded: true,
+            message: 'This user already received referral reward',
+            note: 'No duplicate reward given - database constraint prevented it'
+          });
+        }
+        
+        // Try with 'active' if 'completed' fails for other reasons
         try {
           await client.query(`
             INSERT INTO referrals (referrer_address, referred_address, reward_amount, reward_type, status)
@@ -247,6 +260,17 @@ export default async function handler(req, res) {
           `, [referrerAddress, address, 0.01, 'sol', 'active']);
           console.log('✅ Referral record created with active status');
         } catch (retryError) {
+          // Check again for duplicate
+          if (retryError.code === '23505') {
+            console.log('ℹ️ Referral already completed (duplicate prevented)');
+            client.release();
+            return res.json({
+              success: true,
+              referral_completed: true,
+              already_rewarded: true,
+              message: 'This user already received referral reward'
+            });
+          }
           console.log('ℹ️ Referral record creation failed:', retryError.message);
         }
       }
