@@ -1,10 +1,38 @@
 # 🎮 GOLD MINING GAME - COMPLETE SYSTEM DOCUMENTATION
 
-## 🔥 LATEST SESSION - DECEMBER 22, 2024
+## 🔥 LATEST SESSION - DECEMBER 22, 2024 (Extended)
 
 ### ✅ Critical Fixes Completed:
 
-#### 1. **Referral System Stability** 
+#### 0. **Mobile/Tablet Blocking** (NEW - Dec 22 Evening)
+- Added device detection for phones, tablets, iPad
+- Shows "Desktop Only" message on mobile devices
+- Blocks game functionality on small screens (< 768px)
+- Professional styled blocking overlay
+- Detects: iPhone, Android, iPad, tablets, touch devices
+- Desktop/laptop users unaffected
+
+### ✅ Critical Fixes Completed (Earlier Today):
+
+#### 8. **Referral Duplicate Prevention** (IMPORTANT)
+- Added unique database constraint on `referrals.referred_address`
+- Prevents same user from triggering multiple rewards
+- Only first pickaxe purchase triggers referral reward
+- Subsequent purchases don't give additional rewards
+- Handles error code 23505 (duplicate key violation) gracefully
+- Endpoint: `/api/add-unique-referral-constraint` (run once to activate)
+- Same browser profile = only 1 reward (cookie shared)
+- Different browsers/profiles = separate rewards
+
+#### 9. **Database Connection Timeout Investigation**
+- Analyzed "timeout exceeded when trying to connect" errors
+- Identified as likely Neon free tier connection limit issue
+- Solutions documented: upgrade to paid ($19/mo) vs stay free with workarounds
+- Connection timeout increased from 10s to 30s (optional)
+- Economic analysis: $30 to fake 25 referrals = not profitable (costs more than direct purchase)
+- System naturally prevents single-browser farming via cookie persistence
+
+#### 1. **Referral System Stability** (Morning Session) 
 - Fixed all referral endpoints to use shared database pool
 - Removed hardcoded DB URLs from 8 referral endpoints
 - Fixed referral count display (shows completed referrals only, not visits)
@@ -52,9 +80,17 @@
 - Database pool (10 connections) handles load easily
 
 ### 🔧 New Documentation Added:
-- `CONNECTION_LEAK_FIXES.md` - Complete connection leak fix documentation
+- `CONNECTION_LEAK_FIXES.md` - Complete connection leak fix documentation (19 files fixed)
 - `SCALING_RECOMMENDATIONS.md` - Updated with correct 10K+ user capacity
 - System architecture explanations (Redis caching, when to scale, etc.)
+- Mobile detection documentation (inline in index.html)
+
+### 🎨 UI/UX Enhancements:
+- ROI badges with color coding (Red: 7 days → Cyan: 50 minutes)
+- Gold deduction displays correctly on pickaxe purchases
+- 60-second cache on referral stats (prevents abuse)
+- Mobile/tablet blocking with professional message
+- Desktop-only enforcement
 
 ### 💰 Cost Analysis:
 - **0-10,000 users**: $0/month (FREE TIER) ✅
@@ -62,12 +98,15 @@
 - **20,000-50,000 users**: $50-100/month (add Redis)
 
 ### 🚀 Production Readiness:
-- ✅ Connection leaks fixed
+- ✅ Connection leaks fixed (19 files)
 - ✅ Referral system fully automated
-- ✅ Timeout errors eliminated
-- ✅ Can handle viral growth
-- ✅ Cost-optimized
-- ✅ Abuse-resistant (60s cache)
+- ✅ Timeout errors investigated (Neon free tier limits)
+- ✅ Can handle viral growth (10K+ users)
+- ✅ Cost-optimized ($0 for 10K users)
+- ✅ Abuse-resistant (60s cache, unique constraints, economic barriers)
+- ✅ Mobile blocking (desktop-only enforcement)
+- ✅ Duplicate reward prevention (database constraints)
+- ✅ Professional error handling
 
 ### 📝 Known Working Test Addresses:
 - Main Account: `4VqgEAYvNWe1hCMBhNsvs1ng1Ai1mwihkzjBzSQBSSKa` (2 referrals)
@@ -79,6 +118,15 @@
 - `/api/check-referrals-simple?address=WALLET` - See DB tables data
 - `/api/manual-trigger-referral?referredAddress=WALLET` - Force completion
 - `/api/test-complete-referral?address=WALLET` - Debug why completion fails
+- `/api/add-unique-referral-constraint` - Add database constraint (run once)
+
+### 🔒 Security Measures:
+- Unique constraint prevents duplicate referral rewards
+- Self-referral prevention (referrer ≠ referred)
+- Session expiry (48 hours)
+- Cookie-based session isolation
+- Economic disincentives against farming ($30 spent for $0.025 value)
+- Database-level duplicate prevention (error code 23505)
 
 ---
 
