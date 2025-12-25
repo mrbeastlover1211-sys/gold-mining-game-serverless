@@ -115,8 +115,6 @@ export default async function handler(req, res) {
       
       debugInfo.step5 = 'All checks passed! Ready to reward';
       
-      client.release();
-      
       return res.json({
         success: true,
         message: 'All requirements met - referral SHOULD complete successfully',
@@ -125,12 +123,14 @@ export default async function handler(req, res) {
       });
       
     } catch (queryError) {
-      client.release();
       throw queryError;
+    } finally {
+      if (client) client.release();
     }
     
   } catch (error) {
     console.error('❌ Test complete referral error:', error);
+    if (client) client.release();
     return res.status(200).json({
       success: false,
       error: error.message,

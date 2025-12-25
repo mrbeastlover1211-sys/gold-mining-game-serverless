@@ -104,8 +104,6 @@ export default async function handler(req, res) {
         VALUES ($1, $2, $3, $4, $5)
       `, [referrerAddress, referredAddress, 0.01, 'sol', 'completed']);
       
-      client.release();
-      
       console.log('✅ Referral manually completed!');
       
       return res.json({
@@ -121,12 +119,14 @@ export default async function handler(req, res) {
       });
       
     } catch (queryError) {
-      client.release();
       throw queryError;
+    } finally {
+      if (client) client.release();
     }
     
   } catch (error) {
     console.error('❌ Manual trigger error:', error);
+    if (client) client.release();
     return res.status(200).json({
       success: false,
       error: error.message

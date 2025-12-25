@@ -26,8 +26,6 @@ export default async function handler(req, res) {
       SELECT address, total_referrals, referral_rewards_earned FROM users WHERE address = $1
     `, [address]);
     
-    client.release();
-    
     return res.json({
       address,
       referrals_table: {
@@ -44,7 +42,8 @@ export default async function handler(req, res) {
     });
     
   } catch (error) {
-    client.release();
     return res.status(500).json({ error: error.message });
+  } finally {
+    if (client) client.release();
   }
 }
