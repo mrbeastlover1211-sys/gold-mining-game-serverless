@@ -1315,8 +1315,13 @@ body::before {
   justify-content: space-between;
   gap: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  height: 180px;
+  height: 200px;
   overflow: visible;
+}
+
+/* Expand height when "Owned" badge is visible */
+.pickaxe-item:has(.pickaxe-owned:not([style*="display: none"])) {
+  height: 220px;
 }
 
 .pickaxe-item:hover {
