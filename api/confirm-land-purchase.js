@@ -100,6 +100,9 @@ export default async function handler(req, res) {
         };
       }
       
+      // 🎁 CHECK IF USER WAS REFERRED - GIVE 1000 GOLD BONUS
+      let referralBonusGiven = false;
+      
       // Update with land ownership (using database column names)
       const updatedUser = {
         ...existingUser,
@@ -107,9 +110,6 @@ export default async function handler(req, res) {
         land_purchase_date: nowSec(),
         last_activity: nowSec()
       };
-      
-      // 🎁 CHECK IF USER WAS REFERRED - GIVE 1000 GOLD BONUS
-      let referralBonusGiven = false;
       try {
         const { pool } = await import('../database.js');
         const client = await pool.connect();
