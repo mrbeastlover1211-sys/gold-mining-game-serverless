@@ -1451,9 +1451,12 @@ async function sellGold() {
     return;
   }
 
-  const currentGold = state.status.gold || 0;
+  // Calculate real-time gold including mined gold
+  const currentGold = state.checkpoint ? calculateGoldFromCheckpoint(state.checkpoint) : (state.status.gold || 0);
+  console.log(`💰 Current gold for selling: ${currentGold} (checkpoint: ${state.checkpoint ? 'yes' : 'no'})`);
+  
   if (goldToSell > currentGold) {
-    alert(`Not enough gold! You have ${currentGold.toLocaleString()} gold available`);
+    alert(`Not enough gold! You have ${Math.floor(currentGold).toLocaleString()} gold available`);
     return;
   }
 
