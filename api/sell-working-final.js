@@ -1,5 +1,5 @@
 // Complete sell API using WORKING export default syntax
-import { Pool } from 'pg';
+import { pool } from '../database.js';
 
 const MIN_SELL_GOLD = 10000;
 const GOLD_PRICE_SOL = parseFloat(process.env.GOLD_PRICE_SOL || '0.000001');
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  let pool;
+  let client;
   
   try {
     console.log('💰 Working sell API - with gold deduction');
@@ -42,23 +42,18 @@ export default async function handler(req, res) {
 
     console.log(`💰 Processing sell: ${amountGold} gold from ${address.slice(0, 8)}...`);
 
-    // Connect to database
-    pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-      max: 1,
-      idleTimeoutMillis: 2000,
-      connectionTimeoutMillis: 3000,
-    });
+    // Get database client from shared pool
+    client = await pool.connect();
 
     // Start transaction for atomic operation
-    await pool.query('BEGIN');
+    await client.query('BEGIN');
 
     // Get current user data
-    const userResult = await pool.query('SELECT * FROM users WHERE address = $1', [address]);
+    const userResult = await client.query('SELECT * FROM users WHERE address = $1', [address]);
     
     if (userResult.rows.length === 0) {
-      await pool.query('ROLLBACK');
+      await client.query('ROLLBACK');
+      client.release();
       return res.status(400).json({ error: 'User not found. Please connect wallet and refresh.' });
     }
 
@@ -80,7 +75,8 @@ export default async function handler(req, res) {
 
     // Check if user has enough gold
     if (totalGold < amountGold) {
-      await pool.query('ROLLBACK');
+      await client.query('ROLLBACK');
+      client.release();
       return res.status(400).json({ 
         error: `Insufficient gold. You have ${Math.floor(totalGold).toLocaleString()} gold but need ${amountGold.toLocaleString()} gold.`,
         currentGold: Math.floor(totalGold)
@@ -94,7 +90,7 @@ export default async function handler(req, res) {
     console.log(`✅ Sale approved - Deducting ${amountGold} gold, remaining: ${newGoldAmount.toFixed(2)}`);
 
     // Update user's gold and timestamp in database
-    await pool.query(`
+    await client.query(`
       UPDATE users 
       SET 
         last_checkpoint_gold = $1,
@@ -103,10 +99,9 @@ export default async function handler(req, res) {
       WHERE address = $3
     `, [newGoldAmount, currentTime, address]);
 
-    // Drop and recreate gold_sales table with correct structure
-    await pool.query(`DROP TABLE IF EXISTS gold_sales`);
-    await pool.query(`
-      CREATE TABLE gold_sales (
+    // Create gold_sales table if it doesn't exist (with admin audit columns)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS gold_sales (
         id SERIAL PRIMARY KEY,
         user_address TEXT NOT NULL REFERENCES users(address),
         gold_amount INTEGER NOT NULL,
@@ -115,18 +110,25 @@ export default async function handler(req, res) {
         created_at TIMESTAMP DEFAULT NOW(),
         processed_at TIMESTAMP NULL,
         transaction_signature TEXT NULL,
-        admin_notes TEXT NULL
+        admin_notes TEXT NULL,
+        admin_approved_by VARCHAR(255),
+        admin_approved_at TIMESTAMP,
+        completed_by VARCHAR(255),
+        rejected_by VARCHAR(255),
+        rejected_at TIMESTAMP,
+        reject_reason TEXT,
+        tx_signature TEXT
       )
     `);
 
     // Record the sale for admin processing
-    await pool.query(`
+    await client.query(`
       INSERT INTO gold_sales (user_address, gold_amount, payout_sol, status)
       VALUES ($1, $2, $3, 'pending')
     `, [address, amountGold, payoutSol]);
 
     // Commit transaction
-    await pool.query('COMMIT');
+    await client.query('COMMIT');
 
     console.log(`✅ Gold sale completed successfully - ${address.slice(0, 8)}... sold ${amountGold} gold`);
 
@@ -144,9 +146,9 @@ export default async function handler(req, res) {
 
   } catch (e) {
     // Rollback transaction on error
-    if (pool) {
+    if (client) {
       try {
-        await pool.query('ROLLBACK');
+        await client.query('ROLLBACK');
       } catch (rollbackError) {
         console.error('Rollback error:', rollbackError.message);
       }
@@ -162,12 +164,12 @@ export default async function handler(req, res) {
     });
     
   } finally {
-    // Always close database connection
-    if (pool) {
+    // Always release database client back to pool
+    if (client) {
       try {
-        await pool.end();
-      } catch (closeError) {
-        console.error('Pool close error:', closeError.message);
+        client.release();
+      } catch (releaseError) {
+        console.error('Client release error:', releaseError.message);
       }
     }
   }

@@ -1,9 +1,15 @@
 node_modules/
 .env
+.env.local
+.env*.local
 npm-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .DS_Store
 data/
 .vercel
-.env*.local
+
+# Admin security - NEVER commit these!
+ADMIN_PASSWORD_HASH
+ADMIN_SALT
+setup-admin-credentials-output.txt
