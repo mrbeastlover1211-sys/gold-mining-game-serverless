@@ -95,7 +95,9 @@ export default async function handler(req, res) {
     
     // Auto-trigger referral completion after pickaxe purchase
     try {
-      const baseUrl = `https://${req.headers.host}` || process.env.VERCEL_URL || 'http://localhost:3000';
+      // Always use production URL for API-to-API calls (not preview URLs)
+      const productionUrl = process.env.PRODUCTION_URL || 'https://gold-mining-game-serverless.vercel.app';
+      const baseUrl = process.env.NODE_ENV === 'production' ? productionUrl : 'http://localhost:3000';
       console.log('🎁 Attempting referral completion at:', `${baseUrl}/api/complete-referral`);
       
       const completeReferralResponse = await fetch(`${baseUrl}/api/complete-referral`, {

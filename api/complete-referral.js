@@ -2,6 +2,8 @@
 import { pool, getUserOptimized, saveUserOptimized } from '../database.js';
 
 export default async function handler(req, res) {
+  let client = null; // Initialize to prevent "client is not defined" error
+  
   try {
     console.log('🎁 Processing referral completion...');
     
@@ -19,7 +21,7 @@ export default async function handler(req, res) {
     
     console.log('👤 Checking referral completion for:', address.slice(0, 8) + '...');
     
-    const client = await pool.connect();
+    client = await pool.connect();
     
     try {
       // 1. Find referral for this address (converted = true means wallet was linked)
