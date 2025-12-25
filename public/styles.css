@@ -1295,11 +1295,11 @@ body::before {
 .pickaxe-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  gap: 8px;
   flex: 1;
   height: 100%;
   overflow: visible;
-  padding: 4px;
+  padding: 8px;
 }
 
 .pickaxe-item {
@@ -1315,8 +1315,7 @@ body::before {
   justify-content: space-between;
   gap: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  min-height: 200px;
-  height: auto;
+  height: 180px;
   overflow: visible;
 }
 
