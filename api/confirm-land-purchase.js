@@ -5,6 +5,9 @@ function nowSec() {
 }
 
 export default async function handler(req, res) {
+  // 🎁 REFERRAL BONUS TRACKING - Declare at function level to avoid scope issues
+  let referralBonusGiven = false;
+  
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
