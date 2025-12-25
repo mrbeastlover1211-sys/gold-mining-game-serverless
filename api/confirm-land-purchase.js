@@ -100,9 +100,6 @@ export default async function handler(req, res) {
         };
       }
       
-      // 🎁 CHECK IF USER WAS REFERRED - GIVE 1000 GOLD BONUS
-      let referralBonusGiven = false;
-      
       // Update with land ownership (using database column names)
       const updatedUser = {
         ...existingUser,
