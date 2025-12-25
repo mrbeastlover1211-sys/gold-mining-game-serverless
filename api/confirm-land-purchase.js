@@ -108,6 +108,38 @@ export default async function handler(req, res) {
         last_activity: nowSec()
       };
       
+      // 🎁 CHECK IF USER WAS REFERRED - GIVE 1000 GOLD BONUS
+      let referralBonusGiven = false;
+      try {
+        const { pool } = await import('../database.js');
+        const client = await pool.connect();
+        
+        try {
+          // Check if user came from referral link
+          const referralCheck = await client.query(`
+            SELECT referrer_address, session_id 
+            FROM referral_visits 
+            WHERE converted_address = $1 
+              AND converted = true
+            LIMIT 1
+          `, [address]);
+          
+          if (referralCheck.rows.length > 0) {
+            // User was referred! Give 1000 gold bonus
+            const currentGold = parseFloat(updatedUser.last_checkpoint_gold || 0);
+            updatedUser.last_checkpoint_gold = currentGold + 1000;
+            referralBonusGiven = true;
+            
+            console.log(`🎁 Referral bonus: Gave ${address.slice(0, 8)}... 1000 gold (from referrer: ${referralCheck.rows[0].referrer_address.slice(0, 8)}...)`);
+          }
+        } finally {
+          client.release();
+        }
+      } catch (bonusError) {
+        console.log('⚠️ Could not check referral bonus:', bonusError.message);
+        // Continue without bonus - not critical
+      }
+      
       // Save using optimized function
       console.log(`💾 Attempting to save land purchase for ${address}...`);
       console.log(`📊 Updated user data:`, {
@@ -158,7 +190,9 @@ export default async function handler(req, res) {
       hasLand: true,
       landPurchaseDate: global.users[address].landPurchaseDate,
       message: 'Land purchased successfully! You can now buy pickaxes and start mining.',
-      inventory: global.users[address].inventory 
+      inventory: global.users[address].inventory,
+      referral_bonus_given: referralBonusGiven || false,
+      referral_bonus_amount: referralBonusGiven ? 1000 : 0
     });
   } catch (e) {
     console.error('Land purchase confirmation error:', e);

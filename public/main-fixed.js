@@ -1367,6 +1367,58 @@ async function autoCheckReferralCompletion() {
   }
 }
 
+// 🎁 Show referral bonus notification (for new users who used referral link)
+function showReferralBonusNotification(goldAmount) {
+  const notification = document.createElement('div');
+  notification.id = 'referralBonusNotification';
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(45deg, #fbbf24, #f59e0b);
+    color: #1a1a1a;
+    padding: 25px 35px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(251, 191, 36, 0.5);
+    z-index: 10002;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    animation: slideDown 0.5s ease-out, glow 2s ease-in-out infinite;
+    max-width: 450px;
+    border: 3px solid rgba(255, 255, 255, 0.5);
+  `;
+  
+  notification.innerHTML = `
+    <div style="font-size: 50px; margin-bottom: 10px;">🎁</div>
+    <div style="font-size: 22px; font-weight: bold; margin-bottom: 12px;">
+      Welcome Bonus!
+    </div>
+    <div style="font-size: 16px; margin-bottom: 10px;">
+      You were referred by another player!
+    </div>
+    <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin: 15px 0;">
+      <div style="font-size: 32px; font-weight: bold; color: #fff;">💰 ${goldAmount.toLocaleString()} GOLD</div>
+      <div style="font-size: 14px; margin-top: 5px; color: rgba(0,0,0,0.7);">Added to your balance!</div>
+    </div>
+    <div style="font-size: 13px; color: rgba(0,0,0,0.6);">
+      Use this gold to buy pickaxes and start mining! ⛏️
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Remove after 6 seconds
+  setTimeout(() => {
+    notification.style.animation = 'slideUp 0.5s ease-out';
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 500);
+  }, 6000);
+}
+
 // 🎉 Show referral completion notification
 function showReferralCompletionNotification(result) {
   const notification = document.createElement('div');
@@ -1968,6 +2020,22 @@ async function purchaseLand() {
     // Show success message
     $('#landMsg').textContent = '✅ Land purchased successfully!';
     $('#landMsg').style.color = '#4CAF50';
+    
+    // 🎁 CHECK IF REFERRAL BONUS WAS GIVEN
+    if (confirmData.referral_bonus_given && confirmData.referral_bonus_amount > 0) {
+      console.log('🎁 Referral bonus received:', confirmData.referral_bonus_amount, 'gold');
+      
+      // Show referral bonus popup
+      showReferralBonusNotification(confirmData.referral_bonus_amount);
+      
+      // Update gold display immediately
+      if (state.status) {
+        state.status.gold = (parseFloat(state.status.gold) || 0) + confirmData.referral_bonus_amount;
+      }
+      if (state.checkpoint) {
+        state.checkpoint.last_checkpoint_gold = (parseFloat(state.checkpoint.last_checkpoint_gold) || 0) + confirmData.referral_bonus_amount;
+      }
+    }
     
     // 🚩 CRITICAL FIX: Update cache and database status
     LAND_STATUS_CACHE.setLandStatus(state.address, true);
