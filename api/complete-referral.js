@@ -297,12 +297,16 @@ export default async function handler(req, res) {
       
     } catch (queryError) {
       console.error('❌ Database query error:', queryError.message);
+      if (client) client.release(); // Release connection before throwing!
       throw queryError;
+    } finally {
+      // Always release connection, even on success
+      if (client) client.release();
     }
     
   } catch (error) {
     console.error('❌ Complete referral error:', error);
-    if (client) client.release();
+    if (client) client.release(); // Backup release
     return res.json({
       success: false,
       error: error.message,
