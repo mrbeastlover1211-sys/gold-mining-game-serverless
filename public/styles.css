@@ -1298,6 +1298,8 @@ body::before {
   gap: 6px;
   flex: 1;
   height: 100%;
+  overflow: visible;
+  padding: 4px;
 }
 
 .pickaxe-item {
@@ -1313,8 +1315,9 @@ body::before {
   justify-content: space-between;
   gap: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  min-height: 180px;
-  height: 180px;
+  min-height: 200px;
+  height: auto;
+  overflow: visible;
 }
 
 .pickaxe-item:hover {
@@ -1325,6 +1328,8 @@ body::before {
   background: rgba(42, 42, 42, 0.9);
   backdrop-filter: blur(25px);
   -webkit-backdrop-filter: blur(25px);
+  z-index: 10;
+  overflow: visible;
 }
 
 /* Enhanced text visibility on hover */
