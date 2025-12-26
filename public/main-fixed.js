@@ -1631,14 +1631,20 @@ async function sellGold() {
 
   try {
     console.log(`💰 Selling ${goldToSell} gold...`);
+    console.log(`💰 state.address:`, state.address);
+    console.log(`💰 goldToSell:`, goldToSell);
+    
+    const requestBody = {
+      address: state.address,
+      amountGold: goldToSell  // Backend expects 'amountGold' not 'goldAmount'
+    };
+    
+    console.log(`💰 Request body being sent:`, JSON.stringify(requestBody));
     
     const response = await fetch('/api/sell-working-final', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        address: state.address,
-        goldAmount: goldToSell
-      })
+      body: JSON.stringify(requestBody)
     });
 
     const result = await response.json();
