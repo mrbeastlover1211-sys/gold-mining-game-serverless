@@ -1452,8 +1452,28 @@ async function sellGold() {
   }
 
   // Calculate real-time gold including mined gold
-  const currentGold = state.checkpoint ? calculateGoldFromCheckpoint(state.checkpoint) : (state.status.gold || 0);
-  console.log(`💰 Current gold for selling: ${currentGold} (checkpoint: ${state.checkpoint ? 'yes' : 'no'})`);
+  let currentGold = 0;
+  
+  // Try to get gold from optimized mining engine first (most accurate)
+  if (state.optimizedMiningEngine && state.optimizedMiningEngine.getCurrentGold) {
+    currentGold = state.optimizedMiningEngine.getCurrentGold();
+    console.log(`💰 Current gold from mining engine: ${currentGold}`);
+  } 
+  // Fallback to checkpoint calculation
+  else if (state.checkpoint) {
+    currentGold = calculateGoldFromCheckpoint(state.checkpoint);
+    console.log(`💰 Current gold from checkpoint: ${currentGold}`);
+  }
+  // Last resort: use status gold
+  else {
+    currentGold = state.status.gold || 0;
+    console.log(`💰 Current gold from status: ${currentGold}`);
+  }
+  
+  console.log(`💰 Final gold for selling check: ${currentGold}`);
+  console.log(`💰 User wants to sell: ${goldToSell}`);
+  console.log(`💰 state.checkpoint exists: ${!!state.checkpoint}`);
+  console.log(`💰 state.optimizedMiningEngine exists: ${!!state.optimizedMiningEngine}`);
   
   if (goldToSell > currentGold) {
     alert(`Not enough gold! You have ${Math.floor(currentGold).toLocaleString()} gold available`);
