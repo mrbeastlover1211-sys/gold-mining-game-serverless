@@ -13,7 +13,8 @@ let state = {
   goldUpdateInterval: null,
   checkpoint: null,
   solBalance: 0,
-  consecutiveErrors: 0
+  consecutiveErrors: 0,
+  landFlags: { hasLand: false, lastChecked: 0 }
 };
 
 // 🚩 SMART LAND STATUS CACHE - 3-LAYER SYSTEM TO PREVENT INFINITE LOOPS
