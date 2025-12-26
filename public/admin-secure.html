@@ -945,12 +945,19 @@
             timer.textContent = 'Account temporarily locked due to too many failed attempts';
         }
 
-        // Auto-refresh dashboard every 30 seconds
-        setInterval(() => {
-            if (authToken && document.getElementById('dashboard').style.display !== 'none') {
-                loadDashboard();
-            }
-        }, 30000);
+        // Optional: Auto-refresh dashboard every 30 minutes (1,800,000 ms)
+        // Uncomment below to enable auto-refresh:
+        // setInterval(() => {
+        //     if (authToken && document.getElementById('dashboard').style.display !== 'none') {
+        //         loadDashboard();
+        //     }
+        // }, 1800000); // 30 minutes = 1,800,000 milliseconds
+        
+        // Note: Auto-refresh is disabled by default.
+        // Data refreshes only when:
+        // 1. Admin logs in (initial load)
+        // 2. Admin clicks individual stat refresh buttons (🔄)
+        // 3. Admin clicks "🔄 Refresh" button above payouts table
     </script>
 </body>
 </html>
