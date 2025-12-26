@@ -53,6 +53,16 @@ const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
 const SESSION_DURATION = 60 * 60 * 1000; // 1 hour
 const SESSION_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
+// 🛡️ IP WHITELIST - Only these IPs can access admin panel
+const ALLOWED_ADMIN_IPS = [
+  '183.83.146.141',  // Your current IP (Ahmedabad, India)
+  '127.0.0.1',       // Localhost for testing
+  '::1',             // Localhost IPv6
+  // Add more IPs here as needed:
+  // 'xxx.xxx.xxx.xxx',  // Office IP
+  // 'yyy.yyy.yyy.yyy',  // Home IP
+];
+
 // Clean up expired sessions periodically
 setInterval(() => {
   const now = Date.now();
@@ -130,9 +140,25 @@ export default async function handler(req, res) {
   }
 
   // Get client IP (works with Vercel)
-  const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || 
+  const clientIp = (req.headers['x-forwarded-for']?.split(',')[0] || 
                    req.headers['x-real-ip'] || 
-                   req.socket.remoteAddress;
+                   req.socket.remoteAddress || 'unknown').trim();
+
+  console.log(`[${new Date().toISOString()}] Admin API request from IP: ${clientIp}`);
+
+  // 🛡️ IP WHITELIST CHECK - Block unauthorized IPs immediately
+  if (!ALLOWED_ADMIN_IPS.includes(clientIp)) {
+    console.log(`❌ SECURITY ALERT: Blocked unauthorized IP attempt: ${clientIp}`);
+    return res.status(403).json({
+      success: false,
+      error: 'Access Denied: Your IP address is not authorized to access this admin panel.',
+      code: 'IP_NOT_WHITELISTED',
+      yourIp: clientIp,
+      hint: 'Contact the system administrator to whitelist your IP address.'
+    });
+  }
+
+  console.log(`✅ IP whitelist check passed: ${clientIp}`);
 
   try {
     const { action, username, password, token } = req.body || {};
