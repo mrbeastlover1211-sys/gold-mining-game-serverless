@@ -232,12 +232,51 @@
             box-shadow: 0 15px 40px rgba(0,0,0,0.15);
         }
 
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
         .stat-label {
             color: #666;
             font-size: 14px;
-            margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
+        }
+
+        .btn-refresh-stat {
+            background: transparent;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            color: #666;
+        }
+
+        .btn-refresh-stat:hover {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+            transform: rotate(180deg);
+        }
+
+        .btn-refresh-stat:active {
+            transform: rotate(360deg) scale(0.95);
+        }
+
+        .btn-refresh-stat.refreshing {
+            animation: spin 1s linear infinite;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         .stat-value {
@@ -458,24 +497,52 @@
 
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-label">Total Users</div>
+                    <div class="stat-header">
+                        <div class="stat-label">Total Users</div>
+                        <button class="btn-refresh-stat" onclick="refreshStat('users')" title="Refresh">🔄</button>
+                    </div>
                     <div class="stat-value" id="statTotalUsers">0</div>
                     <div class="stat-subtext">Registered accounts</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Active Users</div>
-                    <div class="stat-value" id="statActiveUsers">0</div>
-                    <div class="stat-subtext">With land purchased</div>
+                    <div class="stat-header">
+                        <div class="stat-label">Land Purchased</div>
+                        <button class="btn-refresh-stat" onclick="refreshStat('land')" title="Refresh">🔄</button>
+                    </div>
+                    <div class="stat-value" id="statLandPurchased">0</div>
+                    <div class="stat-subtext"><span id="statLandRevenue">0</span> SOL received</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Online Now</div>
+                    <div class="stat-header">
+                        <div class="stat-label">Pickaxes Sold</div>
+                        <button class="btn-refresh-stat" onclick="refreshStat('pickaxes')" title="Refresh">🔄</button>
+                    </div>
+                    <div class="stat-value" id="statPickaxesSold">0</div>
+                    <div class="stat-subtext"><span id="statPickaxeRevenue">0</span> SOL received</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-label">Online Now</div>
+                        <button class="btn-refresh-stat" onclick="refreshStat('online')" title="Refresh">🔄</button>
+                    </div>
                     <div class="stat-value" id="statOnlineUsers">0</div>
                     <div class="stat-subtext">Last 10 minutes</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Pending Payouts</div>
+                    <div class="stat-header">
+                        <div class="stat-label">Total SOL Received</div>
+                        <button class="btn-refresh-stat" onclick="refreshStat('revenue')" title="Refresh">🔄</button>
+                    </div>
+                    <div class="stat-value" id="statTotalReceived">0</div>
+                    <div class="stat-subtext">From land + pickaxes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-label">Pending Payouts</div>
+                        <button class="btn-refresh-stat" onclick="refreshStat('payouts')" title="Refresh">🔄</button>
+                    </div>
                     <div class="stat-value" id="statPendingPayouts">0</div>
-                    <div class="stat-subtext"><span id="statPendingSol">0</span> SOL</div>
+                    <div class="stat-subtext"><span id="statPendingSol">0</span> SOL pending</div>
                 </div>
             </div>
 
@@ -613,14 +680,91 @@
                 const statsData = await statsResponse.json();
 
                 if (statsData.success) {
-                    document.getElementById('statTotalUsers').textContent = statsData.stats.users.total;
-                    document.getElementById('statActiveUsers').textContent = statsData.stats.users.active;
-                    document.getElementById('statOnlineUsers').textContent = statsData.stats.users.online;
-                    document.getElementById('statPendingPayouts').textContent = statsData.stats.payouts.pending;
-                    document.getElementById('statPendingSol').textContent = statsData.stats.payouts.pendingSol.toFixed(4);
+                    updateAllStats(statsData.stats);
                 }
 
                 // Load payouts
+                await loadPayouts();
+            } catch (error) {
+                console.error('Dashboard error:', error);
+            }
+        }
+
+        function updateAllStats(stats) {
+            // User stats
+            document.getElementById('statTotalUsers').textContent = stats.users.total;
+            document.getElementById('statOnlineUsers').textContent = stats.users.online;
+            
+            // Land stats
+            document.getElementById('statLandPurchased').textContent = stats.land.total;
+            document.getElementById('statLandRevenue').textContent = stats.land.revenue.toFixed(4);
+            
+            // Pickaxe stats
+            document.getElementById('statPickaxesSold').textContent = stats.pickaxes.total;
+            document.getElementById('statPickaxeRevenue').textContent = stats.pickaxes.revenue.toFixed(4);
+            
+            // Revenue stats
+            document.getElementById('statTotalReceived').textContent = stats.revenue.totalReceived.toFixed(4) + ' SOL';
+            
+            // Payout stats
+            document.getElementById('statPendingPayouts').textContent = stats.payouts.pending;
+            document.getElementById('statPendingSol').textContent = stats.payouts.pendingSol.toFixed(4);
+        }
+
+        async function refreshStat(statType) {
+            const button = event.target;
+            button.classList.add('refreshing');
+            
+            try {
+                const response = await fetch('/api/admin/dashboard', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const stats = data.stats;
+                    
+                    // Update only the requested stat
+                    switch(statType) {
+                        case 'users':
+                            document.getElementById('statTotalUsers').textContent = stats.users.total;
+                            break;
+                        case 'land':
+                            document.getElementById('statLandPurchased').textContent = stats.land.total;
+                            document.getElementById('statLandRevenue').textContent = stats.land.revenue.toFixed(4);
+                            break;
+                        case 'pickaxes':
+                            document.getElementById('statPickaxesSold').textContent = stats.pickaxes.total;
+                            document.getElementById('statPickaxeRevenue').textContent = stats.pickaxes.revenue.toFixed(4);
+                            break;
+                        case 'online':
+                            document.getElementById('statOnlineUsers').textContent = stats.users.online;
+                            break;
+                        case 'revenue':
+                            document.getElementById('statTotalReceived').textContent = stats.revenue.totalReceived.toFixed(4) + ' SOL';
+                            break;
+                        case 'payouts':
+                            document.getElementById('statPendingPayouts').textContent = stats.payouts.pending;
+                            document.getElementById('statPendingSol').textContent = stats.payouts.pendingSol.toFixed(4);
+                            await loadPayouts(); // Also refresh the payouts table
+                            break;
+                    }
+                } else if (data.requireLogin) {
+                    clearSession();
+                }
+            } catch (error) {
+                console.error('Stat refresh error:', error);
+            } finally {
+                button.classList.remove('refreshing');
+            }
+        }
+
+        async function loadPayouts() {
+            try {
                 const payoutsResponse = await fetch('/api/admin/dashboard', {
                     method: 'POST',
                     headers: {

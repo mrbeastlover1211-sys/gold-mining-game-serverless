@@ -180,9 +180,9 @@ export default async function handler(req, res) {
       // Refund gold to user
       await pool.query(`
         UPDATE users 
-        SET gold_balance = gold_balance + $1
-        WHERE wallet_address = $2
-      `, [result.rows[0].gold_amount, result.rows[0].wallet_address]);
+        SET last_checkpoint_gold = last_checkpoint_gold + $1
+        WHERE address = $2
+      `, [result.rows[0].gold_amount, result.rows[0].user_address]);
 
       console.log(`⚠️ Payout ${payoutId} rejected by ${sessionCheck.username}`);
 

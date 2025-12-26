@@ -92,9 +92,10 @@ export default async function handler(req, res) {
       const stats = {
         users: { total: 0, active: 0, online: 0 },
         land: { total: 0, revenue: 0 },
-        pickaxes: { total: 0, revenue: 0 },
+        pickaxes: { total: 0, revenue: 0, breakdown: {} },
         gold: { mined: 0, sold: 0 },
-        payouts: { pending: 0, pendingSol: 0, completed: 0, completedSol: 0 }
+        payouts: { pending: 0, pendingSol: 0, completed: 0, completedSol: 0 },
+        revenue: { totalReceived: 0, totalPaidOut: 0, profit: 0 }
       };
 
       try {
@@ -113,49 +114,96 @@ export default async function handler(req, res) {
           online: parseInt(userStats.rows[0].online) || 0
         };
 
-        // Get land purchase stats
+        // Get land purchase stats with revenue
         const landStats = await pool.query(`
-          SELECT COUNT(*) as total
+          SELECT 
+            COUNT(*) as total,
+            SUM(total_sol_spent) as revenue
           FROM users WHERE has_land = true
         `);
         stats.land.total = parseInt(landStats.rows[0].total) || 0;
-        stats.land.revenue = stats.land.total * 0.01; // 0.01 SOL per land
+        stats.land.revenue = parseFloat(landStats.rows[0].revenue) || (stats.land.total * 0.01);
 
-        // Get pickaxe stats (estimate from upgrades)
-        stats.pickaxes.total = Math.floor(stats.users.active * 2.5);
-        stats.pickaxes.revenue = stats.pickaxes.total * 0.001;
+        // Get actual pickaxe stats from inventory
+        const pickaxeStats = await pool.query(`
+          SELECT 
+            SUM(silver_pickaxes) as silver,
+            SUM(gold_pickaxes) as gold,
+            SUM(diamond_pickaxes) as diamond,
+            SUM(netherite_pickaxes) as netherite,
+            SUM(total_pickaxes_bought) as total_bought
+          FROM users
+        `);
+        
+        const silver = parseInt(pickaxeStats.rows[0].silver) || 0;
+        const gold = parseInt(pickaxeStats.rows[0].gold) || 0;
+        const diamond = parseInt(pickaxeStats.rows[0].diamond) || 0;
+        const netherite = parseInt(pickaxeStats.rows[0].netherite) || 0;
+        
+        stats.pickaxes.total = silver + gold + diamond + netherite;
+        stats.pickaxes.totalBought = parseInt(pickaxeStats.rows[0].total_bought) || 0;
+        stats.pickaxes.breakdown = { silver, gold, diamond, netherite };
+        
+        // Estimate revenue from pickaxes (rough calculation)
+        // Silver: 0.001 SOL, Gold: 0.01 SOL, Diamond: 0.1 SOL, Netherite: 1 SOL
+        stats.pickaxes.revenue = (silver * 0.001) + (gold * 0.01) + (diamond * 0.1) + (netherite * 1);
 
         // Get gold stats
         const goldStats = await pool.query(`
           SELECT 
-            SUM(CAST(gold_amount AS NUMERIC)) as sold,
-            COUNT(*) as transactions
-          FROM gold_sales
+            SUM(total_gold_mined) as total_mined
+          FROM users
         `);
-        stats.gold.sold = parseFloat(goldStats.rows[0].sold) || 0;
-
-        // Get payout stats
-        const payoutStats = await pool.query(`
-          SELECT 
-            status,
-            COUNT(*) as count,
-            SUM(CAST(payout_sol AS NUMERIC)) as total_sol
-          FROM gold_sales
-          GROUP BY status
-        `);
+        stats.gold.mined = parseFloat(goldStats.rows[0].total_mined) || 0;
         
-        payoutStats.rows.forEach(row => {
-          if (row.status === 'pending') {
-            stats.payouts.pending = parseInt(row.count) || 0;
-            stats.payouts.pendingSol = parseFloat(row.total_sol) || 0;
-          } else if (row.status === 'completed') {
-            stats.payouts.completed = parseInt(row.count) || 0;
-            stats.payouts.completedSol = parseFloat(row.total_sol) || 0;
-          }
-        });
+        // Get gold sold from sales table (check if table exists first)
+        try {
+          const goldSoldStats = await pool.query(`
+            SELECT 
+              SUM(CAST(gold_amount AS NUMERIC)) as sold,
+              COUNT(*) as transactions
+            FROM gold_sales
+          `);
+          stats.gold.sold = parseFloat(goldSoldStats.rows[0].sold) || 0;
+          stats.gold.transactions = parseInt(goldSoldStats.rows[0].transactions) || 0;
+        } catch (tableError) {
+          console.log('⚠️ gold_sales table not found, creating it...');
+          stats.gold.sold = 0;
+          stats.gold.transactions = 0;
+        }
+
+        // Get payout stats (check if table exists)
+        try {
+          const payoutStats = await pool.query(`
+            SELECT 
+              status,
+              COUNT(*) as count,
+              SUM(CAST(payout_sol AS NUMERIC)) as total_sol
+            FROM gold_sales
+            GROUP BY status
+          `);
+          
+          payoutStats.rows.forEach(row => {
+            if (row.status === 'pending') {
+              stats.payouts.pending = parseInt(row.count) || 0;
+              stats.payouts.pendingSol = parseFloat(row.total_sol) || 0;
+            } else if (row.status === 'completed') {
+              stats.payouts.completed = parseInt(row.count) || 0;
+              stats.payouts.completedSol = parseFloat(row.total_sol) || 0;
+            }
+          });
+        } catch (tableError) {
+          console.log('⚠️ gold_sales table not found for payout stats');
+        }
+
+        // Calculate total revenue
+        stats.revenue.totalReceived = stats.land.revenue + stats.pickaxes.revenue;
+        stats.revenue.totalPaidOut = stats.payouts.completedSol;
+        stats.revenue.profit = stats.revenue.totalReceived - stats.revenue.totalPaidOut;
 
       } catch (dbError) {
         console.error('⚠️ Database query error:', dbError);
+        console.error('⚠️ Stack:', dbError.stack);
       }
 
       return res.status(200).json({
@@ -167,31 +215,39 @@ export default async function handler(req, res) {
 
     // Get pending payouts
     if (action === 'pending_payouts') {
-      const payouts = await pool.query(`
-        SELECT 
-          id,
-          wallet_address,
-          gold_amount,
-          payout_sol,
-          created_at,
-          status
-        FROM gold_sales 
-        WHERE status = 'pending' 
-        ORDER BY created_at DESC
-        LIMIT 100
-      `);
+      try {
+        const payouts = await pool.query(`
+          SELECT 
+            id,
+            user_address,
+            gold_amount,
+            payout_sol,
+            created_at,
+            status
+          FROM gold_sales 
+          WHERE status = 'pending' 
+          ORDER BY created_at DESC
+          LIMIT 100
+        `);
 
-      return res.status(200).json({
-        success: true,
-        payouts: payouts.rows.map(row => ({
-          id: row.id,
-          wallet: row.wallet_address,
-          goldAmount: parseInt(row.gold_amount),
-          solAmount: parseFloat(row.payout_sol),
-          createdAt: row.created_at,
-          status: row.status
-        }))
-      });
+        return res.status(200).json({
+          success: true,
+          payouts: payouts.rows.map(row => ({
+            id: row.id,
+            wallet: row.user_address,
+            goldAmount: parseInt(row.gold_amount),
+            solAmount: parseFloat(row.payout_sol),
+            createdAt: row.created_at,
+            status: row.status
+          }))
+        });
+      } catch (tableError) {
+        console.log('⚠️ gold_sales table does not exist yet');
+        return res.status(200).json({
+          success: true,
+          payouts: []
+        });
+      }
     }
 
     // Get user list
