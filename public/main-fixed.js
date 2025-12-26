@@ -173,6 +173,68 @@ const LAND_STATUS_CACHE = {
 
 const $ = (sel) => document.querySelector(sel);
 
+// 🔍 Get Phantom provider with proper detection and waiting
+async function getPhantomProvider() {
+  // Check if Phantom is already available
+  if ('phantom' in window) {
+    const phantomProvider = window.phantom?.solana;
+    if (phantomProvider?.isPhantom) {
+      console.log('✅ Phantom wallet detected');
+      return phantomProvider;
+    }
+  }
+  
+  // Check for standalone Solana provider (old Phantom versions)
+  if ('solana' in window) {
+    const provider = window.solana;
+    if (provider?.isPhantom) {
+      console.log('✅ Phantom wallet detected (legacy)');
+      return provider;
+    }
+  }
+  
+  // Wait up to 3 seconds for Phantom to initialize
+  console.log('⏳ Waiting for Phantom wallet to initialize...');
+  
+  return new Promise((resolve) => {
+    let attempts = 0;
+    const maxAttempts = 30; // 3 seconds (30 x 100ms)
+    
+    const checkInterval = setInterval(() => {
+      attempts++;
+      
+      // Check phantom object
+      if ('phantom' in window) {
+        const phantomProvider = window.phantom?.solana;
+        if (phantomProvider?.isPhantom) {
+          clearInterval(checkInterval);
+          console.log('✅ Phantom wallet detected after waiting');
+          resolve(phantomProvider);
+          return;
+        }
+      }
+      
+      // Check legacy solana object
+      if ('solana' in window) {
+        const provider = window.solana;
+        if (provider?.isPhantom) {
+          clearInterval(checkInterval);
+          console.log('✅ Phantom wallet detected (legacy) after waiting');
+          resolve(provider);
+          return;
+        }
+      }
+      
+      // Timeout after max attempts
+      if (attempts >= maxAttempts) {
+        clearInterval(checkInterval);
+        console.log('❌ Phantom wallet not found after 3 seconds');
+        resolve(null);
+      }
+    }, 100); // Check every 100ms
+  });
+}
+
 // 📡 Load configuration and initialize system
 async function loadConfig() {
   try {
@@ -295,9 +357,10 @@ function changeQuantity(pickaxeType, delta) {
 async function connectWallet() {
   console.log('🔗 Connecting wallet...');
   
-  const provider = window.solana || window.phantom?.solana;
+  // Wait for Phantom to be ready
+  const provider = await getPhantomProvider();
   if (!provider) {
-    alert('Phantom wallet not found. Please install Phantom.');
+    alert('Phantom wallet not found. Please install Phantom from https://phantom.app');
     return;
   }
   
