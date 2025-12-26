@@ -61,30 +61,55 @@
       font-weight: 500;
     }
 
+    /* Table-style layout */
+    .leaderboard-table {
+      background: rgba(0, 0, 0, 0.75);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 215, 0, 0.3);
+    }
+
+    .table-header {
+      display: grid;
+      grid-template-columns: 60px 1fr 200px 120px;
+      gap: 15px;
+      padding: 15px 20px;
+      background: rgba(255, 215, 0, 0.15);
+      border-bottom: 2px solid #FFD700;
+      font-weight: 700;
+      font-size: 13px;
+      color: #FFD700;
+    }
+
+    .table-header > div {
+      text-align: left;
+    }
+
+    .table-header > div:first-child {
+      text-align: center;
+    }
+
     .leaderboard-list {
       display: flex;
       flex-direction: column;
-      gap: 20px;
     }
 
     .leaderboard-item {
-      background: rgba(0, 0, 0, 0.75);
-      border-radius: 12px;
-      padding: 15px 20px;
-      display: flex;
-      align-items: center;
+      display: grid;
+      grid-template-columns: 60px 1fr 200px 120px;
       gap: 15px;
+      padding: 15px 20px;
+      align-items: center;
       transition: all 0.2s ease;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      position: relative;
-      overflow: hidden;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .leaderboard-item:last-child {
+      border-bottom: none;
     }
 
     .leaderboard-item:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 20px rgba(255, 215, 0, 0.2);
-      border-color: rgba(255, 215, 0, 0.5);
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(255, 215, 0, 0.08);
     }
 
     .leaderboard-item.rank-1 {
@@ -102,69 +127,49 @@
       background: linear-gradient(135deg, rgba(205, 127, 50, 0.2), rgba(0, 0, 0, 0.8));
     }
 
-    .rank-badge {
-      font-size: 24px;
-      font-weight: 700;
-      min-width: 50px;
+    /* Rank column */
+    .rank-cell {
       text-align: center;
-      color: #AAA;
+      font-size: 18px;
+      font-weight: 700;
+      color: #888;
     }
 
-    .rank-1 .rank-badge {
+    .rank-1 .rank-cell {
       color: #FFD700;
       text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
     }
 
-    .rank-2 .rank-badge {
+    .rank-2 .rank-cell {
       color: #C0C0C0;
       text-shadow: 0 0 10px rgba(192, 192, 192, 0.4);
     }
 
-    .rank-3 .rank-badge {
+    .rank-3 .rank-cell {
       color: #CD7F32;
       text-shadow: 0 0 10px rgba(205, 127, 50, 0.4);
     }
 
-    .rank-badge .trophy {
-      font-size: 32px;
-    }
-
-    .player-info {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .wallet-address {
+    /* Wallet column */
+    .wallet-cell {
       font-family: 'Courier New', monospace;
       font-size: 13px;
       color: #FFD700;
       font-weight: 600;
-      margin-bottom: 8px;
     }
 
-    .player-stats {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-
-    .stat {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      color: #DDD;
-    }
-
-    .stat-icon {
-      font-size: 16px;
-    }
-
-    .stat-value {
+    /* Gold column */
+    .gold-cell {
+      font-size: 14px;
+      color: #FFF;
       font-weight: 600;
-      color: #FFD700;
+    }
+
+    /* Referrals column */
+    .referrals-cell {
+      font-size: 14px;
+      color: #FFF;
+      font-weight: 600;
     }
 
     .back-button {
@@ -192,26 +197,21 @@
     }
 
     @media (max-width: 768px) {
-      .leaderboard-header h1 {
-        font-size: 32px;
-      }
-
+      .table-header,
       .leaderboard-item {
-        flex-direction: column;
-        text-align: center;
+        grid-template-columns: 50px 1fr;
+        gap: 10px;
       }
 
-      .rank-badge {
-        font-size: 36px;
-        min-width: auto;
+      .table-header > div:nth-child(3),
+      .table-header > div:nth-child(4),
+      .gold-cell,
+      .referrals-cell {
+        display: none;
       }
 
-      .player-stats {
-        justify-content: center;
-      }
-
-      .wallet-address {
-        font-size: 14px;
+      .wallet-cell {
+        font-size: 11px;
       }
     }
   </style>
@@ -232,8 +232,16 @@
       </div>
     </div>
 
-    <div class="leaderboard-list" id="leaderboard">
-      <!-- Leaderboard items will be generated here -->
+    <div class="leaderboard-table">
+      <div class="table-header">
+        <div>Rank</div>
+        <div>Wallet Address</div>
+        <div>💰 Total Gold Mined</div>
+        <div>👥 Referrals</div>
+      </div>
+      <div class="leaderboard-list" id="leaderboard">
+        <!-- Leaderboard items will be generated here -->
+      </div>
     </div>
   </div>
 
@@ -322,22 +330,10 @@
         item.className = `leaderboard-item ${rankClass}`;
         
         item.innerHTML = `
-          <div class="rank-badge">
-            <div class="trophy">${getRankEmoji(rank)}</div>
-          </div>
-          <div class="player-info">
-            <div class="wallet-address">${formatWallet(player.wallet)}</div>
-            <div class="player-stats">
-              <div class="stat">
-                <span class="stat-icon">💰</span>
-                <span>Gold Mined: <span class="stat-value">${formatGold(player.gold)}</span></span>
-              </div>
-              <div class="stat">
-                <span class="stat-icon">👥</span>
-                <span>Referrals: <span class="stat-value">${player.referrals}</span></span>
-              </div>
-            </div>
-          </div>
+          <div class="rank-cell">${getRankEmoji(rank)}</div>
+          <div class="wallet-cell">${formatWallet(player.wallet)}</div>
+          <div class="gold-cell">${formatGold(player.gold)}</div>
+          <div class="referrals-cell">${player.referrals}</div>
         `;
         
         leaderboard.appendChild(item);
