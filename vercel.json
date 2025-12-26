@@ -4,5 +4,15 @@
     "api/*.js": {
       "maxDuration": 30
     }
-  }
+  },
+  "routes": [
+    {
+      "src": "/leaderboard.html",
+      "dest": "/leaderboard.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
 }
