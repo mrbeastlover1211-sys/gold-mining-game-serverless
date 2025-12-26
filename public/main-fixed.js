@@ -1616,15 +1616,20 @@ async function sellGold() {
   // Calculate real-time gold including mined gold
   let currentGold = 0;
   
-  // Try to get gold from optimized mining engine first (most accurate)
-  if (state.optimizedMiningEngine && state.optimizedMiningEngine.getCurrentGold) {
-    currentGold = state.optimizedMiningEngine.getCurrentGold();
-    console.log(`💰 Current gold from mining engine: ${currentGold}`);
+  // Use the mining engine's checkpoint to calculate current gold
+  if (state.optimizedMiningEngine && state.optimizedMiningEngine.checkpoint) {
+    currentGold = calculateGoldFromCheckpoint(state.optimizedMiningEngine.checkpoint);
+    console.log(`💰 Current gold from checkpoint calculation: ${currentGold}`);
   } 
-  // Fallback to status gold
+  // Fallback to checkpoint directly
+  else if (state.checkpoint) {
+    currentGold = calculateGoldFromCheckpoint(state.checkpoint);
+    console.log(`💰 Current gold from state.checkpoint: ${currentGold}`);
+  }
+  // Last resort: use status gold
   else {
     currentGold = state.status.gold || 0;
-    console.log(`💰 Current gold from status: ${currentGold}`);
+    console.log(`💰 Current gold from status (fallback): ${currentGold}`);
   }
   
   console.log(`💰 Final gold for selling check: ${currentGold}`);
