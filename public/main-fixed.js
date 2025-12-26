@@ -1625,6 +1625,26 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
           state.status.inventory = result.inventory;
         }
         
+        // CRITICAL FIX: Update total mining power after purchase
+        let newTotalMiningPower = 0;
+        if (result.inventory) {
+          newTotalMiningPower = (result.inventory.silver || 0) * 1 +
+                                (result.inventory.gold || 0) * 10 +
+                                (result.inventory.diamond || 0) * 100 +
+                                (result.inventory.netherite || 0) * 1000;
+        }
+        
+        // Update checkpoint with new mining power
+        if (state.checkpoint) {
+          state.checkpoint.total_mining_power = newTotalMiningPower;
+          
+          // Restart mining engine with updated power
+          if (state.optimizedMiningEngine && newTotalMiningPower > 0) {
+            state.optimizedMiningEngine.checkpoint = state.checkpoint;
+            console.log(`⛏️ Updated mining power to ${newTotalMiningPower}/min`);
+          }
+        }
+        
         // Update UI with new values
         updateDisplay({
           gold: result.newGold,
@@ -1633,6 +1653,7 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
         });
         
         console.log(`✅ Gold deducted: ${currentGold.toFixed(2)} → ${result.newGold.toFixed(2)}`);
+        console.log(`✅ Mining power updated to: ${newTotalMiningPower}/min`);
       }
       
       // Also refresh from server to ensure consistency
@@ -1740,7 +1761,34 @@ async function sellGold() {
       $('#sellMsg').style.color = '#4CAF50';
       $('#goldToSell').value = '';
       
-      // Refresh status to show updated gold
+      // CRITICAL FIX: Update gold immediately after selling
+      if (result.newGold !== undefined) {
+        state.status.gold = result.newGold;
+        
+        // Update checkpoint with new gold value
+        if (state.checkpoint) {
+          state.checkpoint.last_checkpoint_gold = result.newGold;
+          state.checkpoint.checkpoint_timestamp = Math.floor(Date.now() / 1000);
+          
+          // Update mining engine checkpoint
+          if (state.optimizedMiningEngine) {
+            state.optimizedMiningEngine.checkpoint = state.checkpoint;
+          }
+        }
+        
+        // Update UI display immediately
+        const totalGoldEl = $('#totalGold');
+        if (totalGoldEl) {
+          totalGoldEl.textContent = result.newGold.toLocaleString('en-US', { 
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2 
+          });
+        }
+        
+        console.log(`✅ Gold updated after sell: ${result.newGold}`);
+      }
+      
+      // Refresh status to show updated gold from server
       await refreshStatus(true);
     } else {
       throw new Error(result.error || 'Sell failed');
