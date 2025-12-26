@@ -3,25 +3,25 @@
 
 const backgrounds = [
   // Videos (mp4)
-  { type: 'video', src: '../image/blue-lake-minecraft.1920x1080.mp4' },
-  { type: 'video', src: '../image/cherry-leaves.1920x1080.mp4' },
-  { type: 'video', src: '../image/fancy-center-minecraft.3840x2160.mp4' },
-  { type: 'video', src: '../image/minecraft-dog.3840x2160.mp4' },
-  { type: 'video', src: '../image/minecraft-house.3840x2160.mp4' },
-  { type: 'video', src: '../image/minecraft-rainy-landscape.1920x1080.mp4' },
-  { type: 'video', src: '../image/minecraft-sunset2.3840x2160.mp4' },
-  { type: 'video', src: '../image/portal-in-minecraft.3840x2160.mp4' },
-  { type: 'video', src: '../image/raindrops-minecraft.1920x1080.mp4' },
+  { type: 'video', src: 'assets/backgrounds/blue-lake-minecraft.1920x1080.mp4' },
+  { type: 'video', src: 'assets/backgrounds/cherry-leaves.1920x1080.mp4' },
+  { type: 'video', src: 'assets/backgrounds/fancy-center-minecraft.3840x2160.mp4' },
+  { type: 'video', src: 'assets/backgrounds/minecraft-dog.3840x2160.mp4' },
+  { type: 'video', src: 'assets/backgrounds/minecraft-house.3840x2160.mp4' },
+  { type: 'video', src: 'assets/backgrounds/minecraft-rainy-landscape.1920x1080.mp4' },
+  { type: 'video', src: 'assets/backgrounds/minecraft-sunset2.3840x2160.mp4' },
+  { type: 'video', src: 'assets/backgrounds/portal-in-minecraft.3840x2160.mp4' },
+  { type: 'video', src: 'assets/backgrounds/raindrops-minecraft.1920x1080.mp4' },
   
   // Images (jpg, webp)
-  { type: 'image', src: '../image/beautiful-minecraft-wooden-mansion-izpd9ai80etyb2kk.jpg' },
-  { type: 'image', src: '../image/minecraft-1106252_1920.jpg' },
-  { type: 'image', src: '../image/wp15148770-minecraft-sunrise-wallpapers.webp' },
-  { type: 'image', src: '../image/wp15148789-minecraft-sunrise-wallpapers.webp' },
-  { type: 'image', src: '../image/wp15148791-minecraft-sunrise-wallpapers.webp' },
-  { type: 'image', src: '../image/wp15148793-minecraft-sunrise-wallpapers.webp' },
-  { type: 'image', src: '../image/wp15225188-cave-minecraft-wallpapers.webp' },
-  { type: 'image', src: '../image/wp15225216-cave-minecraft-wallpapers.webp' },
+  { type: 'image', src: 'assets/backgrounds/beautiful-minecraft-wooden-mansion-izpd9ai80etyb2kk.jpg' },
+  { type: 'image', src: 'assets/backgrounds/minecraft-1106252_1920.jpg' },
+  { type: 'image', src: 'assets/backgrounds/wp15148770-minecraft-sunrise-wallpapers.webp' },
+  { type: 'image', src: 'assets/backgrounds/wp15148789-minecraft-sunrise-wallpapers.webp' },
+  { type: 'image', src: 'assets/backgrounds/wp15148791-minecraft-sunrise-wallpapers.webp' },
+  { type: 'image', src: 'assets/backgrounds/wp15148793-minecraft-sunrise-wallpapers.webp' },
+  { type: 'image', src: 'assets/backgrounds/wp15225188-cave-minecraft-wallpapers.webp' },
+  { type: 'image', src: 'assets/backgrounds/wp15225216-cave-minecraft-wallpapers.webp' },
 ];
 
 function setRandomBackground() {
