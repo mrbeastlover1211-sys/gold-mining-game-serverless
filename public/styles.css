@@ -4331,7 +4331,8 @@ h6 { font-size: 12px; }
 
 
 /* How it Works Button - Enhanced Glowing Effect */
-.how-it-works-btn {
+.how-it-works-btn,
+.leaderboard-btn {
   background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
   border: none;
   color: white;
@@ -4376,7 +4377,8 @@ h6 { font-size: 12px; }
   }
 }
 
-.how-it-works-btn:hover {
+.how-it-works-btn:hover,
+.leaderboard-btn:hover {
   transform: translateY(-2px) scale(1.1);
   box-shadow: 
     0 0 40px rgba(74, 222, 128, 1),
