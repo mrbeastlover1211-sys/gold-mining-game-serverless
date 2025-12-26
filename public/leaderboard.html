@@ -24,40 +24,41 @@
 
     .leaderboard-header {
       text-align: center;
-      margin-bottom: 40px;
-      background: rgba(0, 0, 0, 0.7);
-      padding: 30px;
-      border-radius: 20px;
-      border: 3px solid #FFD700;
+      margin-bottom: 30px;
+      background: rgba(0, 0, 0, 0.85);
+      padding: 20px;
+      border-radius: 15px;
+      border: 2px solid #FFD700;
     }
 
     .leaderboard-header h1 {
-      font-size: 48px;
+      font-size: 32px;
       color: #FFD700;
-      text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-      margin-bottom: 10px;
+      text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+      margin-bottom: 8px;
+      font-weight: 600;
     }
 
     .leaderboard-header .subtitle {
-      font-size: 18px;
-      color: #FFF;
-      margin-top: 10px;
+      font-size: 14px;
+      color: #CCC;
+      margin-top: 5px;
     }
 
     .refresh-notice {
-      background: rgba(255, 215, 0, 0.2);
-      padding: 15px;
-      border-radius: 10px;
-      margin: 20px 0;
+      background: rgba(255, 215, 0, 0.15);
+      padding: 10px;
+      border-radius: 8px;
+      margin: 15px 0 0 0;
       text-align: center;
-      border: 2px solid #FFD700;
+      border: 1px solid rgba(255, 215, 0, 0.5);
     }
 
     .refresh-notice p {
       margin: 0;
       color: #FFD700;
-      font-size: 16px;
-      font-weight: bold;
+      font-size: 12px;
+      font-weight: 500;
     }
 
     .leaderboard-list {
@@ -67,22 +68,23 @@
     }
 
     .leaderboard-item {
-      background: rgba(0, 0, 0, 0.8);
-      border-radius: 15px;
-      padding: 25px;
+      background: rgba(0, 0, 0, 0.75);
+      border-radius: 12px;
+      padding: 15px 20px;
       display: flex;
       align-items: center;
-      gap: 20px;
-      transition: all 0.3s ease;
-      border: 2px solid transparent;
+      gap: 15px;
+      transition: all 0.2s ease;
+      border: 1px solid rgba(255, 255, 255, 0.1);
       position: relative;
       overflow: hidden;
     }
 
     .leaderboard-item:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
-      border-color: #FFD700;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(255, 215, 0, 0.2);
+      border-color: rgba(255, 215, 0, 0.5);
+      background: rgba(0, 0, 0, 0.85);
     }
 
     .leaderboard-item.rank-1 {
@@ -101,29 +103,30 @@
     }
 
     .rank-badge {
-      font-size: 48px;
-      font-weight: bold;
-      min-width: 80px;
+      font-size: 24px;
+      font-weight: 700;
+      min-width: 50px;
       text-align: center;
+      color: #AAA;
     }
 
     .rank-1 .rank-badge {
       color: #FFD700;
-      text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
     }
 
     .rank-2 .rank-badge {
       color: #C0C0C0;
-      text-shadow: 0 0 20px rgba(192, 192, 192, 0.6);
+      text-shadow: 0 0 10px rgba(192, 192, 192, 0.4);
     }
 
     .rank-3 .rank-badge {
       color: #CD7F32;
-      text-shadow: 0 0 20px rgba(205, 127, 50, 0.6);
+      text-shadow: 0 0 10px rgba(205, 127, 50, 0.4);
     }
 
     .rank-badge .trophy {
-      font-size: 60px;
+      font-size: 32px;
     }
 
     .player-info {
@@ -135,47 +138,48 @@
 
     .wallet-address {
       font-family: 'Courier New', monospace;
-      font-size: 18px;
+      font-size: 13px;
       color: #FFD700;
-      font-weight: bold;
+      font-weight: 600;
+      margin-bottom: 8px;
     }
 
     .player-stats {
       display: flex;
-      gap: 30px;
+      gap: 20px;
       flex-wrap: wrap;
     }
 
     .stat {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 16px;
-      color: #FFF;
+      gap: 6px;
+      font-size: 13px;
+      color: #DDD;
     }
 
     .stat-icon {
-      font-size: 24px;
+      font-size: 16px;
     }
 
     .stat-value {
-      font-weight: bold;
+      font-weight: 600;
       color: #FFD700;
     }
 
     .back-button {
       position: fixed;
-      top: 20px;
-      left: 20px;
-      background: rgba(0, 0, 0, 0.8);
+      top: 15px;
+      left: 15px;
+      background: rgba(0, 0, 0, 0.85);
       color: #FFD700;
-      padding: 15px 30px;
-      border-radius: 10px;
-      border: 2px solid #FFD700;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: 1px solid #FFD700;
       cursor: pointer;
-      font-size: 18px;
-      font-weight: bold;
-      transition: all 0.3s ease;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s ease;
       text-decoration: none;
       display: inline-block;
       z-index: 1000;
@@ -184,7 +188,7 @@
     .back-button:hover {
       background: #FFD700;
       color: #000;
-      transform: scale(1.05);
+      transform: translateX(-3px);
     }
 
     @media (max-width: 768px) {
