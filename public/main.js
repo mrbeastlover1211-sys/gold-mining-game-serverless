@@ -1478,7 +1478,7 @@ async function sellGold() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         address: state.address,
-        goldAmount: goldToSell
+        amountGold: goldToSell  // Backend expects 'amountGold' not 'goldAmount'
       })
     });
 
