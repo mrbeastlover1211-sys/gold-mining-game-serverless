@@ -6,11 +6,20 @@
   <title>🏆 Biggest Miners - Leaderboard</title>
   <link rel="stylesheet" href="styles.css">
   <style>
+    /* Enable scrolling */
+    body {
+      overflow-y: auto !important;
+      height: auto !important;
+      min-height: 100vh;
+    }
+
     /* Leaderboard specific styles */
     .leaderboard-container {
       max-width: 1200px;
       margin: 40px auto;
-      padding: 20px;
+      padding: 20px 20px 100px 20px; /* Extra bottom padding for scrolling */
+      position: relative;
+      z-index: 1;
     }
 
     .leaderboard-header {
