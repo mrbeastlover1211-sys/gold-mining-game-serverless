@@ -1613,9 +1613,25 @@ async function sellGold() {
     return;
   }
 
-  const currentGold = state.status.gold || 0;
+  // Calculate real-time gold including mined gold
+  let currentGold = 0;
+  
+  // Try to get gold from optimized mining engine first (most accurate)
+  if (state.optimizedMiningEngine && state.optimizedMiningEngine.getCurrentGold) {
+    currentGold = state.optimizedMiningEngine.getCurrentGold();
+    console.log(`💰 Current gold from mining engine: ${currentGold}`);
+  } 
+  // Fallback to status gold
+  else {
+    currentGold = state.status.gold || 0;
+    console.log(`💰 Current gold from status: ${currentGold}`);
+  }
+  
+  console.log(`💰 Final gold for selling check: ${currentGold}`);
+  console.log(`💰 User wants to sell: ${goldToSell}`);
+  
   if (goldToSell > currentGold) {
-    alert(`Not enough gold! You have ${currentGold.toLocaleString()} gold available`);
+    alert(`Not enough gold! You have ${Math.floor(currentGold).toLocaleString()} gold available`);
     return;
   }
 
