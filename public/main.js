@@ -1283,7 +1283,10 @@ async function autoCheckReferralCompletion() {
     
     const response = await fetch('/api/complete-referral', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include', // 🔧 CRITICAL: Include cookies in request
       body: JSON.stringify({ address: state.address })
     });
     

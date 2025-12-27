@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   try {
     console.log('🎁 Processing referral completion...');
     
-    const { method, body } = req;
+    const { method, body, headers } = req;
     
     if (method !== 'POST') {
       return res.status(405).json({ error: 'Method not allowed' });
@@ -21,21 +21,52 @@ export default async function handler(req, res) {
     
     console.log('👤 Checking referral completion for:', address.slice(0, 8) + '...');
     
+    // 🔧 CRITICAL: Get session from cookies
+    const cookies = headers.cookie || '';
+    const sessionMatch = cookies.match(/referral_session=([^;]+)/);
+    const sessionId = sessionMatch ? sessionMatch[1] : null;
+    
+    console.log('🍪 Cookie info:', {
+      hasCookie: !!sessionId,
+      sessionId: sessionId ? sessionId.slice(0, 20) + '...' : 'none'
+    });
+    
     client = await pool.connect();
     
     try {
-      // 1. Find referral for this address (converted = true means wallet was linked)
-      const pendingReferral = await client.query(`
-        SELECT * FROM referral_visits 
-        WHERE converted_address = $1 
-        AND converted = true
-        AND expires_at > CURRENT_TIMESTAMP
-        AND NOT EXISTS (
-          SELECT 1 FROM referrals 
-          WHERE referrals.referred_address = $1 
-          AND referrals.status IN ('completed', 'active', 'completed_referral')
-        )
-      `, [address]);
+      // 1. Find referral for this address using session cookie OR converted address
+      let pendingReferral;
+      
+      if (sessionId) {
+        // Try with session cookie first (most reliable)
+        pendingReferral = await client.query(`
+          SELECT * FROM referral_visits 
+          WHERE session_id = $1
+          AND expires_at > CURRENT_TIMESTAMP
+          AND NOT EXISTS (
+            SELECT 1 FROM referrals 
+            WHERE referrals.referred_address = $2
+            AND referrals.status IN ('completed', 'active', 'completed_referral')
+          )
+        `, [sessionId, address]);
+        
+        console.log('🔍 Found referral by session cookie:', pendingReferral.rows.length > 0);
+      } else {
+        // Fallback: try with converted address
+        pendingReferral = await client.query(`
+          SELECT * FROM referral_visits 
+          WHERE converted_address = $1 
+          AND converted = true
+          AND expires_at > CURRENT_TIMESTAMP
+          AND NOT EXISTS (
+            SELECT 1 FROM referrals 
+            WHERE referrals.referred_address = $1 
+            AND referrals.status IN ('completed', 'active', 'completed_referral')
+          )
+        `, [address]);
+        
+        console.log('🔍 Found referral by converted address:', pendingReferral.rows.length > 0);
+      }
       
       if (pendingReferral.rows.length === 0) {
         // Check if referral was already completed
