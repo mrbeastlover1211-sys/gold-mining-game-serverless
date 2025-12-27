@@ -225,7 +225,6 @@ export default async function handler(req, res) {
       let rewardPickaxeType = '';
       let rewardPickaxeCount = 1;
       const goldReward = 100; // Gold reward for referrer
-      const newUserGoldBonus = 1000; // Gold bonus for new user who used referral link
       
       if (newReferralCount >= 1 && newReferralCount <= 10) {
         rewardPickaxeType = 'silver';
@@ -277,19 +276,9 @@ export default async function handler(req, res) {
         throw saveError;
       }
       
-      // 5.5. Give 1000 gold bonus to new user who used referral link
-      console.log('🎁 Giving 1000 gold bonus to new user...');
-      const newUserData = await getUserOptimized(address, false);
-      if (newUserData) {
-        newUserData.last_checkpoint_gold = parseFloat(newUserData.last_checkpoint_gold || 0) + newUserGoldBonus;
-        try {
-          await saveUserOptimized(address, newUserData);
-          console.log('✅ New user bonus (1000 gold) distributed successfully');
-        } catch (bonusError) {
-          console.error('❌ Error saving new user bonus:', bonusError.message);
-          // Don't throw - referrer reward already saved
-        }
-      }
+      // NOTE: 1000 gold bonus for new user is now given in confirm-land-purchase.js
+      // This ensures they get it immediately when buying land, not when buying pickaxe
+      console.log('ℹ️ New user already received 1000 gold bonus when they purchased land');
       
       // 6. Mark referral as completed (use only existing columns)
       await client.query(`
@@ -356,8 +345,8 @@ export default async function handler(req, res) {
           pickaxe_type: rewardPickaxeType,
           pickaxe_count: rewardPickaxeCount,
           gold_reward: goldReward,
-          new_user_gold_bonus: newUserGoldBonus,
-          new_referral_count: referrerData.total_referrals
+          new_referral_count: referrerData.total_referrals,
+          note: 'New user received 1000 gold bonus when they purchased land'
         },
         session_id: referralVisit.session_id
       });

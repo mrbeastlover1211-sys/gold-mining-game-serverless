@@ -17,6 +17,17 @@ export default async function handler(req, res) {
     if (!address || !signature) {
       return res.status(400).json({ error: 'address and signature required' });
     }
+    
+    // 🔧 Read referral session from cookies
+    const cookies = req.headers.cookie || '';
+    const sessionMatch = cookies.match(/referral_session=([^;]+)/);
+    const sessionId = sessionMatch ? sessionMatch[1] : null;
+    
+    console.log('🍪 Confirm land purchase - Cookie info:', {
+      hasCookie: !!sessionId,
+      sessionId: sessionId ? sessionId.slice(0, 20) + '...' : 'none',
+      address: address.slice(0, 8) + '...'
+    });
 
     global.users = global.users || {};
     
@@ -115,14 +126,43 @@ export default async function handler(req, res) {
         const client = await pool.connect();
         
         try {
-          // Check if user came from referral link
-          const referralCheck = await client.query(`
-            SELECT referrer_address, session_id 
-            FROM referral_visits 
-            WHERE converted_address = $1 
-              AND converted = true
-            LIMIT 1
-          `, [address]);
+          // Check if user came from referral link (using session cookie OR converted address)
+          let referralCheck;
+          
+          if (sessionId) {
+            // Try session cookie first (most reliable)
+            referralCheck = await client.query(`
+              SELECT referrer_address, session_id 
+              FROM referral_visits 
+              WHERE session_id = $1
+                AND expires_at > CURRENT_TIMESTAMP
+              LIMIT 1
+            `, [sessionId]);
+            
+            console.log('🔍 Referral check by session cookie:', referralCheck.rows.length > 0 ? 'FOUND' : 'NOT FOUND');
+            
+            // If found, link this wallet to the session
+            if (referralCheck.rows.length > 0) {
+              await client.query(`
+                UPDATE referral_visits 
+                SET converted_address = $1, converted = true, converted_timestamp = CURRENT_TIMESTAMP
+                WHERE session_id = $2
+              `, [address, sessionId]);
+              
+              console.log('✅ Linked wallet to referral session');
+            }
+          } else {
+            // Fallback: try converted address
+            referralCheck = await client.query(`
+              SELECT referrer_address, session_id 
+              FROM referral_visits 
+              WHERE converted_address = $1 
+                AND converted = true
+              LIMIT 1
+            `, [address]);
+            
+            console.log('🔍 Referral check by converted address:', referralCheck.rows.length > 0 ? 'FOUND' : 'NOT FOUND');
+          }
           
           if (referralCheck.rows.length > 0) {
             // User was referred! Give 1000 gold bonus
@@ -131,6 +171,8 @@ export default async function handler(req, res) {
             referralBonusGiven = true;
             
             console.log(`🎁 Referral bonus: Gave ${address.slice(0, 8)}... 1000 gold (from referrer: ${referralCheck.rows[0].referrer_address.slice(0, 8)}...)`);
+          } else {
+            console.log('ℹ️ No referral session found - no bonus given');
           }
         } finally {
           client.release();
