@@ -2241,7 +2241,7 @@ function copyReferralLink() {
 // 📱 Social Sharing Functions
 function sharePromotersOnTwitter() {
   const text = "🚀 Earn 5-50 SOL daily promoting this amazing gold mining game!";
-  const url = $('#promotersLink').value || 'https://gold-mining-game-serverless.vercel.app';
+  const url = $('#promotersLink').value || 'https://www.thegoldmining.com';
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
   window.open(twitterUrl, '_blank');
 }
