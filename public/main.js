@@ -1608,7 +1608,7 @@ async function updatePromotersStatus() {
   if (walletConnected && hasLand) {
     $('#promotersRequirement').style.display = 'none';
     $('#promotersLinkSection').style.display = 'block';
-    $('#promotersLink').value = `https://gold-mining-game-serverless.vercel.app/?ref=${state.address}`;
+    $('#promotersLink').value = `https://www.thegoldmining.com/?ref=${state.address}`;
   } else {
     $('#promotersRequirement').style.display = 'block';
     $('#promotersLinkSection').style.display = 'none';
@@ -1740,7 +1740,7 @@ async function updateReferralStatus() {
   if (walletConnected && hasLand) {
     $('#referralRequirement').style.display = 'none';
     $('#referralLinkSection').style.display = 'block';
-    $('#referralLink').value = `https://gold-mining-game-serverless.vercel.app/?ref=${state.address}`;
+    $('#referralLink').value = `https://www.thegoldmining.com/?ref=${state.address}`;
   } else {
     $('#referralRequirement').style.display = 'block';
     $('#referralLinkSection').style.display = 'none';
@@ -1869,32 +1869,32 @@ function copyReferralLink() {
 // 📱 Social Sharing Functions
 function sharePromotersOnTwitter() {
   const text = "🚀 Earn 5-50 SOL daily promoting this amazing gold mining game!";
-  const url = $('#promotersLink').value || 'https://gold-mining-game-serverless.vercel.app';
+  const url = $('#promotersLink').value || 'https://www.thegoldmining.com';
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
   window.open(twitterUrl, '_blank');
 }
 
 function sharePromotersOnFacebook() {
-  const url = $('#promotersLink').value || 'https://gold-mining-game-serverless.vercel.app';
+  const url = $('#promotersLink').value || 'https://www.thegoldmining.com';
   const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
   window.open(facebookUrl, '_blank');
 }
 
 function sharePromotersOnLinkedIn() {
-  const url = $('#promotersLink').value || 'https://gold-mining-game-serverless.vercel.app';
+  const url = $('#promotersLink').value || 'https://www.thegoldmining.com';
   const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
   window.open(linkedinUrl, '_blank');
 }
 
 function copyPromotersForInstagram() {
-  const text = "🚀 Earn 5-50 SOL daily promoting this amazing gold mining game! " + ($('#promotersLink').value || 'https://gold-mining-game-serverless.vercel.app');
+  const text = "🚀 Earn 5-50 SOL daily promoting this amazing gold mining game! " + ($('#promotersLink').value || 'https://www.thegoldmining.com');
   navigator.clipboard.writeText(text).then(() => {
     alert('Text copied for Instagram! Paste it in your Instagram post.');
   });
 }
 
 function copyPromotersForTikTok() {
-  const text = "🚀 Earn 5-50 SOL daily promoting this amazing gold mining game! " + ($('#promotersLink').value || 'https://gold-mining-game-serverless.vercel.app');
+  const text = "🚀 Earn 5-50 SOL daily promoting this amazing gold mining game! " + ($('#promotersLink').value || 'https://www.thegoldmining.com');
   navigator.clipboard.writeText(text).then(() => {
     alert('Text copied for TikTok! Paste it in your TikTok video description.');
   });
@@ -2087,7 +2087,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   if (shareX) {
     shareX.addEventListener('click', () => {
       const text = "🚀 Join this amazing gold mining game and earn SOL!";
-      const url = $('#referralLink').value || 'https://gold-mining-game-serverless.vercel.app';
+      const url = $('#referralLink').value || 'https://www.thegoldmining.com';
       const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
       window.open(twitterUrl, '_blank');
     });
@@ -2096,7 +2096,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   const shareDiscord = $('#shareDiscord');
   if (shareDiscord) {
     shareDiscord.addEventListener('click', () => {
-      const text = "🚀 Join this amazing gold mining game and earn SOL! " + ($('#referralLink').value || 'https://gold-mining-game-serverless.vercel.app');
+      const text = "🚀 Join this amazing gold mining game and earn SOL! " + ($('#referralLink').value || 'https://www.thegoldmining.com');
       navigator.clipboard.writeText(text).then(() => {
         alert('Link copied! Paste it in Discord.');
       });
@@ -2107,7 +2107,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   if (shareTelegram) {
     shareTelegram.addEventListener('click', () => {
       const text = "🚀 Join this amazing gold mining game and earn SOL!";
-      const url = $('#referralLink').value || 'https://gold-mining-game-serverless.vercel.app';
+      const url = $('#referralLink').value || 'https://www.thegoldmining.com';
       const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
       window.open(telegramUrl, '_blank');
     });
