@@ -158,11 +158,33 @@ export default async function handler(req, res) {
       }
       
       if (!referrerData) {
-        console.log('❌ Referrer not found in optimized database');
-        return res.json({
-          success: false,
-          error: 'Referrer not found in database'
-        });
+        console.log('⚠️ Referrer not found in database - creating new account...');
+        
+        // Create referrer account automatically
+        referrerData = {
+          address: referrerAddress,
+          has_land: false,
+          silver_pickaxes: 0,
+          gold_pickaxes: 0,
+          diamond_pickaxes: 0,
+          netherite_pickaxes: 0,
+          total_mining_power: 0,
+          last_checkpoint_gold: 0,
+          checkpoint_timestamp: Math.floor(Date.now() / 1000),
+          total_referrals: 0,
+          created_at: new Date().toISOString()
+        };
+        
+        try {
+          await saveUserOptimized(referrerAddress, referrerData);
+          console.log('✅ Created new referrer account successfully');
+        } catch (createError) {
+          console.error('❌ Error creating referrer account:', createError.message);
+          return res.json({
+            success: false,
+            error: 'Failed to create referrer account'
+          });
+        }
       }
       
       const currentReferrals = referrerData.total_referrals || 0;
