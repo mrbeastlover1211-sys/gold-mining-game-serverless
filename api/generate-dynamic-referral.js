@@ -16,9 +16,8 @@ export default async function handler(req, res) {
       
       console.log(`🎯 Generating dynamic referral link for ${referrerAddress.slice(0, 8)}...`);
       
-      // Get the latest deployment URL
-      const deploymentUrl = process.env.VERCEL_URL || 'gold-mining-game-serverless.vercel.app';
-      const baseUrl = deploymentUrl.startsWith('http') ? deploymentUrl : `https://${deploymentUrl}`;
+      // Use custom domain for referral links
+      const baseUrl = 'https://www.thegoldmining.com';
       
       // Create the dynamic referral link
       const referralLink = `${baseUrl}/?ref=${referrerAddress}`;
@@ -40,13 +39,12 @@ export default async function handler(req, res) {
       
     } else if (method === 'GET') {
       // Return current deployment info
-      const deploymentUrl = process.env.VERCEL_URL || 'gold-mining-game-serverless.vercel.app';
-      const baseUrl = deploymentUrl.startsWith('http') ? deploymentUrl : `https://${deploymentUrl}`;
+      const baseUrl = 'https://www.thegoldmining.com';
       
       return res.json({
         success: true,
         currentDeployment: {
-          url: deploymentUrl,
+          url: 'www.thegoldmining.com',
           baseUrl,
           isPreview: deploymentUrl !== 'gold-mining-game-serverless.vercel.app',
           timestamp: new Date().toISOString()
