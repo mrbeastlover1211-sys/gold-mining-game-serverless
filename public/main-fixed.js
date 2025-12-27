@@ -2463,7 +2463,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   const shareDiscord = $('#shareDiscord');
   if (shareDiscord) {
     shareDiscord.addEventListener('click', () => {
-      const text = "🚀 Join this amazing gold mining game and earn SOL! " + ($('#referralLink').value || `${window.location.origin}/?ref=${state.address || 'signup'}`);
+      const text = "🚀 Join this amazing gold mining game and earn SOL! " + ($('#referralLink').value || `https://www.thegoldmining.com/?ref=${state.address || 'signup'}`);
       navigator.clipboard.writeText(text).then(() => {
         alert('Link copied! Paste it in Discord.');
       });
