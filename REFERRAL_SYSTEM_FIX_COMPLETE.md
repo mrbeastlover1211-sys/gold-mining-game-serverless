@@ -89,18 +89,19 @@ buyPickaxe() → autoCheckReferralCompletion()
    - ✅ Referral session exists?
 5. **REFERRAL COMPLETED!**
 
-### **Step 5: Referrer Gets Rewards** 🎉
+### **Step 5: Rewards Distributed** 🎉
 ```javascript
 Automatic reward distribution
 ```
 
-**Rewards Based on Total Referrals:**
+**Referrer Rewards (Based on Total Referrals):**
 - **Referrals 1-10**: Silver Pickaxe + 100 gold
 - **Referrals 11-17**: Gold Pickaxe + 100 gold
 - **Referrals 18-24**: Diamond Pickaxe + 100 gold
 - **Referrals 25+**: Netherite Pickaxe + 100 gold
 
-**All tiers also receive:** 0.01 SOL
+**New User Bonus (Used Referral Link):**
+- **1000 Gold** - Free bonus for signing up via referral!
 
 ## 📊 Database Tables
 

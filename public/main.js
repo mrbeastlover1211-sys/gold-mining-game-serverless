@@ -1336,13 +1336,16 @@ function showReferralCompletionNotification(result) {
     <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">
       🎉 Referral Reward Earned!
     </div>
-    <div style="font-size: 14px; margin-bottom: 15px;">
-      Your referrer received:
+    <div style="background: rgba(76, 175, 80, 0.3); padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 2px solid rgba(76, 175, 80, 0.6);">
+      <div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">🎁 You received:</div>
+      <div style="font-size: 18px; font-weight: bold; color: #FFD700;">💰 ${rewards.new_user_gold_bonus || 1000} Gold Bonus!</div>
+    </div>
+    <div style="font-size: 14px; margin-bottom: 10px; opacity: 0.9;">
+      Your referrer also received:
     </div>
     <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
       <div>🔨 ${rewards.pickaxe_count || 1}x ${(rewards.pickaxe_type || 'silver').toUpperCase()} Pickaxe</div>
       <div>💰 ${rewards.gold_reward || 100} Gold</div>
-      <div>🪙 ${rewards.sol_reward || 0.01} SOL</div>
     </div>
     <div style="font-size: 12px; opacity: 0.9;">
       Referrals completed: ${rewards.new_referral_count || 1}

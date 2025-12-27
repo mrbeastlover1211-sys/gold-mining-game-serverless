@@ -171,7 +171,8 @@ export default async function handler(req, res) {
       // 4. Determine tier reward based on total referrals
       let rewardPickaxeType = '';
       let rewardPickaxeCount = 1;
-      const goldReward = 100;
+      const goldReward = 100; // Gold reward for referrer
+      const newUserGoldBonus = 1000; // Gold bonus for new user who used referral link
       
       if (newReferralCount >= 1 && newReferralCount <= 10) {
         rewardPickaxeType = 'silver';
@@ -208,9 +209,8 @@ export default async function handler(req, res) {
       // Update referrer using same system as status API
       console.log('🎁 Distributing rewards to referrer...');
       
-      // Update referrer data (ensure numeric conversion)
+      // Update referrer data (ensure numeric conversion) - NO SOL REWARD
       referrerData.total_referrals = currentReferrals + 1;
-      referrerData.referral_rewards_earned = parseFloat(referrerData.referral_rewards_earned || 0) + 0.01;
       referrerData[`${rewardPickaxeType}_pickaxes`] = parseInt(referrerData[`${rewardPickaxeType}_pickaxes`] || 0) + rewardPickaxeCount;
       referrerData.last_checkpoint_gold = parseFloat(referrerData.last_checkpoint_gold || 0) + goldReward;
       referrerData.total_mining_power = parseInt(referrerData.total_mining_power || 0) + additionalMiningPower;
@@ -222,6 +222,20 @@ export default async function handler(req, res) {
       } catch (saveError) {
         console.error('❌ Error saving referrer rewards:', saveError.message);
         throw saveError;
+      }
+      
+      // 5.5. Give 1000 gold bonus to new user who used referral link
+      console.log('🎁 Giving 1000 gold bonus to new user...');
+      const newUserData = await getUserOptimized(address, false);
+      if (newUserData) {
+        newUserData.last_checkpoint_gold = parseFloat(newUserData.last_checkpoint_gold || 0) + newUserGoldBonus;
+        try {
+          await saveUserOptimized(address, newUserData);
+          console.log('✅ New user bonus (1000 gold) distributed successfully');
+        } catch (bonusError) {
+          console.error('❌ Error saving new user bonus:', bonusError.message);
+          // Don't throw - referrer reward already saved
+        }
       }
       
       // 6. Mark referral as completed (use only existing columns)
@@ -238,7 +252,7 @@ export default async function handler(req, res) {
         await client.query(`
           INSERT INTO referrals (referrer_address, referred_address, reward_amount, reward_type, status)
           VALUES ($1, $2, $3, $4, $5)
-        `, [referrerAddress, address, 0.01, 'sol', 'completed']);
+        `, [referrerAddress, address, 0, 'gold', 'completed']);
         console.log('✅ Referral record created');
       } catch (referralRecordError) {
         // Check if it's a unique constraint violation (23505 = duplicate key)
@@ -259,7 +273,7 @@ export default async function handler(req, res) {
           await client.query(`
             INSERT INTO referrals (referrer_address, referred_address, reward_amount, reward_type, status)
             VALUES ($1, $2, $3, $4, $5)
-          `, [referrerAddress, address, 0.01, 'sol', 'active']);
+          `, [referrerAddress, address, 0, 'gold', 'active']);
           console.log('✅ Referral record created with active status');
         } catch (retryError) {
           // Check again for duplicate
@@ -289,7 +303,7 @@ export default async function handler(req, res) {
           pickaxe_type: rewardPickaxeType,
           pickaxe_count: rewardPickaxeCount,
           gold_reward: goldReward,
-          sol_reward: 0.01,
+          new_user_gold_bonus: newUserGoldBonus,
           new_referral_count: referrerData.total_referrals
         },
         session_id: referralVisit.session_id
