@@ -332,10 +332,10 @@
                 const res = await fetch('/api/generate-dynamic-referral', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ referrerAddress: currentAddress }) });
                 const data = await res.json();
                 const input = document.getElementById('promotersLink');
-                if (input) input.value = data?.success && data?.referralLink ? data.referralLink : `${window.location.origin}/?ref=${currentAddress}`;
+                if (input) input.value = data?.success && data?.referralLink ? data.referralLink : `${"https://www.thegoldmining.com"}/?ref=${currentAddress}`;
               } catch (e) {
                 const input = document.getElementById('promotersLink');
-                if (input) input.value = `${window.location.origin}/?ref=${currentAddress}`;
+                if (input) input.value = `${"https://www.thegoldmining.com"}/?ref=${currentAddress}`;
               }
             } else {
               if (req) req.style.display = 'block';
@@ -394,10 +394,10 @@
                 const res = await fetch('/api/generate-dynamic-referral', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ referrerAddress: currentAddress }) });
                 const data = await res.json();
                 const input = document.getElementById('referralLink');
-                if (input) input.value = data?.success && data?.referralLink ? data.referralLink : `${window.location.origin}/?ref=${currentAddress}`;
+                if (input) input.value = data?.success && data?.referralLink ? data.referralLink : `${"https://www.thegoldmining.com"}/?ref=${currentAddress}`;
               } catch (e) {
                 const input = document.getElementById('referralLink');
-                if (input) input.value = `${window.location.origin}/?ref=${currentAddress}`;
+                if (input) input.value = `${"https://www.thegoldmining.com"}/?ref=${currentAddress}`;
               }
               
               // Update referral stats (with 60-second cache)
