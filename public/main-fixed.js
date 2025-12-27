@@ -1917,11 +1917,11 @@ async function updatePromotersStatus() {
         $('#promotersLink').value = data.referralLink;
         console.log('🚀 Dynamic promoter link:', data.referralLink);
       } else {
-        $('#promotersLink').value = `${window.location.origin}/?ref=${state.address}`;
+        $('#promotersLink').value = `https://www.thegoldmining.com/?ref=${state.address}`;
       }
     } catch (error) {
       console.log('⚠️ Using fallback promoter link');
-      $('#promotersLink').value = `${window.location.origin}/?ref=${state.address}`;
+      $('#promotersLink').value = `https://www.thegoldmining.com/?ref=${state.address}`;
     }
   } else {
     $('#promotersRequirement').style.display = 'block';
@@ -2091,11 +2091,11 @@ async function updateReferralStatus() {
         $('#referralLink').value = data.referralLink;
         console.log('🚀 Dynamic referral link:', data.referralLink);
       } else {
-        $('#referralLink').value = `${window.location.origin}/?ref=${currentAddress}`;
+        $('#referralLink').value = `https://www.thegoldmining.com/?ref=${currentAddress}`;
       }
     } catch (error) {
       console.log('⚠️ Using fallback referral link');
-      $('#referralLink').value = `${window.location.origin}/?ref=${currentAddress}`;
+      $('#referralLink').value = `https://www.thegoldmining.com/?ref=${currentAddress}`;
     }
   } else {
     $('#referralRequirement').style.display = 'block';
@@ -2454,7 +2454,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   if (shareX) {
     shareX.addEventListener('click', () => {
       const text = "🚀 Join this amazing gold mining game and earn SOL!";
-      const url = $('#referralLink').value || 'https://gold-mining-game-serverless.vercel.app';
+      const url = $('#referralLink').value || 'https://www.thegoldmining.com';
       const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
       window.open(twitterUrl, '_blank');
     });
@@ -2474,7 +2474,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   if (shareTelegram) {
     shareTelegram.addEventListener('click', () => {
       const text = "🚀 Join this amazing gold mining game and earn SOL!";
-      const url = $('#referralLink').value || 'https://gold-mining-game-serverless.vercel.app';
+      const url = $('#referralLink').value || 'https://www.thegoldmining.com';
       const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
       window.open(telegramUrl, '_blank');
     });
