@@ -1956,18 +1956,11 @@ async function checkAndTrackReferral() {
     if (referrerAddress && referrerAddress.length > 20) {
       console.log('🎁 Referral detected from:', referrerAddress.slice(0, 8) + '...');
       
-      // Track the referral session
-      const response = await fetch('/api/track-referral', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          referrer_address: referrerAddress,
-          timestamp: Math.floor(Date.now() / 1000)
-        })
-      });
+      // Track the referral session using tracking pixel (GET request)
+      const trackingPixel = new Image();
+      trackingPixel.src = `/api/track-referral?ref=${encodeURIComponent(referrerAddress)}&t=${Date.now()}`;
       
-      const result = await response.json();
-      if (result.success) {
+      trackingPixel.onload = () => {
         console.log('✅ Referral session tracked successfully');
         
         // Store referrer in localStorage for later use
@@ -1975,9 +1968,12 @@ async function checkAndTrackReferral() {
         
         // Show referral notification
         showReferralTrackedNotification(referrerAddress);
-      } else {
-        console.log('⚠️ Failed to track referral:', result.error);
-      }
+      };
+      
+      trackingPixel.onerror = () => {
+        console.log('⚠️ Failed to track referral');
+      };
+      
     } else {
       console.log('ℹ️ No referral parameter found');
     }
