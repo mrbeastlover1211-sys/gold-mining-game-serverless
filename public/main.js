@@ -468,6 +468,10 @@ async function buyPickaxe(pickaxeType) {
       checkpoint: state.checkpoint
     });
     
+    // 🎁 CRITICAL: Check if referral can be completed now
+    console.log('🎁 Pickaxe purchased - checking referral completion...');
+    await autoCheckReferralCompletion();
+    
     // Update with server response
     if (j2.inventory) {
       state.status.inventory = j2.inventory;
@@ -1422,7 +1426,7 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
     })
   })
   .then(response => response.json())
-  .then(result => {
+  .then(async result => {
     if (result.success) {
       $('#modalStoreMsg').textContent = `✅ Successfully purchased ${pickaxeType} pickaxe with gold!`;
       $('#modalStoreMsg').style.color = '#4CAF50';
@@ -1430,6 +1434,10 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
       // Update display
       refreshStatus(true);
       updateGoldStoreModal();
+      
+      // 🎁 CRITICAL: Check if referral can be completed now
+      console.log('🎁 Pickaxe purchased with gold - checking referral completion...');
+      await autoCheckReferralCompletion();
     } else {
       throw new Error(result.error || 'Purchase failed');
     }
@@ -1825,6 +1833,10 @@ async function purchaseLand() {
     
     // Refresh status
     await refreshStatus(true);
+    
+    // 🎁 CRITICAL: Check if referral can be completed now
+    console.log('🎁 Land purchased - checking referral completion...');
+    await autoCheckReferralCompletion();
     
     console.log('🎉 Land purchase complete - user now has access!');
     
