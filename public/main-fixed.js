@@ -2247,26 +2247,26 @@ function sharePromotersOnTwitter() {
 }
 
 function sharePromotersOnFacebook() {
-  const url = $('#promotersLink').value || 'https://gold-mining-game-serverless.vercel.app';
+  const url = $('#promotersLink').value || 'https://www.thegoldmining.com';
   const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
   window.open(facebookUrl, '_blank');
 }
 
 function sharePromotersOnLinkedIn() {
-  const url = $('#promotersLink').value || 'https://gold-mining-game-serverless.vercel.app';
+  const url = $('#promotersLink').value || 'https://www.thegoldmining.com';
   const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
   window.open(linkedinUrl, '_blank');
 }
 
 function copyPromotersForInstagram() {
-  const text = "🚀 Earn 5-50 SOL daily promoting this amazing gold mining game! " + ($('#promotersLink').value || 'https://gold-mining-game-serverless.vercel.app');
+  const text = "🚀 Earn 5-50 SOL daily promoting this amazing gold mining game! " + ($('#promotersLink').value || 'https://www.thegoldmining.com');
   navigator.clipboard.writeText(text).then(() => {
     alert('Text copied for Instagram! Paste it in your Instagram post.');
   });
 }
 
 function copyPromotersForTikTok() {
-  const text = "🚀 Earn 5-50 SOL daily promoting this amazing gold mining game! " + ($('#promotersLink').value || 'https://gold-mining-game-serverless.vercel.app');
+  const text = "🚀 Earn 5-50 SOL daily promoting this amazing gold mining game! " + ($('#promotersLink').value || 'https://www.thegoldmining.com');
   navigator.clipboard.writeText(text).then(() => {
     alert('Text copied for TikTok! Paste it in your TikTok video description.');
   });
