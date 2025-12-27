@@ -30,11 +30,11 @@ export default async function handler(req, res) {
         baseUrl,
         referrerAddress,
         deploymentInfo: {
-          url: deploymentUrl,
-          isLatest: deploymentUrl !== 'gold-mining-game-serverless.vercel.app',
+          url: 'www.thegoldmining.com',
+          isLatest: true,
           timestamp: new Date().toISOString()
         },
-        message: 'Dynamic referral link generated with latest deployment URL'
+        message: 'Dynamic referral link generated with custom domain'
       });
       
     } else if (method === 'GET') {
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
         currentDeployment: {
           url: 'www.thegoldmining.com',
           baseUrl,
-          isPreview: deploymentUrl !== 'gold-mining-game-serverless.vercel.app',
+          isPreview: false,
           timestamp: new Date().toISOString()
         },
         message: 'Current deployment info',
