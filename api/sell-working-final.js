@@ -1,7 +1,7 @@
 // Complete sell API using WORKING export default syntax
 import { pool } from '../database.js';
 
-const MIN_SELL_GOLD = 5000;
+const MIN_SELL_GOLD = 10000;
 const GOLD_PRICE_SOL = parseFloat(process.env.GOLD_PRICE_SOL || '0.000001');
 
 export default async function handler(req, res) {
