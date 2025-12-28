@@ -512,6 +512,7 @@ async function buyPickaxe(pickaxeType) {
     const r2 = await fetch('/api/purchase-confirm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // 🔧 CRITICAL: Include cookies for Netherite challenge
       body: JSON.stringify({ address: state.address, pickaxeType, quantity, signature: sig.signature }),
     });
     
