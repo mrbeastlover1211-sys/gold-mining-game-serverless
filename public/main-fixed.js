@@ -2933,8 +2933,8 @@ window.acceptNetheriteChallenge = async function() {
     if (result.success) {
       console.log('✅ Netherite Challenge started!', result);
       
-      // Show success message
-      showNotification('🔥 Challenge Started! Share your link now! Timer: 1:00:00', 'success');
+      // Show success message using alert
+      alert('🔥 Challenge Started! Share your link now!\n\n⏰ Timer: 1 hour\n🔗 Your referral link is ready to share!');
       
       // Close modal
       if (modal) {
@@ -2942,19 +2942,18 @@ window.acceptNetheriteChallenge = async function() {
         setTimeout(() => modal.remove(), 300);
       }
       
-      // Show countdown timer in UI (you can add this to the game UI)
-      // For now, just log it
+      // Log challenge details
       console.log('⏰ Challenge expires at:', result.challenge.expires_at);
       
     } else {
-      showNotification('❌ ' + result.error, 'error');
+      alert('❌ ' + result.error);
       btn.disabled = false;
       btn.innerHTML = '🔥 ACCEPT CHALLENGE! 🔥';
     }
     
   } catch (error) {
     console.error('❌ Error starting challenge:', error);
-    showNotification('❌ Failed to start challenge. Please try again.', 'error');
+    alert('❌ Failed to start challenge. Please try again.\n\nError: ' + error.message);
     btn.disabled = false;
     btn.innerHTML = '🔥 ACCEPT CHALLENGE! 🔥';
   }
