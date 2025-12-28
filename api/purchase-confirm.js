@@ -227,11 +227,15 @@ export default async function handler(req, res) {
     }
     
     // Auto-trigger referral completion after pickaxe purchase
-    try {
-      // Always use production URL for API-to-API calls (not preview URLs)
-      const productionUrl = process.env.PRODUCTION_URL || 'https://gold-mining-game-serverless.vercel.app';
-      const baseUrl = process.env.NODE_ENV === 'production' ? productionUrl : 'http://localhost:3000';
-      console.log('🎁 Attempting referral completion at:', `${baseUrl}/api/complete-referral`);
+    // BUT skip if Netherite bonus was awarded (to avoid double rewards)
+    if (netheriteBonus.awarded) {
+      console.log('🔥 Netherite bonus was awarded - SKIPPING regular referral reward to avoid double rewards');
+    } else {
+      try {
+        // Always use production URL for API-to-API calls (not preview URLs)
+        const productionUrl = process.env.PRODUCTION_URL || 'https://gold-mining-game-serverless.vercel.app';
+        const baseUrl = process.env.NODE_ENV === 'production' ? productionUrl : 'http://localhost:3000';
+        console.log('🎁 Attempting referral completion at:', `${baseUrl}/api/complete-referral`);
       
       const completeReferralResponse = await fetch(`${baseUrl}/api/complete-referral`, {
         method: 'POST',
@@ -245,11 +249,12 @@ export default async function handler(req, res) {
         result: referralResult
       });
       
-      if (!completeReferralResponse.ok) {
-        console.error('⚠️ Referral completion returned non-OK status:', completeReferralResponse.status);
+        if (!completeReferralResponse.ok) {
+          console.error('⚠️ Referral completion returned non-OK status:', completeReferralResponse.status);
+        }
+      } catch (referralError) {
+        console.error('⚠️ Auto-referral completion failed (non-critical):', referralError);
       }
-    } catch (referralError) {
-      console.error('⚠️ Auto-referral completion failed (non-critical):', referralError);
     }
     
     // Create inventory object for response
