@@ -104,6 +104,47 @@ export default async function handler(req, res) {
         sessionId: referralVisit.session_id.slice(0, 20) + '...'
       });
       
+      // 🔥 CHECK: Did this user just get a Netherite bonus?
+      // If yes, skip regular reward to avoid double rewards
+      if (referralVisit.netherite_challenge_id && referralVisit.purchased_netherite === true) {
+        console.log('🔥 User purchased Netherite within challenge - checking if bonus was awarded...');
+        
+        // Check if this purchase triggered the Netherite bonus
+        const netheriteCheck = await client.query(`
+          SELECT nc.challenge_started_at,
+                 EXTRACT(EPOCH FROM (rv.netherite_purchase_time - nc.challenge_started_at)) as seconds_elapsed
+          FROM referral_visits rv
+          INNER JOIN netherite_challenges nc ON rv.netherite_challenge_id = nc.id
+          WHERE rv.session_id = $1
+            AND rv.purchased_netherite = true
+        `, [referralVisit.session_id]);
+        
+        if (netheriteCheck.rows.length > 0) {
+          const secondsElapsed = parseFloat(netheriteCheck.rows[0].seconds_elapsed);
+          const wasWithinOneHour = secondsElapsed <= 3600;
+          
+          console.log('⏰ Netherite purchase timing:', {
+            secondsElapsed,
+            wasWithinOneHour,
+            oneHour: 3600
+          });
+          
+          if (wasWithinOneHour) {
+            console.log('🔥 Netherite bonus was awarded - SKIPPING regular referral reward to avoid double rewards!');
+            
+            return res.status(200).json({
+              success: true,
+              referral_completed: false,
+              already_rewarded: true,
+              message: 'Netherite Challenge bonus was awarded instead of regular reward',
+              netherite_bonus: true
+            });
+          } else {
+            console.log('⏰ Netherite purchased after 1 hour - proceeding with regular reward');
+          }
+        }
+      }
+      
       // 2. Check if referred user has both land and pickaxe
       const userCheck = await client.query(`
         SELECT 
