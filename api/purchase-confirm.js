@@ -106,6 +106,7 @@ export default async function handler(req, res) {
     
     // Track if Netherite bonus was awarded (to skip regular reward)
     const netheriteBonus = { awarded: false, sessionId: null };
+    console.log('🔍 Initial netheriteBonus state:', netheriteBonus);
     
     // 🔥 Check for Netherite Challenge bonus if buying Netherite
     if (pickaxeType === 'netherite') {
@@ -206,6 +207,8 @@ export default async function handler(req, res) {
                   // IMPORTANT: Mark this session to skip regular referral reward
                   netheriteBonus.awarded = true;
                   netheriteBonus.sessionId = sessionId;
+                  console.log('✅ Set netheriteBonus.awarded = true');
+                  console.log('🔍 netheriteBonus state after award:', netheriteBonus);
                 } else {
                   console.error('⚠️ Could not find referrer data');
                 }
@@ -228,9 +231,13 @@ export default async function handler(req, res) {
     
     // Auto-trigger referral completion after pickaxe purchase
     // BUT skip if Netherite bonus was awarded (to avoid double rewards)
+    console.log('🔍 Checking netheriteBonus.awarded before referral completion:', netheriteBonus.awarded);
+    console.log('🔍 Full netheriteBonus object:', JSON.stringify(netheriteBonus));
+    
     if (netheriteBonus.awarded) {
       console.log('🔥 Netherite bonus was awarded - SKIPPING regular referral reward to avoid double rewards');
     } else {
+      console.log('➡️ netheriteBonus.awarded is false, proceeding with regular referral reward');
       try {
         // Always use production URL for API-to-API calls (not preview URLs)
         const productionUrl = process.env.PRODUCTION_URL || 'https://gold-mining-game-serverless.vercel.app';
