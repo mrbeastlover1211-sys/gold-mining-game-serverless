@@ -4447,3 +4447,28 @@ h6 { font-size: 12px; }
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
+
+/* Battlezone Modal Red Theme */
+.battlezone-header {
+  background: linear-gradient(135deg, #8B0000 0%, #DC143C 50%, #FF0000 100%) !important;
+  box-shadow: 0 4px 15px rgba(220, 20, 60, 0.4) !important;
+}
+
+.battlezone-title {
+  color: #fff !important;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.8), 0 0 20px rgba(255, 0, 0, 0.4);
+  font-weight: 700;
+}
+
+.battlezone-close {
+  background: rgba(139, 0, 0, 0.3) !important;
+  color: #fff !important;
+  border: 2px solid rgba(255, 0, 0, 0.5) !important;
+  text-shadow: 0 0 5px rgba(255, 0, 0, 0.8);
+}
+
+.battlezone-close:hover {
+  background: rgba(220, 20, 60, 0.5) !important;
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.6) !important;
+  transform: scale(1.1) rotate(90deg);
+}
