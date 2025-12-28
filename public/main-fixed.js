@@ -262,7 +262,7 @@ async function loadConfig() {
 function updateStaticInfo() {
   if (state.config) {
     $('#goldPrice').textContent = state.config.goldPriceSol + ' SOL';
-    $('#minSell').textContent = state.config.minSellGold.toLocaleString();
+    $('#minSell').textContent = '5,000'; // Fixed display value
   }
 }
 
