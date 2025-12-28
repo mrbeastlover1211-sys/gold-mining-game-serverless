@@ -4455,8 +4455,8 @@ h6 { font-size: 12px; }
 }
 
 .battlezone-title {
-  color: #fff !important;
-  text-shadow: 0 0 10px rgba(255, 0, 0, 0.8), 0 0 20px rgba(255, 0, 0, 0.4);
+  color: #dc143c !important;
+  text-shadow: 0 0 10px rgba(220, 20, 60, 0.5);
   font-weight: 700;
 }
 
