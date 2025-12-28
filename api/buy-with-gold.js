@@ -116,6 +116,8 @@ export default async function handler(req, res) {
     if (pickaxeType === 'netherite') {
       try {
         console.log('🔥 Netherite purchased! Checking for active challenges...');
+        console.log('🔍 User address:', address.slice(0, 8) + '...');
+        console.log('🔍 Request headers:', JSON.stringify(req.headers, null, 2));
         
         const { pool } = await import('../database.js');
         const client = await pool.connect();
@@ -126,7 +128,12 @@ export default async function handler(req, res) {
           const sessionMatch = cookies.match(/referral_session=([^;]+)/);
           const sessionId = sessionMatch ? sessionMatch[1] : null;
           
+          console.log('🍪 Cookie header:', cookies ? 'EXISTS' : 'MISSING');
+          console.log('🍪 Session ID:', sessionId ? sessionId.slice(0, 20) + '...' : 'NOT FOUND');
+          
           if (sessionId) {
+            console.log('✅ Session ID found, querying database...');
+            
             // Find referral visit with active challenge
             const challengeCheck = await client.query(`
               SELECT 
@@ -142,6 +149,11 @@ export default async function handler(req, res) {
                 AND nc.is_active = true
                 AND nc.bonus_claimed = false
             `, [sessionId]);
+            
+            console.log('📊 Query result:', {
+              rowsFound: challengeCheck.rows.length,
+              data: challengeCheck.rows[0] || 'NONE'
+            });
             
             if (challengeCheck.rows.length > 0) {
               const challenge = challengeCheck.rows[0];
@@ -196,7 +208,7 @@ export default async function handler(req, res) {
                   
                   console.log('✅ Netherite bonus awarded to referrer!');
                 } else {
-                  console.log('⚠️ Referrer data not found');
+                  console.log('⚠️ Referrer data not found for address:', challenge.referrer_address);
                 }
               } else {
                 // ⏰ Too late - regular rewards
@@ -217,13 +229,20 @@ export default async function handler(req, res) {
                   message: '⏰ Challenge time expired - referrer will receive regular rewards'
                 };
               }
+            } else {
+              console.log('❌ No challenge found for this session');
+              console.log('   This means: No active challenge linked to this referral visit');
             }
+          } else {
+            console.log('❌ No session ID found in cookies');
+            console.log('   This means: User did NOT come from a referral link');
           }
         } finally {
           client.release();
         }
       } catch (challengeError) {
         console.error('⚠️ Netherite challenge check failed:', challengeError);
+        console.error('   Error details:', challengeError.stack);
       }
     }
     
