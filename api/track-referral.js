@@ -55,14 +55,40 @@ export default async function handler(req, res) {
       console.log('ℹ️ Table creation info:', tableError.message);
     }
     
-    // Store the visit
+    // 🔥 Check if referrer has active Netherite Challenge
+    let activeChallengeId = null;
+    try {
+      const challengeCheck = await client.query(`
+        SELECT id, challenge_expires_at 
+        FROM netherite_challenges
+        WHERE referrer_address = $1
+          AND is_active = true
+          AND challenge_expires_at > CURRENT_TIMESTAMP
+          AND bonus_claimed = false
+        ORDER BY challenge_started_at DESC
+        LIMIT 1
+      `, [ref]);
+      
+      if (challengeCheck.rows.length > 0) {
+        activeChallengeId = challengeCheck.rows[0].id;
+        console.log('🔥 Found active Netherite Challenge:', {
+          challengeId: activeChallengeId,
+          expiresAt: challengeCheck.rows[0].challenge_expires_at
+        });
+      }
+    } catch (challengeError) {
+      console.log('ℹ️ Challenge check info:', challengeError.message);
+    }
+    
+    // Store the visit (with challenge link if exists)
     try {
       const insertResult = await client.query(`
-        INSERT INTO referral_visits (session_id, referrer_address, visitor_ip, user_agent, visit_timestamp, expires_at)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO referral_visits (session_id, referrer_address, visitor_ip, user_agent, visit_timestamp, expires_at, netherite_challenge_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         ON CONFLICT (session_id) DO UPDATE SET
           visit_timestamp = EXCLUDED.visit_timestamp,
-          expires_at = EXCLUDED.expires_at
+          expires_at = EXCLUDED.expires_at,
+          netherite_challenge_id = EXCLUDED.netherite_challenge_id
         RETURNING *
       `, [
         sessionId,
@@ -70,10 +96,14 @@ export default async function handler(req, res) {
         visitorIP,
         userAgent,
         timestamp,
-        new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() // 48 hours from now
+        new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 48 hours from now
+        activeChallengeId
       ]);
       
       console.log('✅ Referral visit logged:', insertResult.rows[0]);
+      if (activeChallengeId) {
+        console.log('🔥 Visit linked to Netherite Challenge ID:', activeChallengeId);
+      }
       
       // Set session cookie
       res.setHeader('Set-Cookie', [
