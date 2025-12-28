@@ -457,7 +457,13 @@ async function connectWallet() {
     await autoCheckReferralCompletion();
     
     // 🔥 SCHEDULE NETHERITE CHALLENGE POPUP (30 seconds after connect)
-    scheduleNetheriteChallengePopup();
+    console.log('🔍 About to call scheduleNetheriteChallengePopup, function exists?', typeof scheduleNetheriteChallengePopup);
+    try {
+      scheduleNetheriteChallengePopup();
+      console.log('✅ scheduleNetheriteChallengePopup called successfully');
+    } catch (popupError) {
+      console.error('❌ Error calling scheduleNetheriteChallengePopup:', popupError);
+    }
     
   } catch (e) {
     console.error('❌ Wallet connection failed:', e);
