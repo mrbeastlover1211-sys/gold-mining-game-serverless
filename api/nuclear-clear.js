@@ -110,6 +110,8 @@ export default async function handler(req, res) {
       success: true,
       message: 'Nuclear database clearing completed',
       method: 'DELETE statements on each table individually',
+      version: 'v3-FIXED-2025-12-28-15:45',
+      tablesToClearList: ['referrals', 'transactions', 'gold_sales', 'netherite_challenges'],
       results: results
     });
     
