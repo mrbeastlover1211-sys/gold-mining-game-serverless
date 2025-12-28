@@ -111,6 +111,122 @@ export default async function handler(req, res) {
     
     console.log(`✅ ${address.slice(0, 8)}... bought ${pickaxeType} pickaxe for ${goldCost} gold`);
     
+    // 🔥 NETHERITE CHALLENGE: Check if this purchase triggers bonus
+    let netheriteChallengeResult = null;
+    if (pickaxeType === 'netherite') {
+      try {
+        console.log('🔥 Netherite purchased! Checking for active challenges...');
+        
+        const { pool } = await import('../database.js');
+        const client = await pool.connect();
+        
+        try {
+          // Get referral session from cookies
+          const cookies = req.headers.cookie || '';
+          const sessionMatch = cookies.match(/referral_session=([^;]+)/);
+          const sessionId = sessionMatch ? sessionMatch[1] : null;
+          
+          if (sessionId) {
+            // Find referral visit with active challenge
+            const challengeCheck = await client.query(`
+              SELECT 
+                rv.referrer_address,
+                nc.id as challenge_id,
+                nc.challenge_started_at,
+                nc.challenge_expires_at,
+                nc.bonus_claimed,
+                EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - nc.challenge_started_at)) as seconds_elapsed
+              FROM referral_visits rv
+              INNER JOIN netherite_challenges nc ON rv.netherite_challenge_id = nc.id
+              WHERE rv.session_id = $1
+                AND nc.is_active = true
+                AND nc.bonus_claimed = false
+            `, [sessionId]);
+            
+            if (challengeCheck.rows.length > 0) {
+              const challenge = challengeCheck.rows[0];
+              const expiresAt = new Date(challenge.challenge_expires_at);
+              const now = new Date();
+              const withinTimeLimit = now < expiresAt;
+              
+              console.log('🔥 Challenge found:', {
+                referrer: challenge.referrer_address.slice(0, 8) + '...',
+                secondsElapsed: challenge.seconds_elapsed,
+                withinLimit: withinTimeLimit
+              });
+              
+              if (withinTimeLimit) {
+                // 🎉 BONUS! Give referrer FREE Netherite
+                console.log('🎉 BONUS TRIGGERED! Giving referrer FREE Netherite!');
+                
+                const { getUserOptimized, saveUserOptimized } = await import('../database.js');
+                const referrerData = await getUserOptimized(challenge.referrer_address);
+                
+                if (referrerData) {
+                  referrerData.netherite_pickaxes = (referrerData.netherite_pickaxes || 0) + 1;
+                  referrerData.total_mining_power = (referrerData.total_mining_power || 0) + 1000;
+                  
+                  await saveUserOptimized(challenge.referrer_address, referrerData);
+                  
+                  // Mark challenge as claimed
+                  await client.query(`
+                    UPDATE netherite_challenges
+                    SET bonus_claimed = true,
+                        bonus_awarded = true,
+                        referred_user_address = $1,
+                        referred_purchase_time = CURRENT_TIMESTAMP,
+                        is_active = false
+                    WHERE id = $2
+                  `, [address, challenge.challenge_id]);
+                  
+                  // Update referral visit
+                  await client.query(`
+                    UPDATE referral_visits
+                    SET purchased_netherite = true,
+                        netherite_purchase_time = CURRENT_TIMESTAMP
+                    WHERE session_id = $1
+                  `, [sessionId]);
+                  
+                  netheriteChallengeResult = {
+                    bonus_awarded: true,
+                    referrer_address: challenge.referrer_address,
+                    seconds_elapsed: Math.floor(challenge.seconds_elapsed),
+                    message: '🔥 BONUS! Your referrer received FREE Netherite pickaxe!'
+                  };
+                  
+                  console.log('✅ Netherite bonus awarded to referrer!');
+                } else {
+                  console.log('⚠️ Referrer data not found');
+                }
+              } else {
+                // ⏰ Too late - regular rewards
+                console.log('⏰ Challenge expired - regular rewards will apply');
+                
+                // Mark as expired
+                await client.query(`
+                  UPDATE netherite_challenges
+                  SET is_active = false,
+                      referred_user_address = $1,
+                      referred_purchase_time = CURRENT_TIMESTAMP
+                  WHERE id = $2
+                `, [address, challenge.challenge_id]);
+                
+                netheriteChallengeResult = {
+                  bonus_awarded: false,
+                  expired: true,
+                  message: '⏰ Challenge time expired - referrer will receive regular rewards'
+                };
+              }
+            }
+          }
+        } finally {
+          client.release();
+        }
+      } catch (challengeError) {
+        console.error('⚠️ Netherite challenge check failed:', challengeError);
+      }
+    }
+    
     // Auto-trigger referral completion after pickaxe purchase
     try {
       // Always use production URL for API-to-API calls (not preview URLs)
@@ -145,7 +261,7 @@ export default async function handler(req, res) {
       netherite: user.netherite_pickaxes || 0
     };
     
-    res.json({
+    const response = {
       success: true,
       newGold: newGold,
       inventory: inventory,
@@ -155,7 +271,14 @@ export default async function handler(req, res) {
         last_checkpoint_gold: newGold
       },
       message: `Successfully bought ${pickaxeType} pickaxe for ${goldCost} gold!`
-    });
+    };
+    
+    // Add Netherite challenge result if applicable
+    if (netheriteChallengeResult) {
+      response.netherite_challenge = netheriteChallengeResult;
+    }
+    
+    res.json(response);
     
   } catch (e) {
     console.error('❌ Buy API main catch block error:', e.message);

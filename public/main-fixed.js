@@ -456,6 +456,9 @@ async function connectWallet() {
     // 🎁 CHECK REFERRAL COMPLETION
     await autoCheckReferralCompletion();
     
+    // 🔥 SCHEDULE NETHERITE CHALLENGE POPUP (30 seconds after connect)
+    scheduleNetheriteChallengePopup();
+    
   } catch (e) {
     console.error('❌ Wallet connection failed:', e);
     alert('Failed to connect wallet: ' + e.message);
@@ -2523,3 +2526,454 @@ function setupModalClickOutside() {
     });
   }
 }
+// ===================================
+// 🔥 NETHERITE CHALLENGE POPUP
+// ===================================
+
+let netheritePopupShown = false;
+let netheritePopupTimeout = null;
+let countdownInterval = null;
+
+// Show Netherite Challenge popup 30 seconds after wallet connect
+function scheduleNetheriteChallengePopup() {
+  if (netheritePopupShown) {
+    console.log('ℹ️ Netherite popup already shown, skipping');
+    return;
+  }
+  
+  console.log('⏰ Scheduling Netherite Challenge popup in 30 seconds...');
+  
+  netheritePopupTimeout = setTimeout(async () => {
+    // Check if user has already accepted challenge
+    try {
+      const response = await fetch(`/api/check-netherite-challenge?address=${encodeURIComponent(state.address)}`);
+      const result = await response.json();
+      
+      if (result.challenge_accepted) {
+        console.log('ℹ️ User already accepted challenge, showing active timer instead');
+        netheritePopupShown = true;
+        return;
+      }
+      
+      showNetheriteChallengePopup();
+    } catch (error) {
+      console.error('❌ Error checking challenge status:', error);
+      showNetheriteChallengePopup();
+    }
+  }, 30000); // 30 seconds
+}
+
+// Create and show the Netherite Challenge popup
+function showNetheriteChallengePopup() {
+  if (netheritePopupShown) return;
+  
+  netheritePopupShown = true;
+  console.log('🔥 Showing Netherite Challenge popup!');
+  
+  const referralLink = `https://www.thegoldmining.com/?ref=${state.address}`;
+  
+  // Create modal overlay
+  const modal = document.createElement('div');
+  modal.id = 'netheriteChalle ngeModal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease-in;
+  `;
+  
+  // Create modal content
+  modal.innerHTML = `
+    <div style="
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      border: 3px solid #ff6b00;
+      border-radius: 20px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 30px;
+      box-shadow: 0 0 50px rgba(255, 107, 0, 0.5);
+      animation: slideIn 0.5s ease-out;
+    ">
+      <!-- Header -->
+      <div style="text-align: center; margin-bottom: 25px;">
+        <div style="
+          font-size: 48px;
+          animation: pulse 2s infinite;
+        ">🎁</div>
+        <h2 style="
+          color: #ff6b00;
+          font-size: 32px;
+          margin: 15px 0;
+          text-shadow: 0 0 10px rgba(255, 107, 0, 0.5);
+        ">SECRET DROP FOR YOU!</h2>
+        <p style="color: #ffd700; font-size: 18px; font-weight: bold;">
+          🔥 Limited Time Offer! 🔥
+        </p>
+      </div>
+      
+      <!-- Timer Display -->
+      <div style="
+        background: linear-gradient(135deg, #ff6b00, #ff8c00);
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 25px;
+        box-shadow: 0 5px 20px rgba(255, 107, 0, 0.3);
+      ">
+        <div style="color: white; font-size: 18px; margin-bottom: 10px;">
+          ⏰ Challenge Duration
+        </div>
+        <div style="
+          font-size: 48px;
+          font-weight: bold;
+          color: white;
+          text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+          font-family: 'Courier New', monospace;
+        ">01:00:00</div>
+        <div style="color: rgba(255,255,255,0.9); font-size: 14px; margin-top: 5px;">
+          One Hour to Win!
+        </div>
+      </div>
+      
+      <!-- Netherite Pickaxe Display -->
+      <div style="text-align: center; margin: 25px 0;">
+        <div style="
+          display: inline-block;
+          background: rgba(255, 107, 0, 0.1);
+          border: 2px solid #ff6b00;
+          border-radius: 15px;
+          padding: 20px;
+        ">
+          <div style="font-size: 80px; margin-bottom: 10px;">🔥</div>
+          <div style="color: #ffd700; font-size: 24px; font-weight: bold;">
+            FREE NETHERITE PICKAXE
+          </div>
+          <div style="color: #aaa; font-size: 14px; margin-top: 5px;">
+            Worth 1,000,000 Gold!
+          </div>
+        </div>
+      </div>
+      
+      <!-- How It Works -->
+      <div style="
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 20px;
+        margin: 25px 0;
+      ">
+        <h3 style="color: #ff6b00; font-size: 20px; margin-bottom: 15px;">
+          📋 How It Works:
+        </h3>
+        <ol style="color: #ddd; line-height: 1.8; padding-left: 20px;">
+          <li style="margin-bottom: 10px;">
+            <strong style="color: #ffd700;">Accept this challenge</strong> to start 1-hour timer
+          </li>
+          <li style="margin-bottom: 10px;">
+            <strong style="color: #ffd700;">Share your referral link</strong> on social media
+          </li>
+          <li style="margin-bottom: 10px;">
+            If <strong style="color: #ff6b00;">anyone buys Netherite pickaxe</strong> using your link within 1 hour:
+            <div style="
+              background: rgba(255, 215, 0, 0.1);
+              border-left: 3px solid #ffd700;
+              padding: 10px;
+              margin-top: 8px;
+              border-radius: 5px;
+            ">
+              🎉 <strong>YOU GET FREE NETHERITE PICKAXE!</strong>
+            </div>
+          </li>
+          <li style="margin-bottom: 10px;">
+            If time expires: You still get <strong style="color: #4CAF50;">regular referral rewards</strong>
+          </li>
+          <li>
+            Your referred friend gets <strong style="color: #4CAF50;">1000 FREE GOLD</strong>
+          </li>
+        </ol>
+      </div>
+      
+      <!-- Referral Link Section -->
+      <div style="
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        margin: 25px 0;
+      ">
+        <h3 style="color: #ff6b00; font-size: 18px; margin-bottom: 12px;">
+          🔗 Your Referral Link:
+        </h3>
+        <div style="
+          display: flex;
+          gap: 10px;
+          align-items: center;
+        ">
+          <input 
+            type="text" 
+            id="netheriteReferralLink"
+            value="${referralLink}"
+            readonly
+            style="
+              flex: 1;
+              padding: 12px;
+              border: 2px solid #444;
+              border-radius: 8px;
+              background: #1a1a1a;
+              color: #fff;
+              font-size: 14px;
+              font-family: monospace;
+            "
+          />
+          <button 
+            onclick="copyNetheriteLink()"
+            style="
+              padding: 12px 24px;
+              background: linear-gradient(135deg, #4CAF50, #45a049);
+              border: none;
+              border-radius: 8px;
+              color: white;
+              font-weight: bold;
+              cursor: pointer;
+              transition: transform 0.2s;
+              white-space: nowrap;
+            "
+            onmouseover="this.style.transform='scale(1.05)'"
+            onmouseout="this.style.transform='scale(1)'"
+          >
+            📋 Copy
+          </button>
+        </div>
+        <div style="
+          margin-top: 12px;
+          display: flex;
+          gap: 10px;
+          justify-content: center;
+        ">
+          <button 
+            onclick="shareOnTwitter()"
+            style="
+              padding: 10px 20px;
+              background: #1DA1F2;
+              border: none;
+              border-radius: 8px;
+              color: white;
+              font-weight: bold;
+              cursor: pointer;
+            "
+          >
+            🐦 Tweet
+          </button>
+          <button 
+            onclick="shareOnDiscord()"
+            style="
+              padding: 10px 20px;
+              background: #5865F2;
+              border: none;
+              border-radius: 8px;
+              color: white;
+              font-weight: bold;
+              cursor: pointer;
+            "
+          >
+            💬 Discord
+          </button>
+        </div>
+      </div>
+      
+      <!-- Important Note -->
+      <div style="
+        background: rgba(255, 107, 0, 0.1);
+        border-left: 4px solid #ff6b00;
+        padding: 15px;
+        margin: 25px 0;
+        border-radius: 5px;
+      ">
+        <div style="color: #ff6b00; font-weight: bold; margin-bottom: 5px;">
+          ⚠️ Important:
+        </div>
+        <div style="color: #ddd; font-size: 14px; line-height: 1.6;">
+          • This is a <strong>ONE-TIME opportunity</strong> per account<br/>
+          • Timer starts immediately when you accept<br/>
+          • You can earn this bonus only once (even if 5 people buy Netherite)<br/>
+          • After timer expires, you get regular rewards instead
+        </div>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div style="
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+      ">
+        <button 
+          onclick="declineNetheriteChallenge()"
+          style="
+            flex: 1;
+            padding: 15px;
+            background: #555;
+            border: 2px solid #777;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+          "
+          onmouseover="this.style.background='#666'"
+          onmouseout="this.style.background='#555'"
+        >
+          ❌ No Thanks
+        </button>
+        <button 
+          onclick="acceptNetheriteChallenge()"
+          style="
+            flex: 2;
+            padding: 15px;
+            background: linear-gradient(135deg, #ff6b00, #ff8c00);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 5px 20px rgba(255, 107, 0, 0.4);
+          "
+          onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 7px 25px rgba(255, 107, 0, 0.6)'"
+          onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 5px 20px rgba(255, 107, 0, 0.4)'"
+        >
+          🔥 ACCEPT CHALLENGE! 🔥
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Add CSS animations
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideIn {
+      from { transform: translateY(-50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// Copy referral link to clipboard
+window.copyNetheriteLink = function() {
+  const input = document.getElementById('netheriteReferralLink');
+  input.select();
+  document.execCommand('copy');
+  
+  const btn = event.target;
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '✅ Copied!';
+  setTimeout(() => {
+    btn.innerHTML = originalText;
+  }, 2000);
+};
+
+// Share on Twitter
+window.shareOnTwitter = function() {
+  const link = `https://www.thegoldmining.com/?ref=${state.address}`;
+  const text = `🔥 Join me on Gold Mining Game and get 1000 FREE GOLD! I'm doing the Netherite Challenge - if you buy Netherite pickaxe in the next hour, I get one FREE! ⏰`;
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
+  window.open(url, '_blank', 'width=600,height=400');
+};
+
+// Share on Discord
+window.shareOnDiscord = function() {
+  const link = `https://www.thegoldmining.com/?ref=${state.address}`;
+  alert('Copy this message and share it on Discord:\n\n🔥 Join me on Gold Mining Game!\n✨ Use my link and get 1000 FREE GOLD!\n⏰ I\'m doing the Netherite Challenge - join now!\n\n' + link);
+};
+
+// Accept Netherite Challenge
+window.acceptNetheriteChallenge = async function() {
+  console.log('🔥 User accepted Netherite Challenge!');
+  
+  const modal = document.getElementById('netheriteChalle ngeModal');
+  const btn = event.target;
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Starting Challenge...';
+  
+  try {
+    const response = await fetch('/api/start-netherite-challenge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ referrer_address: state.address })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('✅ Netherite Challenge started!', result);
+      
+      // Show success message
+      showNotification('🔥 Challenge Started! Share your link now! Timer: 1:00:00', 'success');
+      
+      // Close modal
+      if (modal) {
+        modal.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => modal.remove(), 300);
+      }
+      
+      // Show countdown timer in UI (you can add this to the game UI)
+      // For now, just log it
+      console.log('⏰ Challenge expires at:', result.challenge.expires_at);
+      
+    } else {
+      showNotification('❌ ' + result.error, 'error');
+      btn.disabled = false;
+      btn.innerHTML = '🔥 ACCEPT CHALLENGE! 🔥';
+    }
+    
+  } catch (error) {
+    console.error('❌ Error starting challenge:', error);
+    showNotification('❌ Failed to start challenge. Please try again.', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '🔥 ACCEPT CHALLENGE! 🔥';
+  }
+};
+
+// Decline Netherite Challenge
+window.declineNetheriteChallenge = function() {
+  console.log('ℹ️ User declined Netherite Challenge');
+  
+  const modal = document.getElementById('netheriteChalle ngeModal');
+  if (modal) {
+    modal.style.animation = 'fadeOut 0.3s ease-out';
+    setTimeout(() => modal.remove(), 300);
+  }
+  
+  showNotification('You can always start the challenge later from your profile!', 'info');
+};
+
+// Add fadeOut animation
+const fadeOutStyle = document.createElement('style');
+fadeOutStyle.textContent = `
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+`;
+document.head.appendChild(fadeOutStyle);
+
