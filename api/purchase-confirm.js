@@ -109,7 +109,14 @@ export default async function handler(req, res) {
       console.log('🔥 Netherite purchase detected! Checking for active challenge...');
       
       try {
+        // Use the shared pool from database.js
         const { pool } = await import('../database.js');
+        
+        if (!pool) {
+          console.error('⚠️ Database pool not available');
+          return;
+        }
+        
         const client = await pool.connect();
         
         try {
