@@ -104,6 +104,9 @@ export default async function handler(req, res) {
     
     console.log(`✅ Purchase completed successfully!`);
     
+    // Track if Netherite bonus was awarded (to skip regular reward)
+    const netheriteBonus = { awarded: false, sessionId: null };
+    
     // 🔥 Check for Netherite Challenge bonus if buying Netherite
     if (pickaxeType === 'netherite') {
       console.log('🔥 Netherite purchase detected! Checking for active challenge...');
@@ -199,6 +202,10 @@ export default async function handler(req, res) {
                   
                   console.log('✅ Netherite bonus awarded to referrer:', challenge.referrer_address.slice(0, 8) + '...');
                   console.log('🎉 Referrer now has', referrerData.netherite_pickaxes, 'Netherite pickaxes!');
+                  
+                  // IMPORTANT: Mark this session to skip regular referral reward
+                  netheriteBonus.awarded = true;
+                  netheriteBonus.sessionId = sessionId;
                 } else {
                   console.error('⚠️ Could not find referrer data');
                 }
