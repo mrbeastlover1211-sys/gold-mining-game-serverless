@@ -173,7 +173,19 @@ export default async function handler(req, res) {
                 console.log('🔥 BONUS TRIGGERED! Giving referrer FREE Netherite!');
                 
                 // Get referrer's data
+                console.log('🔍 Looking up referrer:', challenge.referrer_address);
                 const referrerData = await getUserOptimized(challenge.referrer_address, false);
+                console.log('📊 Referrer data found:', referrerData ? 'YES' : 'NO');
+                
+                if (!referrerData) {
+                  console.error('❌ CRITICAL: Referrer not found in database!');
+                  console.error('   Referrer address:', challenge.referrer_address);
+                  console.error('   This should not happen - referrer must exist to have created challenge');
+                  
+                  // Still mark bonus as awarded to prevent double reward
+                  netheriteBonus.awarded = true;
+                  netheriteBonus.sessionId = sessionId;
+                }
                 
                 if (referrerData) {
                   // Give referrer +1 Netherite pickaxe
