@@ -2574,7 +2574,7 @@ function showNetheriteChallengePopup() {
   
   // Create modal overlay
   const modal = document.createElement('div');
-  modal.id = 'netheriteChalle ngeModal';
+  modal.id = 'netheriteChallengeModal';
   modal.style.cssText = `
     position: fixed;
     top: 0;
