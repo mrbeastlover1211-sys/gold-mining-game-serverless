@@ -2909,7 +2909,7 @@ window.shareOnDiscord = function() {
 window.acceptNetheriteChallenge = async function() {
   console.log('🔥 User accepted Netherite Challenge!');
   
-  const modal = document.getElementById('netheriteChalle ngeModal');
+  const modal = document.getElementById('netheriteChallengeModal');
   const btn = event.target;
   btn.disabled = true;
   btn.innerHTML = '⏳ Starting Challenge...';
@@ -2958,7 +2958,7 @@ window.acceptNetheriteChallenge = async function() {
 window.declineNetheriteChallenge = function() {
   console.log('ℹ️ User declined Netherite Challenge');
   
-  const modal = document.getElementById('netheriteChalle ngeModal');
+  const modal = document.getElementById('netheriteChallengeModal');
   if (modal) {
     modal.style.animation = 'fadeOut 0.3s ease-out';
     setTimeout(() => modal.remove(), 300);
