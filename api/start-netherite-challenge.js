@@ -99,7 +99,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ 
       success: false, 
       error: 'Failed to start challenge',
-      details: error.message 
+      details: error.message,
+      stack: error.stack,
+      fullError: JSON.stringify(error, Object.getOwnPropertyNames(error))
     });
   } finally {
     if (client) {
