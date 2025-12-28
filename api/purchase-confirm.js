@@ -125,20 +125,21 @@ export default async function handler(req, res) {
             console.log('✅ Session ID found, querying for Netherite Challenge...');
             
             // Find referral visit with active challenge
+            // NOTE: We DON'T check bonus_claimed = false because multiple people can earn bonus!
             const challengeCheck = await client.query(`
               SELECT 
                 rv.referrer_address,
+                rv.purchased_netherite,
                 nc.id as challenge_id,
                 nc.challenge_started_at,
                 nc.challenge_expires_at,
-                nc.bonus_claimed,
                 EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - nc.challenge_started_at)) as seconds_elapsed
               FROM referral_visits rv
               INNER JOIN netherite_challenges nc ON rv.netherite_challenge_id = nc.id
               WHERE rv.session_id = $1
                 AND nc.is_active = true
-                AND nc.bonus_claimed = false
                 AND nc.challenge_expires_at > CURRENT_TIMESTAMP
+                AND rv.purchased_netherite = false
             `, [sessionId]);
             
             console.log('📊 Challenge query result:', {
@@ -174,15 +175,12 @@ export default async function handler(req, res) {
                   
                   await saveUserOptimized(challenge.referrer_address, referrerData);
                   
-                  // Mark challenge as claimed
+                  // Mark challenge as awarded (but DON'T set bonus_claimed to allow multiple bonuses!)
                   await client.query(`
                     UPDATE netherite_challenges
-                    SET bonus_claimed = true,
-                        bonus_awarded = true,
-                        referred_user_address = $1,
-                        referred_purchase_time = CURRENT_TIMESTAMP
-                    WHERE id = $2
-                  `, [address, challenge.challenge_id]);
+                    SET bonus_awarded = true
+                    WHERE id = $1
+                  `, [challenge.challenge_id]);
                   
                   // Update visit record
                   await client.query(`
