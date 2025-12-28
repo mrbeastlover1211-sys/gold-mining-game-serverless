@@ -1600,6 +1600,7 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
   fetch('/api/buy-with-gold', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include', // 🔧 CRITICAL: Include cookies for Netherite challenge detection
     body: JSON.stringify({
       address: state.address,
       pickaxeType: pickaxeType,
