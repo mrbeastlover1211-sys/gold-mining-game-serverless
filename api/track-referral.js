@@ -64,7 +64,6 @@ export default async function handler(req, res) {
         WHERE referrer_address = $1
           AND is_active = true
           AND challenge_expires_at > CURRENT_TIMESTAMP
-          AND bonus_claimed = false
         ORDER BY challenge_started_at DESC
         LIMIT 1
       `, [ref]);
