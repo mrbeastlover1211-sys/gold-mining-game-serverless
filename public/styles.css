@@ -4057,10 +4057,14 @@ h6 { font-size: 12px; }
 }
 
 .battlezone-hero h3 {
-  color: #dc143c;
+  background: linear-gradient(45deg, #ffd700, #ffed4e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 0 0 10px 0;
   font-size: 28px;
-  text-shadow: 0 0 10px rgba(220, 20, 60, 0.5);
+  text-shadow: none;
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.6));
 }
 
 .battlezone-tagline {
@@ -4455,9 +4459,13 @@ h6 { font-size: 12px; }
 }
 
 .battlezone-title {
-  color: #fff !important;
-  text-shadow: 0 0 10px rgba(255, 0, 0, 0.8), 0 0 20px rgba(255, 0, 0, 0.4);
+  background: linear-gradient(45deg, #ffd700, #ffed4e) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  text-shadow: none !important;
   font-weight: 700;
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.6));
 }
 
 .battlezone-close {
