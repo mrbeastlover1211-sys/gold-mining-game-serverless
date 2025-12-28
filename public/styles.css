@@ -2341,6 +2341,8 @@ h6 { font-size: 12px; }
   font-size: 18px;
   font-weight: bold;
   color: var(--text-primary);
+  text-align: center;
+  flex: 1;
 }
 
 .modal-close-btn {
