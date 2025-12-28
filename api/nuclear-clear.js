@@ -61,8 +61,8 @@ export default async function handler(req, res) {
         results.push(`❌ Users clear error: ${userError.message}`);
       }
       
-      // 4. Clear all other tables one by one
-      const tablesToClear = ['referrals', 'transactions', 'gold_sales'];
+      // 4. Clear all other tables one by one (including Netherite challenges)
+      const tablesToClear = ['referrals', 'transactions', 'gold_sales', 'netherite_challenges'];
       
       for (const tableName of tablesToClear) {
         try {
