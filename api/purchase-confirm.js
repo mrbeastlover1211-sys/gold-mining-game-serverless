@@ -93,6 +93,116 @@ export default async function handler(req, res) {
     
     console.log(`✅ Purchase completed successfully!`);
     
+    // 🔥 Check for Netherite Challenge bonus if buying Netherite
+    if (pickaxeType === 'netherite') {
+      console.log('🔥 Netherite purchase detected! Checking for active challenge...');
+      
+      try {
+        const { pool } = await import('../database.js');
+        const client = await pool.connect();
+        
+        try {
+          // Get session ID from cookie
+          const cookies = req.headers.cookie || '';
+          const sessionMatch = cookies.match(/referral_session=([^;]+)/);
+          const sessionId = sessionMatch ? sessionMatch[1] : null;
+          
+          console.log('🍪 Cookie header:', cookies ? 'EXISTS' : 'MISSING');
+          console.log('🍪 Session ID:', sessionId ? sessionId.slice(0, 20) + '...' : 'NOT FOUND');
+          
+          if (sessionId) {
+            console.log('✅ Session ID found, querying for Netherite Challenge...');
+            
+            // Find referral visit with active challenge
+            const challengeCheck = await client.query(`
+              SELECT 
+                rv.referrer_address,
+                nc.id as challenge_id,
+                nc.challenge_started_at,
+                nc.challenge_expires_at,
+                nc.bonus_claimed,
+                EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - nc.challenge_started_at)) as seconds_elapsed
+              FROM referral_visits rv
+              INNER JOIN netherite_challenges nc ON rv.netherite_challenge_id = nc.id
+              WHERE rv.session_id = $1
+                AND nc.is_active = true
+                AND nc.bonus_claimed = false
+                AND nc.challenge_expires_at > CURRENT_TIMESTAMP
+            `, [sessionId]);
+            
+            console.log('📊 Challenge query result:', {
+              rowsFound: challengeCheck.rows.length,
+              data: challengeCheck.rows[0] || 'NONE'
+            });
+            
+            if (challengeCheck.rows.length > 0) {
+              const challenge = challengeCheck.rows[0];
+              const secondsElapsed = parseFloat(challenge.seconds_elapsed);
+              const withinTimeLimit = secondsElapsed <= 3600; // 1 hour
+              
+              console.log('⏰ Time check:', {
+                secondsElapsed,
+                withinTimeLimit,
+                timeLimit: 3600
+              });
+              
+              if (withinTimeLimit) {
+                console.log('🔥 BONUS TRIGGERED! Giving referrer FREE Netherite!');
+                
+                // Get referrer's data
+                const referrerData = await getUserOptimized(challenge.referrer_address, false);
+                
+                if (referrerData) {
+                  // Give referrer +1 Netherite pickaxe
+                  referrerData.netherite_pickaxes = (referrerData.netherite_pickaxes || 0) + 1;
+                  referrerData.total_mining_power = 
+                    (referrerData.silver_pickaxes || 0) * 1 +
+                    (referrerData.gold_pickaxes || 0) * 10 +
+                    (referrerData.diamond_pickaxes || 0) * 100 +
+                    (referrerData.netherite_pickaxes || 0) * 1000;
+                  
+                  await saveUserOptimized(challenge.referrer_address, referrerData);
+                  
+                  // Mark challenge as claimed
+                  await client.query(`
+                    UPDATE netherite_challenges
+                    SET bonus_claimed = true,
+                        bonus_awarded = true,
+                        referred_user_address = $1,
+                        referred_purchase_time = CURRENT_TIMESTAMP
+                    WHERE id = $2
+                  `, [address, challenge.challenge_id]);
+                  
+                  // Update visit record
+                  await client.query(`
+                    UPDATE referral_visits
+                    SET purchased_netherite = true,
+                        netherite_purchase_time = CURRENT_TIMESTAMP
+                    WHERE session_id = $1
+                  `, [sessionId]);
+                  
+                  console.log('✅ Netherite bonus awarded to referrer:', challenge.referrer_address.slice(0, 8) + '...');
+                  console.log('🎉 Referrer now has', referrerData.netherite_pickaxes, 'Netherite pickaxes!');
+                } else {
+                  console.error('⚠️ Could not find referrer data');
+                }
+              } else {
+                console.log('⏰ Purchase was outside 1-hour window. No bonus awarded.');
+              }
+            } else {
+              console.log('ℹ️ No active Netherite Challenge found for this session');
+            }
+          } else {
+            console.log('ℹ️ No referral session cookie found');
+          }
+        } finally {
+          client.release();
+        }
+      } catch (challengeError) {
+        console.error('⚠️ Netherite Challenge check failed (non-critical):', challengeError);
+      }
+    }
+    
     // Auto-trigger referral completion after pickaxe purchase
     try {
       // Always use production URL for API-to-API calls (not preview URLs)
