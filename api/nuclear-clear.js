@@ -61,18 +61,25 @@ export default async function handler(req, res) {
         results.push(`❌ Users clear error: ${userError.message}`);
       }
       
-      // 4. Clear all other tables one by one (including Netherite challenges)
+      // 4. Clear all other tables one by one
+      // NOTE: Order matters due to foreign key constraints!
+      // netherite_challenges must be cleared AFTER referral_visits (already cleared above)
       const tablesToClear = ['referrals', 'transactions', 'gold_sales', 'netherite_challenges'];
       
       for (const tableName of tablesToClear) {
         try {
           const countBefore = await client.query(`SELECT COUNT(*) as count FROM ${tableName}`);
+          console.log(`Clearing ${tableName}: ${countBefore.rows[0].count} rows`);
+          
           await client.query(`DELETE FROM ${tableName}`);
+          
           const countAfter = await client.query(`SELECT COUNT(*) as count FROM ${tableName}`);
           
           results.push(`✅ ${tableName}: ${countBefore.rows[0].count} → ${countAfter.rows[0].count}`);
+          console.log(`✅ ${tableName} cleared successfully`);
         } catch (tableError) {
-          results.push(`ℹ️ ${tableName}: ${tableError.message}`);
+          console.error(`❌ Error clearing ${tableName}:`, tableError.message);
+          results.push(`❌ ${tableName}: ${tableError.message}`);
         }
       }
       
