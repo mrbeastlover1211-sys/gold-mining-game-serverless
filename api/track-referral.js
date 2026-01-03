@@ -1,42 +1,40 @@
-// 🎯 SESSION TRACKING REFERRAL SYSTEM - Server-side referral recognition
+import { sql } from '../database.js';
+
 export default async function handler(req, res) {
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   try {
-    console.log('🔗 Tracking referral visit...');
-    
-    const { method, query, headers } = req;
-    
-    if (method !== 'GET') {
-      return res.status(405).json({ error: 'Method not allowed' });
-    }
-    
-    const { ref } = query;
+    const { ref } = req.query;
     
     if (!ref) {
-      return res.status(400).json({ error: 'Missing referrer parameter' });
+      return res.status(400).json({ error: 'Missing referrer address' });
     }
-    
-    // Generate unique session ID
-    const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    
-    // Get visitor info
-    const visitorIP = headers['x-forwarded-for'] || headers['x-real-ip'] || req.connection?.remoteAddress || 'unknown';
-    const userAgent = headers['user-agent'] || 'unknown';
+
+    const referrer = ref;
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
     const timestamp = new Date().toISOString();
-    
+
+    console.log('🔗 Tracking referral visit...');
     console.log('👥 Visitor info:', {
-      sessionId: sessionId,
-      referrer: ref.slice(0, 8) + '...',
-      ip: visitorIP,
+      sessionId: sessionId.slice(0, 30) + '...',
+      referrer: referrer.slice(0, 8) + '...',
+      ip: ip,
       timestamp: timestamp
     });
-    
-    // Store in database using shared pool
-    const { pool } = await import('../database.js');
-    const client = await pool.connect();
-    
-    // Create referral_visits table if it doesn't exist
+
+    // Create table and insert visit using Neon Serverless
     try {
-      await client.query(`
+      // Create table if needed
+      await sql`
         CREATE TABLE IF NOT EXISTS referral_visits (
           id SERIAL PRIMARY KEY,
           session_id VARCHAR(50) UNIQUE NOT NULL,
@@ -47,105 +45,75 @@ export default async function handler(req, res) {
           converted BOOLEAN DEFAULT false,
           converted_address VARCHAR(100),
           converted_timestamp TIMESTAMP,
-          expires_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP + INTERVAL '48 hours'
+          expires_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP + INTERVAL '48 hours',
+          netherite_challenge_id INTEGER,
+          purchased_netherite BOOLEAN DEFAULT false,
+          netherite_purchase_time TIMESTAMP
         )
-      `);
-      console.log('✅ Referral visits table ready');
-    } catch (tableError) {
-      console.log('ℹ️ Table creation info:', tableError.message);
-    }
-    
-    // 🔥 Check if referrer has active Netherite Challenge
-    let activeChallengeId = null;
-    try {
-      const challengeCheck = await client.query(`
+      `;
+
+      // Check for active Netherite Challenge
+      const challengeCheck = await sql`
         SELECT id, challenge_expires_at 
-        FROM netherite_challenges
-        WHERE referrer_address = $1
-          AND is_active = true
+        FROM netherite_challenges 
+        WHERE referrer_address = ${referrer}
+          AND is_active = true 
           AND challenge_expires_at > CURRENT_TIMESTAMP
-        ORDER BY challenge_started_at DESC
         LIMIT 1
-      `, [ref]);
+      `;
       
-      if (challengeCheck.rows.length > 0) {
-        activeChallengeId = challengeCheck.rows[0].id;
-        console.log('🔥 Found active Netherite Challenge:', {
-          challengeId: activeChallengeId,
-          expiresAt: challengeCheck.rows[0].challenge_expires_at
+      let netheriteChallenge = null;
+      if (challengeCheck.length > 0) {
+        netheriteChallenge = challengeCheck[0];
+        console.log('🔥 Active Netherite Challenge found:', {
+          challengeId: netheriteChallenge.id,
+          expires: netheriteChallenge.challenge_expires_at
         });
       }
-    } catch (challengeError) {
-      console.log('ℹ️ Challenge check info:', challengeError.message);
-    }
-    
-    // Store the visit (with challenge link if exists)
-    try {
-      const insertResult = await client.query(`
-        INSERT INTO referral_visits (session_id, referrer_address, visitor_ip, user_agent, visit_timestamp, expires_at, netherite_challenge_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        ON CONFLICT (session_id) DO UPDATE SET
-          visit_timestamp = EXCLUDED.visit_timestamp,
-          expires_at = EXCLUDED.expires_at,
+      
+      // Insert referral visit
+      await sql`
+        INSERT INTO referral_visits 
+        (session_id, referrer_address, visitor_ip, user_agent, expires_at, netherite_challenge_id) 
+        VALUES (${sessionId}, ${referrer}, ${ip}, ${userAgent}, CURRENT_TIMESTAMP + INTERVAL '7 days', ${netheriteChallenge?.id || null})
+        ON CONFLICT (session_id) 
+        DO UPDATE SET 
+          visit_timestamp = CURRENT_TIMESTAMP,
+          expires_at = CURRENT_TIMESTAMP + INTERVAL '7 days',
           netherite_challenge_id = EXCLUDED.netherite_challenge_id
-        RETURNING *
-      `, [
-        sessionId,
-        ref, // FULL ADDRESS - no truncation
-        visitorIP,
-        userAgent,
-        timestamp,
-        new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 48 hours from now
-        activeChallengeId
-      ]);
+      `;
       
-      console.log('✅ Referral visit logged:', insertResult.rows[0]);
-      if (activeChallengeId) {
-        console.log('🔥 Visit linked to Netherite Challenge ID:', activeChallengeId);
-      }
+      console.log(`✅ Referral visit tracked: ${sessionId.slice(0, 20)}...`);
+      console.log(`   Referrer: ${referrer.slice(0, 8)}...`);
+      console.log(`   Netherite Challenge: ${netheriteChallenge ? 'LINKED' : 'none'}`);
       
-      // Set session cookie
-      res.setHeader('Set-Cookie', [
-        `referral_session=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${48 * 60 * 60}`, // 48 hours
-        `referral_tracked=true; Path=/; SameSite=Lax; Max-Age=${48 * 60 * 60}` // Tracking flag
-      ]);
-      
-      // Clean up expired visits (optional housekeeping)
-      try {
-        const cleanupResult = await client.query(`
-          DELETE FROM referral_visits 
-          WHERE expires_at < CURRENT_TIMESTAMP
-        `);
-        if (cleanupResult.rowCount > 0) {
-          console.log(`🧹 Cleaned up ${cleanupResult.rowCount} expired visits`);
-        }
-      } catch (cleanupError) {
-        console.log('ℹ️ Cleanup info:', cleanupError.message);
-      }
-      
-    } catch (insertError) {
-      console.error('❌ Failed to log visit:', insertError.message);
-      throw insertError;
+    } catch (dbError) {
+      console.error('❌ Database error:', dbError.message);
+      throw dbError;
     }
-    
-    client.release();
-    
-    // Return tracking pixel (1x1 transparent GIF)
-    const pixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
-    
-    res.setHeader('Content-Type', 'image/gif');
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    
-    return res.send(pixel);
-    
+
+    // Set cookie
+    res.setHeader('Set-Cookie', [
+      `referral_session=${sessionId}; Path=/; Max-Age=604800; SameSite=Lax`,
+      `referrer=${referrer}; Path=/; Max-Age=604800; SameSite=Lax`
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      sessionId: sessionId,
+      referrer: referrer,
+      expires: '7 days',
+      netheriteChallenge: netheriteChallenge ? {
+        id: netheriteChallenge.id,
+        expires: netheriteChallenge.challenge_expires_at
+      } : null
+    });
+
   } catch (error) {
     console.error('❌ Track referral error:', error);
-    
-    // Return tracking pixel even on error (silent failure)
-    const pixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
-    res.setHeader('Content-Type', 'image/gif');
-    return res.send(pixel);
+    return res.status(500).json({ 
+      error: 'Failed to track referral',
+      message: error.message 
+    });
   }
 }
