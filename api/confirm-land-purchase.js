@@ -124,20 +124,30 @@ export default async function handler(req, res) {
       try {
         const { sql } = await import('../database.js');
         
+        console.log('🍪 Checking for referral bonus...');
+        console.log('  Session ID:', sessionId ? sessionId.slice(0, 20) + '...' : 'NONE');
+        console.log('  Address:', address.slice(0, 8) + '...');
+        console.log('  Current gold before bonus:', updatedUser.last_checkpoint_gold || 0);
+        
         // Check if user came from referral link (using session cookie OR converted address)
         let referralCheck;
         
         if (sessionId) {
           // Try session cookie first (most reliable)
           referralCheck = await sql`
-            SELECT referrer_address, session_id 
+            SELECT referrer_address, session_id, expires_at
             FROM referral_visits 
             WHERE session_id = ${sessionId}
               AND expires_at > CURRENT_TIMESTAMP
             LIMIT 1
           `;
           
-          console.log('🔍 Referral check by session cookie:', referralCheck.length > 0 ? 'FOUND' : 'NOT FOUND');
+          console.log('🔍 Referral check by session cookie:');
+          console.log('  Found:', referralCheck.length > 0 ? 'YES' : 'NO');
+          if (referralCheck.length > 0) {
+            console.log('  Referrer:', referralCheck[0].referrer_address?.slice(0, 8) + '...');
+            console.log('  Expires:', referralCheck[0].expires_at);
+          }
           
           // If found, link this wallet to the session
           if (referralCheck.length > 0) {

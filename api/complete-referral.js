@@ -3,7 +3,9 @@ import { sql, getUserOptimized, saveUserOptimized } from '../database.js';
 
 export default async function handler(req, res) {
   try {
-    console.log('🎁 Processing referral completion...');
+    console.log('🎁 ========================================');
+    console.log('🎁 REFERRAL COMPLETION ENDPOINT CALLED');
+    console.log('🎁 ========================================');
     
     const { method, body, headers } = req;
     
@@ -17,17 +19,25 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing wallet address' });
     }
     
-    console.log('👤 Checking referral completion for:', address.slice(0, 8) + '...');
+    console.log('👤 User address:', address.slice(0, 8) + '...');
+    console.log('🌐 Request headers:', JSON.stringify(headers, null, 2));
     
     // 🔧 CRITICAL: Get session from cookies
     const cookies = headers.cookie || '';
+    console.log('🍪 Raw cookie header:', cookies || 'EMPTY');
+    
     const sessionMatch = cookies.match(/referral_session=([^;]+)/);
     const sessionId = sessionMatch ? sessionMatch[1] : null;
     
-    console.log('🍪 Cookie info:', {
-      hasCookie: !!sessionId,
-      sessionId: sessionId ? sessionId.slice(0, 20) + '...' : 'none'
-    });
+    console.log('🍪 Parsed session ID:', sessionId ? sessionId.slice(0, 20) + '...' : '❌ NOT FOUND');
+    
+    if (!sessionId) {
+      console.log('⚠️ No referral session cookie found - cannot complete referral');
+      console.log('   This means either:');
+      console.log('   1. User did not come from referral link');
+      console.log('   2. Cookie was not forwarded from buy-with-gold.js');
+      console.log('   3. Cookie expired or was deleted');
+    }
     
     // 1. Find referral for this address using session cookie OR converted address
     let pendingReferral;
