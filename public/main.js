@@ -1886,7 +1886,7 @@ function copyReferralLink() {
 
 // 📱 Social Sharing Functions
 function sharePromotersOnTwitter() {
-  const text = "🚀 Earn 5-50 SOL daily promoting this amazing gold mining game!";
+  const text = "🚀 Join this amazing gold mining game and earn SOL! Get 1000 gold signup bonus to start!";
   const url = $('#promotersLink').value || 'https://www.thegoldmining.com';
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
   window.open(twitterUrl, '_blank');
@@ -1905,14 +1905,14 @@ function sharePromotersOnLinkedIn() {
 }
 
 function copyPromotersForInstagram() {
-  const text = "🚀 Earn 5-50 SOL daily promoting this amazing gold mining game! " + ($('#promotersLink').value || 'https://www.thegoldmining.com');
+  const text = "🚀 Join this amazing gold mining game and earn SOL! Get 1000 gold signup bonus to start! " + ($('#promotersLink').value || 'https://www.thegoldmining.com');
   navigator.clipboard.writeText(text).then(() => {
     alert('Text copied for Instagram! Paste it in your Instagram post.');
   });
 }
 
 function copyPromotersForTikTok() {
-  const text = "🚀 Earn 5-50 SOL daily promoting this amazing gold mining game! " + ($('#promotersLink').value || 'https://www.thegoldmining.com');
+  const text = "🚀 Join this amazing gold mining game and earn SOL! Get 1000 gold signup bonus to start! " + ($('#promotersLink').value || 'https://www.thegoldmining.com');
   navigator.clipboard.writeText(text).then(() => {
     alert('Text copied for TikTok! Paste it in your TikTok video description.');
   });
@@ -2100,7 +2100,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   const shareX = $('#shareX');
   if (shareX) {
     shareX.addEventListener('click', () => {
-      const text = "🚀 Join this amazing gold mining game and earn SOL!";
+      const text = "🚀 Join this amazing gold mining game and earn SOL! Get 1000 gold signup bonus to start!";
       const url = $('#referralLink').value || 'https://www.thegoldmining.com';
       const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
       window.open(twitterUrl, '_blank');
@@ -2110,7 +2110,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   const shareDiscord = $('#shareDiscord');
   if (shareDiscord) {
     shareDiscord.addEventListener('click', () => {
-      const text = "🚀 Join this amazing gold mining game and earn SOL! " + ($('#referralLink').value || 'https://www.thegoldmining.com');
+      const text = "🚀 Join this amazing gold mining game and earn SOL! Get 1000 gold signup bonus to start! " + ($('#referralLink').value || 'https://www.thegoldmining.com');
       navigator.clipboard.writeText(text).then(() => {
         alert('Link copied! Paste it in Discord.');
       });
@@ -2120,7 +2120,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   const shareTelegram = $('#shareTelegram');
   if (shareTelegram) {
     shareTelegram.addEventListener('click', () => {
-      const text = "🚀 Join this amazing gold mining game and earn SOL!";
+      const text = "🚀 Join this amazing gold mining game and earn SOL! Get 1000 gold signup bonus to start!";
       const url = $('#referralLink').value || 'https://www.thegoldmining.com';
       const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
       window.open(telegramUrl, '_blank');
