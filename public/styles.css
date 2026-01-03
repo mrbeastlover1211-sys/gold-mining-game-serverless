@@ -2430,14 +2430,13 @@ h6 { font-size: 12px; }
 .store-message-modal {
   text-align: center;
   padding: 12px;
-  margin-bottom: 15px;
+  margin-top: 15px;
   border-radius: 8px;
   font-weight: bold;
   font-size: 15px;
   display: none;
   background: rgba(0, 0, 0, 0.5);
   border: 2px solid;
-  animation: slideIn 0.3s ease-out;
   min-height: 0;
 }
 
