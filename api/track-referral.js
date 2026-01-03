@@ -98,16 +98,17 @@ export default async function handler(req, res) {
       `referrer=${referrer}; Path=/; Max-Age=604800; SameSite=Lax`
     ]);
 
-    return res.status(200).json({
-      success: true,
-      sessionId: sessionId,
-      referrer: referrer,
-      expires: '7 days',
-      netheriteChallenge: netheriteChallenge ? {
-        id: netheriteChallenge.id,
-        expires: netheriteChallenge.challenge_expires_at
-      } : null
-    });
+    // Return 1x1 transparent GIF for tracking pixel compatibility
+    // This allows the Image() element in frontend to trigger onload
+    const transparentGif = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+    res.setHeader('Content-Type', 'image/gif');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    
+    // Also add referral info to response headers for debugging
+    res.setHeader('X-Referral-Session', sessionId);
+    res.setHeader('X-Referral-Status', 'tracked');
+    
+    return res.status(200).send(transparentGif);
 
   } catch (error) {
     console.error('❌ Track referral error:', error);
