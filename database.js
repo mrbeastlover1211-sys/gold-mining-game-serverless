@@ -30,7 +30,7 @@ export async function getUserOptimized(address, useCache = true) {
       SELECT 
         address, has_land, land_purchase_date, land_type,
         silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes,
-        gold, last_checkpoint, mining_power,
+        last_checkpoint_gold, checkpoint_timestamp, total_mining_power,
         created_at, updated_at
       FROM users 
       WHERE address = ${address}
@@ -65,12 +65,12 @@ export async function saveUserOptimized(address, userData) {
 
     const now = new Date();
     
-    // Upsert with all fields
+    // Upsert with all fields (using correct database column names)
     const result = await sql`
       INSERT INTO users (
         address, has_land, land_purchase_date, land_type,
         silver_pickaxes, gold_pickaxes, diamond_pickaxes, netherite_pickaxes,
-        gold, last_checkpoint, mining_power, created_at, updated_at
+        last_checkpoint_gold, checkpoint_timestamp, total_mining_power, created_at, updated_at
       ) VALUES (
         ${address},
         ${userData.has_land || false},
@@ -80,9 +80,9 @@ export async function saveUserOptimized(address, userData) {
         ${userData.gold_pickaxes || 0},
         ${userData.diamond_pickaxes || 0},
         ${userData.netherite_pickaxes || 0},
-        ${userData.gold || 0},
-        ${userData.last_checkpoint || now},
-        ${userData.mining_power || 0},
+        ${userData.last_checkpoint_gold || userData.gold || 0},
+        ${userData.checkpoint_timestamp || userData.last_checkpoint || Math.floor(Date.now() / 1000)},
+        ${userData.total_mining_power || userData.mining_power || 0},
         ${now},
         ${now}
       )
@@ -95,9 +95,9 @@ export async function saveUserOptimized(address, userData) {
         gold_pickaxes = EXCLUDED.gold_pickaxes,
         diamond_pickaxes = EXCLUDED.diamond_pickaxes,
         netherite_pickaxes = EXCLUDED.netherite_pickaxes,
-        gold = EXCLUDED.gold,
-        last_checkpoint = EXCLUDED.last_checkpoint,
-        mining_power = EXCLUDED.mining_power,
+        last_checkpoint_gold = EXCLUDED.last_checkpoint_gold,
+        checkpoint_timestamp = EXCLUDED.checkpoint_timestamp,
+        total_mining_power = EXCLUDED.total_mining_power,
         updated_at = EXCLUDED.updated_at
       RETURNING *
     `;
