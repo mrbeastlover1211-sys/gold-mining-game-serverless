@@ -496,6 +496,9 @@ async function buyPickaxe(pickaxeType) {
       }
     }
     
+    // 💾 NEW: Save checkpoint after purchase (server already saved, this is client confirmation)
+    console.log('💾 Pickaxe purchase complete - checkpoint already saved by server');
+    
     // Update wallet balance
     await updateWalletBalance();
     
@@ -847,6 +850,54 @@ function calculateGoldFromCheckpoint(checkpoint) {
   const baseGold = parseFloat(checkpoint.last_checkpoint_gold) || 0;
   
   return baseGold + goldMined;
+}
+
+// 💾 Save checkpoint to server (called on actions and page close)
+async function saveCheckpoint(goldAmount = null) {
+  if (!state.address || !state.checkpoint) {
+    console.log('⚠️ Cannot save checkpoint - no wallet or checkpoint data');
+    return;
+  }
+  
+  try {
+    // Calculate current gold if not provided
+    const currentGold = goldAmount !== null ? goldAmount : calculateGoldFromCheckpoint(state.checkpoint);
+    const timestamp = Math.floor(Date.now() / 1000);
+    
+    console.log('💾 Saving checkpoint:', {
+      address: state.address.slice(0, 8) + '...',
+      gold: currentGold.toFixed(2),
+      timestamp
+    });
+    
+    const response = await fetch('/api/save-checkpoint', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: state.address,
+        gold: currentGold,
+        timestamp: timestamp,
+        finalSync: false
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('✅ Checkpoint saved successfully:', result.checkpoint);
+      return result.checkpoint;
+    } else {
+      throw new Error(result.error || 'Unknown error');
+    }
+    
+  } catch (error) {
+    console.error('❌ Failed to save checkpoint:', error);
+    return null;
+  }
 }
 
 // 🛑 OPTIMIZED: Stop mining function for new system
@@ -1530,6 +1581,20 @@ async function sellGold() {
       $('#sellMsg').style.color = '#4CAF50';
       $('#goldToSell').value = '';
       
+      // 💾 NEW: Save checkpoint after selling gold
+      console.log('💾 Saving checkpoint after gold sale...');
+      const currentGold = calculateGoldFromCheckpoint(state.checkpoint);
+      const newGold = currentGold - goldToSell;
+      
+      await saveCheckpoint(newGold);
+      
+      // Update local state
+      if (state.checkpoint) {
+        state.checkpoint.last_checkpoint_gold = newGold;
+        state.checkpoint.checkpoint_timestamp = Math.floor(Date.now() / 1000);
+      }
+      state.status.gold = newGold;
+      
       // Refresh status to show updated gold
       await refreshStatus(true);
     } else {
@@ -2039,6 +2104,35 @@ function showReferralTrackedNotification(referrerAddress) {
 }
 
 // 🚀 Initialize the game when page loads
+// 💾 Save checkpoint when page is closing
+window.addEventListener('beforeunload', function(e) {
+  if (state.address && state.checkpoint && state.checkpoint.total_mining_power > 0) {
+    console.log('💾 Page closing - saving final checkpoint...');
+    
+    // Calculate final gold amount
+    const finalGold = calculateGoldFromCheckpoint(state.checkpoint);
+    const timestamp = Math.floor(Date.now() / 1000);
+    
+    // Use sendBeacon for reliable delivery during page unload
+    const payload = {
+      address: state.address,
+      gold: finalGold,
+      timestamp: timestamp,
+      finalSync: true
+    };
+    
+    // sendBeacon with Blob to set Content-Type
+    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+    const beaconSent = navigator.sendBeacon('/api/save-checkpoint', blob);
+    
+    if (beaconSent) {
+      console.log('✅ Final checkpoint sent via sendBeacon:', finalGold.toFixed(2), 'gold');
+    } else {
+      console.log('⚠️ sendBeacon failed, checkpoint may not be saved');
+    }
+  }
+});
+
 window.addEventListener('DOMContentLoaded', async function() {
   console.log('🚀 Initializing Complete Optimized Gold Mining Game...');
   

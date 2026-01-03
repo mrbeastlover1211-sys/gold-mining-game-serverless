@@ -115,11 +115,15 @@ export default async function handler(req, res) {
       }
       
       // Update with land ownership (using database column names)
+      const currentTime = nowSec();
       const updatedUser = {
         ...existingUser,
         has_land: true,
-        land_purchase_date: nowSec(),
-        last_activity: nowSec()
+        land_purchase_date: currentTime,
+        last_activity: currentTime,
+        // 💾 CREATE NEW CHECKPOINT on land purchase
+        checkpoint_timestamp: currentTime,
+        last_checkpoint_gold: existingUser.last_checkpoint_gold || 0
       };
       try {
         const { sql } = await import('../database.js');
@@ -176,9 +180,12 @@ export default async function handler(req, res) {
           // User was referred! Give 1000 gold bonus
           const currentGold = parseFloat(updatedUser.last_checkpoint_gold || 0);
           updatedUser.last_checkpoint_gold = currentGold + 1000;
+          // 💾 Update checkpoint timestamp when giving bonus
+          updatedUser.checkpoint_timestamp = nowSec();
           referralBonusGiven = true;
           
           console.log(`🎁 Referral bonus: Gave ${address.slice(0, 8)}... 1000 gold (from referrer: ${referralCheck[0].referrer_address.slice(0, 8)}...)`);
+          console.log(`💾 Checkpoint updated with bonus gold: ${updatedUser.last_checkpoint_gold}`);
         } else {
           console.log('ℹ️ No referral session found - no bonus given');
         }
