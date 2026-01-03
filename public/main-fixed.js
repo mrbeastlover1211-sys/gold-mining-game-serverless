@@ -3004,16 +3004,16 @@ document.head.appendChild(fadeOutStyle);
 
 // Wheel prizes configuration (must match backend)
 const WHEEL_PRIZES = [
-  { id: 'silver', name: 'Silver Pickaxe', color: '#C0C0C0', emoji: '🥈' },
-  { id: 'gold_pickaxe', name: 'Gold Pickaxe', color: '#FFD700', emoji: '🥇' },
-  { id: 'diamond', name: 'Diamond Pickaxe', color: '#00FFFF', emoji: '💎' },
-  { id: 'netherite', name: 'Netherite Pickaxe', color: '#FF00FF', emoji: '⛏️' },
-  { id: 'gold_100', name: '100 Gold', color: '#4CAF50', emoji: '💰' },
-  { id: 'gold_500', name: '500 Gold', color: '#66BB6A', emoji: '💰' },
-  { id: 'gold_1000', name: '1000 Gold', color: '#81C784', emoji: '💰' },
-  { id: 'gold_10000', name: '10000 Gold', color: '#A5D6A7', emoji: '💰' },
-  { id: 'better_luck', name: 'Better Luck', color: '#666666', emoji: '😢' },
-  { id: 'retry', name: 'Free Retry', color: '#2196F3', emoji: '🔄' }
+  { id: 'silver', name: 'Silver Pickaxe', shortName: 'Silver', color: '#C0C0C0', emoji: '🥈', rarity: 'common' },
+  { id: 'gold_pickaxe', name: 'Gold Pickaxe', shortName: 'Gold', color: '#FFD700', emoji: '🥇', rarity: 'rare' },
+  { id: 'diamond', name: 'Diamond Pickaxe', shortName: 'Diamond', color: '#00FFFF', emoji: '💎', rarity: 'epic' },
+  { id: 'netherite', name: 'Netherite Pickaxe', shortName: 'Netherite', color: '#FF00FF', emoji: '⛏️', rarity: 'legendary' },
+  { id: 'gold_100', name: '100 Gold', shortName: '100', color: '#4CAF50', emoji: '💰', rarity: 'gold' },
+  { id: 'gold_500', name: '500 Gold', shortName: '500', color: '#66BB6A', emoji: '💰', rarity: 'gold' },
+  { id: 'gold_1000', name: '1000 Gold', shortName: '1K', color: '#81C784', emoji: '💰', rarity: 'gold' },
+  { id: 'gold_10000', name: '10000 Gold', shortName: '10K', color: '#A5D6A7', emoji: '💰', rarity: 'gold' },
+  { id: 'better_luck', name: 'Better Luck', shortName: 'Try Again', color: '#666666', emoji: '😢', rarity: 'common' },
+  { id: 'retry', name: 'Free Retry', shortName: 'Retry', color: '#2196F3', emoji: '🔄', rarity: 'special' }
 ];
 
 let wheelCanvas = null;
@@ -3061,58 +3061,216 @@ function initializeWheel() {
   drawWheel(0);
 }
 
-// Draw the wheel
+// Draw the premium wheel with 3D effects
 function drawWheel(rotation) {
   if (!wheelCtx || !wheelCanvas) return;
   
   const centerX = wheelCanvas.width / 2;
   const centerY = wheelCanvas.height / 2;
-  const radius = wheelCanvas.width / 2 - 10;
+  const outerRadius = (wheelCanvas.width / 2) - 20;
+  const innerRadius = 50;
   const numSegments = WHEEL_PRIZES.length;
   const anglePerSegment = (2 * Math.PI) / numSegments;
   
   // Clear canvas
   wheelCtx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
   
-  // Draw segments
+  // Draw outer glow ring
+  wheelCtx.save();
+  wheelCtx.shadowColor = 'rgba(255, 215, 0, 0.8)';
+  wheelCtx.shadowBlur = 40;
+  wheelCtx.beginPath();
+  wheelCtx.arc(centerX, centerY, outerRadius + 10, 0, 2 * Math.PI);
+  wheelCtx.strokeStyle = '#FFD700';
+  wheelCtx.lineWidth = 10;
+  wheelCtx.stroke();
+  wheelCtx.restore();
+  
+  // Draw segments with gradients
   for (let i = 0; i < numSegments; i++) {
     const startAngle = rotation + i * anglePerSegment - Math.PI / 2;
     const endAngle = startAngle + anglePerSegment;
+    const prize = WHEEL_PRIZES[i];
+    
+    // Create radial gradient for 3D effect
+    const gradient = wheelCtx.createRadialGradient(
+      centerX, centerY, innerRadius,
+      centerX, centerY, outerRadius
+    );
+    
+    // Set colors based on rarity
+    if (prize.rarity === 'legendary') {
+      gradient.addColorStop(0, '#8B00FF');
+      gradient.addColorStop(1, '#FF00FF');
+    } else if (prize.rarity === 'epic') {
+      gradient.addColorStop(0, '#0080FF');
+      gradient.addColorStop(1, '#00FFFF');
+    } else if (prize.rarity === 'rare') {
+      gradient.addColorStop(0, '#FF8C00');
+      gradient.addColorStop(1, '#FFD700');
+    } else if (prize.rarity === 'gold') {
+      gradient.addColorStop(0, '#2E7D32');
+      gradient.addColorStop(1, '#66BB6A');
+    } else if (prize.rarity === 'special') {
+      gradient.addColorStop(0, '#1565C0');
+      gradient.addColorStop(1, '#42A5F5');
+    } else {
+      gradient.addColorStop(0, '#757575');
+      gradient.addColorStop(1, '#BDBDBD');
+    }
     
     // Draw segment
     wheelCtx.beginPath();
     wheelCtx.moveTo(centerX, centerY);
-    wheelCtx.arc(centerX, centerY, radius, startAngle, endAngle);
+    wheelCtx.arc(centerX, centerY, outerRadius, startAngle, endAngle);
     wheelCtx.closePath();
-    
-    wheelCtx.fillStyle = WHEEL_PRIZES[i].color;
+    wheelCtx.fillStyle = gradient;
     wheelCtx.fill();
     
-    wheelCtx.strokeStyle = '#000';
-    wheelCtx.lineWidth = 3;
+    // Segment border with shadow
+    wheelCtx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+    wheelCtx.lineWidth = 4;
     wheelCtx.stroke();
     
-    // Draw text
+    // Add shine effect
     wheelCtx.save();
-    wheelCtx.translate(centerX, centerY);
-    wheelCtx.rotate(startAngle + anglePerSegment / 2 + Math.PI / 2);
-    wheelCtx.textAlign = 'center';
-    wheelCtx.fillStyle = '#000';
-    wheelCtx.font = 'bold 16px Arial';
-    wheelCtx.fillText(WHEEL_PRIZES[i].emoji, 0, -radius + 40);
-    wheelCtx.font = 'bold 12px Arial';
-    wheelCtx.fillText(WHEEL_PRIZES[i].name, 0, -radius + 60);
+    wheelCtx.clip();
+    const shineGradient = wheelCtx.createRadialGradient(
+      centerX - outerRadius * 0.3,
+      centerY - outerRadius * 0.3,
+      0,
+      centerX,
+      centerY,
+      outerRadius
+    );
+    shineGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+    shineGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)');
+    shineGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    wheelCtx.fillStyle = shineGradient;
+    wheelCtx.fill();
     wheelCtx.restore();
+    
+    // Draw text and emoji
+    drawPrizeText(wheelCtx, centerX, centerY, startAngle, anglePerSegment, outerRadius, prize);
   }
   
-  // Draw center circle
-  wheelCtx.beginPath();
-  wheelCtx.arc(centerX, centerY, 30, 0, 2 * Math.PI);
-  wheelCtx.fillStyle = '#FFD700';
-  wheelCtx.fill();
-  wheelCtx.strokeStyle = '#000';
-  wheelCtx.lineWidth = 4;
-  wheelCtx.stroke();
+  // Draw decorative pins
+  drawPins(wheelCtx, centerX, centerY, outerRadius, rotation, numSegments, anglePerSegment);
+  
+  // Draw center hub with 3D effect
+  drawCenterHub(wheelCtx, centerX, centerY, innerRadius);
+}
+
+// Draw prize text on segment
+function drawPrizeText(ctx, centerX, centerY, startAngle, anglePerSegment, outerRadius, prize) {
+  ctx.save();
+  
+  const angle = startAngle + anglePerSegment / 2;
+  const textRadius = outerRadius * 0.7;
+  const x = centerX + Math.cos(angle) * textRadius;
+  const y = centerY + Math.sin(angle) * textRadius;
+  
+  ctx.translate(x, y);
+  ctx.rotate(angle + Math.PI / 2);
+  
+  // Text shadow for readability
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
+  
+  // Draw emoji
+  ctx.font = 'bold 36px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#FFF';
+  ctx.fillText(prize.emoji, 0, -20);
+  
+  // Draw prize name
+  ctx.font = 'bold 16px Arial';
+  ctx.fillStyle = '#FFF';
+  ctx.fillText(prize.shortName, 0, 15);
+  
+  ctx.restore();
+}
+
+// Draw decorative pins around wheel
+function drawPins(ctx, centerX, centerY, outerRadius, rotation, numSegments, anglePerSegment) {
+  const pinCount = numSegments;
+  const pinRadius = 8;
+  
+  for (let i = 0; i < pinCount; i++) {
+    const angle = rotation + (i * anglePerSegment) - Math.PI / 2;
+    const x = centerX + Math.cos(angle) * (outerRadius - 8);
+    const y = centerY + Math.sin(angle) * (outerRadius - 8);
+    
+    // Pin shadow
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+    ctx.shadowBlur = 6;
+    
+    // Pin gradient
+    const pinGradient = ctx.createRadialGradient(x - 3, y - 3, 0, x, y, pinRadius);
+    pinGradient.addColorStop(0, '#FFD700');
+    pinGradient.addColorStop(1, '#B8860B');
+    
+    ctx.beginPath();
+    ctx.arc(x, y, pinRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = pinGradient;
+    ctx.fill();
+    
+    ctx.strokeStyle = '#8B4513';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// Draw center hub with 3D effect
+function drawCenterHub(ctx, centerX, centerY, innerRadius) {
+  // Outer shadow ring
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+  ctx.shadowBlur = 20;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, innerRadius + 15, 0, 2 * Math.PI);
+  ctx.fillStyle = '#2C2C2C';
+  ctx.fill();
+  ctx.restore();
+  
+  // Main hub with gradient
+  const hubGradient = ctx.createRadialGradient(
+    centerX - 15, centerY - 15, 0,
+    centerX, centerY, innerRadius
+  );
+  hubGradient.addColorStop(0, '#FFD700');
+  hubGradient.addColorStop(0.7, '#FFA500');
+  hubGradient.addColorStop(1, '#FF8C00');
+  
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI);
+  ctx.fillStyle = hubGradient;
+  ctx.fill();
+  
+  // Hub border
+  ctx.strokeStyle = '#8B4513';
+  ctx.lineWidth = 5;
+  ctx.stroke();
+  
+  // Inner shine
+  ctx.beginPath();
+  ctx.arc(centerX - 12, centerY - 12, innerRadius * 0.5, 0, 2 * Math.PI);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+  ctx.fill();
+  
+  // Center text
+  ctx.font = 'bold 20px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#000';
+  ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
+  ctx.shadowBlur = 3;
+  ctx.fillText('SPIN', centerX, centerY);
 }
 
 // Update gold display
@@ -3251,43 +3409,75 @@ function animateWheel(startRotation, endRotation, duration, callback) {
   animate();
 }
 
-// Show spin result
+// Show spin result with premium styling
 function showSpinResult(result) {
   const resultDiv = document.getElementById('spinResult');
   if (!resultDiv) return;
   
   resultDiv.style.display = 'block';
-  resultDiv.className = 'spin-result';
+  resultDiv.className = 'spin-result-premium';
   
   let resultClass = 'win';
   let resultText = result.message;
+  let prizeEmoji = '🎁';
   
+  // Determine result class and emoji
   if (result.prize.type === 'nothing') {
     resultClass = 'lose';
+    prizeEmoji = '😢';
   } else if (result.prize.type === 'pickaxe' && result.prize.value === 'netherite') {
     resultClass = 'legendary-win';
+    prizeEmoji = '⛏️';
+  } else if (result.prize.type === 'pickaxe') {
+    prizeEmoji = '⛏️';
+  } else if (result.prize.type === 'gold') {
+    prizeEmoji = '💰';
+  } else if (result.prize.type === 'retry') {
+    prizeEmoji = '🔄';
   }
   
   resultDiv.classList.add(resultClass);
   resultDiv.innerHTML = `
-    <div style="font-size: 48px; margin-bottom: 10px;">
-      ${result.prize.type === 'pickaxe' ? '⛏️' : 
-        result.prize.type === 'gold' ? '💰' : 
-        result.prize.type === 'retry' ? '🔄' : '😢'}
+    <div style="font-size: 64px; margin-bottom: 15px; animation: prizeFloat 1s ease-in-out infinite;">
+      ${prizeEmoji}
     </div>
-    <div>${resultText}</div>
-    <div style="margin-top: 15px; font-size: 18px;">
-      Gold: ${result.goldBefore.toLocaleString()} → ${result.goldAfter.toLocaleString()}
+    <div style="font-size: 24px; font-weight: bold; color: #ffd700; margin-bottom: 10px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);">
+      ${resultText}
     </div>
+    <div style="display: flex; justify-content: space-around; margin-top: 20px; padding-top: 20px; border-top: 2px solid rgba(255, 215, 0, 0.3);">
+      <div style="text-align: center;">
+        <div style="font-size: 12px; color: #aaa; text-transform: uppercase;">Before</div>
+        <div style="font-size: 20px; font-weight: bold; color: #fff;">${result.goldBefore.toLocaleString()}</div>
+      </div>
+      <div style="font-size: 24px; color: #ffd700;">→</div>
+      <div style="text-align: center;">
+        <div style="font-size: 12px; color: #aaa; text-transform: uppercase;">After</div>
+        <div style="font-size: 20px; font-weight: bold; color: #4CAF50;">${result.goldAfter.toLocaleString()}</div>
+      </div>
+    </div>
+    ${result.freeRetry ? '<div style="margin-top: 15px; padding: 10px; background: rgba(33, 150, 243, 0.2); border: 2px solid #2196F3; border-radius: 10px; font-weight: bold; color: #2196F3;">🔄 FREE SPIN! Click again!</div>' : ''}
   `;
+  
+  // Add floating animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes prizeFloat {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+  `;
+  if (!document.getElementById('prizeFloatStyle')) {
+    style.id = 'prizeFloatStyle';
+    document.head.appendChild(style);
+  }
   
   // Show notification
   showNotification(resultText, result.prize.type === 'nothing' ? 'error' : 'success');
   
-  // Hide result after 5 seconds
+  // Auto-hide result after 8 seconds
   setTimeout(() => {
     resultDiv.style.display = 'none';
-  }, 5000);
+  }, 8000);
 }
 
 console.log('🎰 Spin wheel functions loaded');

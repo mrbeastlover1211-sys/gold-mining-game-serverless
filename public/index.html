@@ -1258,51 +1258,137 @@
     </div>
   </div>
 
-  <!-- 🎰 Spin Wheel Modal -->
+  <!-- 🎰 PREMIUM Spin Wheel Modal -->
   <div id="spinWheelModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content spin-wheel-modal">
-      <div class="modal-header">
-        <div class="modal-title">🎰 LUCKY SPIN WHEEL 🎰</div>
-        <button class="modal-close-btn" onclick="closeSpinWheelModal()">✖</button>
-      </div>
+    <div class="modal-content spin-wheel-modal-premium">
+      <button class="modal-close-btn-premium" onclick="closeSpinWheelModal()">✖</button>
       
-      <div class="modal-body">
-        <div class="spin-wheel-container">
-          <!-- Wheel Canvas -->
-          <div class="wheel-wrapper">
-            <canvas id="wheelCanvas" width="400" height="400"></canvas>
-            <div class="wheel-pointer">▼</div>
+      <div class="modal-body-premium">
+        <!-- Header Section -->
+        <div class="wheel-header">
+          <div class="wheel-title">
+            <div class="title-glow">🎰 SPIN TO WIN 🎰</div>
+            <div class="subtitle">Pay 1,000 Gold for a Chance at Epic Prizes!</div>
           </div>
-          
-          <!-- Spin Button -->
-          <div class="spin-controls">
-            <button id="spinButton" class="spin-btn" onclick="spinWheel()">
-              🎰 Pay 1000 Gold & Spin
-            </button>
-            <div class="spin-info">
-              💰 Your Gold: <span id="spinGoldDisplay">0</span>
+        </div>
+        
+        <div class="wheel-main-content">
+          <!-- Left Side: Wheel -->
+          <div class="wheel-section">
+            <div class="wheel-stage">
+              <!-- Pointer -->
+              <div class="wheel-pointer-container">
+                <div class="wheel-pointer-premium">
+                  <svg width="60" height="60" viewBox="0 0 60 60">
+                    <defs>
+                      <linearGradient id="pointerGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#FF8C00;stop-opacity:1" />
+                      </linearGradient>
+                      <filter id="pointerShadow">
+                        <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000" flood-opacity="0.5"/>
+                      </filter>
+                    </defs>
+                    <polygon points="30,10 40,30 30,25 20,30" fill="url(#pointerGradient)" filter="url(#pointerShadow)" stroke="#8B4513" stroke-width="2"/>
+                  </svg>
+                </div>
+              </div>
+              
+              <!-- Wheel Canvas -->
+              <div class="wheel-wrapper-premium">
+                <canvas id="wheelCanvas" width="500" height="500"></canvas>
+              </div>
+              
+              <!-- Decorative Elements -->
+              <div class="wheel-base"></div>
+            </div>
+            
+            <!-- Spin Button -->
+            <div class="spin-button-container">
+              <button id="spinButton" class="spin-btn-premium" onclick="spinWheel()">
+                <span class="btn-glow"></span>
+                <span class="btn-text">
+                  <span class="btn-icon">🎰</span>
+                  <span class="btn-label">SPIN NOW</span>
+                  <span class="btn-cost">1,000 Gold</span>
+                </span>
+              </button>
             </div>
           </div>
           
-          <!-- Prize List -->
-          <div class="prize-list">
-            <h3>🎁 Possible Prizes:</h3>
-            <div class="prizes-grid">
-              <div class="prize-item legendary">⛏️ Netherite Pickaxe</div>
-              <div class="prize-item epic">💎 Diamond Pickaxe</div>
-              <div class="prize-item rare">🥇 Gold Pickaxe</div>
-              <div class="prize-item common">🥈 Silver Pickaxe</div>
-              <div class="prize-item gold">💰 10,000 Gold</div>
-              <div class="prize-item gold">💰 1,000 Gold</div>
-              <div class="prize-item gold">💰 500 Gold</div>
-              <div class="prize-item gold">💰 100 Gold</div>
-              <div class="prize-item retry">🔄 Free Retry</div>
-              <div class="prize-item nothing">😢 Better Luck</div>
+          <!-- Right Side: Info -->
+          <div class="wheel-info-section">
+            <!-- Gold Display -->
+            <div class="gold-display-card">
+              <div class="card-icon">💰</div>
+              <div class="card-content">
+                <div class="card-label">Your Gold Balance</div>
+                <div class="card-value" id="spinGoldDisplay">0</div>
+              </div>
             </div>
+            
+            <!-- Prize List -->
+            <div class="prizes-card">
+              <div class="prizes-header">
+                <span class="prizes-title">🎁 WIN BIG PRIZES</span>
+              </div>
+              <div class="prizes-list-premium">
+                <div class="prize-row legendary-prize">
+                  <span class="prize-emoji">⛏️</span>
+                  <span class="prize-name">Netherite</span>
+                  <span class="prize-chance">5%</span>
+                </div>
+                <div class="prize-row epic-prize">
+                  <span class="prize-emoji">💎</span>
+                  <span class="prize-name">Diamond</span>
+                  <span class="prize-chance">10%</span>
+                </div>
+                <div class="prize-row rare-prize">
+                  <span class="prize-emoji">🥇</span>
+                  <span class="prize-name">Gold Pickaxe</span>
+                  <span class="prize-chance">20%</span>
+                </div>
+                <div class="prize-row common-prize">
+                  <span class="prize-emoji">🥈</span>
+                  <span class="prize-name">Silver</span>
+                  <span class="prize-chance">25%</span>
+                </div>
+                <div class="prize-row gold-prize">
+                  <span class="prize-emoji">💰</span>
+                  <span class="prize-name">10,000 Gold</span>
+                  <span class="prize-chance">2%</span>
+                </div>
+                <div class="prize-row gold-prize">
+                  <span class="prize-emoji">💰</span>
+                  <span class="prize-name">1,000 Gold</span>
+                  <span class="prize-chance">8%</span>
+                </div>
+                <div class="prize-row gold-prize">
+                  <span class="prize-emoji">💰</span>
+                  <span class="prize-name">500 Gold</span>
+                  <span class="prize-chance">10%</span>
+                </div>
+                <div class="prize-row gold-prize">
+                  <span class="prize-emoji">💰</span>
+                  <span class="prize-name">100 Gold</span>
+                  <span class="prize-chance">15%</span>
+                </div>
+                <div class="prize-row special-prize">
+                  <span class="prize-emoji">🔄</span>
+                  <span class="prize-name">Free Retry</span>
+                  <span class="prize-chance">1%</span>
+                </div>
+                <div class="prize-row lose-prize">
+                  <span class="prize-emoji">😢</span>
+                  <span class="prize-name">Try Again</span>
+                  <span class="prize-chance">4%</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Result Display -->
+            <div id="spinResult" class="spin-result-premium" style="display: none;"></div>
           </div>
-          
-          <!-- Result Display -->
-          <div id="spinResult" class="spin-result" style="display: none;"></div>
         </div>
       </div>
     </div>
