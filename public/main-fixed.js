@@ -2777,7 +2777,7 @@ function showNetheriteChallengePopup() {
               cursor: pointer;
             "
           >
-            <span style="font-size: 14px;">𝕏</span> Post on X
+            <span style="font-size: 14px;">𝕏</span> X
           </button>
           <button 
             onclick="shareOnDiscord()"
