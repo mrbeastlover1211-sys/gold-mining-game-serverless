@@ -1,5 +1,5 @@
-// Complete sell API using WORKING export default syntax
-import { pool } from '../database.js';
+// Complete sell API using Neon Serverless (HTTP-based, no TCP connections)
+import { sql, getUserOptimized, saveUserOptimized } from '../database.js';
 
 const MIN_SELL_GOLD = 10000;
 const GOLD_PRICE_SOL = parseFloat(process.env.GOLD_PRICE_SOL || '0.000001');
@@ -18,10 +18,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  let client;
-  
   try {
-    console.log('💰 Working sell API - with gold deduction');
+    console.log('💰 Neon Serverless sell API - HTTP-based');
     
     const { address, amountGold } = req.body || {};
 
@@ -42,22 +40,12 @@ export default async function handler(req, res) {
 
     console.log(`💰 Processing sell: ${amountGold} gold from ${address.slice(0, 8)}...`);
 
-    // Get database client from shared pool
-    client = await pool.connect();
-
-    // Start transaction for atomic operation
-    await client.query('BEGIN');
-
-    // Get current user data
-    const userResult = await client.query('SELECT * FROM users WHERE address = $1', [address]);
+    // Get current user data using optimized function
+    const user = await getUserOptimized(address, false); // Don't use cache for transactions
     
-    if (userResult.rows.length === 0) {
-      await client.query('ROLLBACK');
-      client.release();
+    if (!user) {
       return res.status(400).json({ error: 'User not found. Please connect wallet and refresh.' });
     }
-
-    const user = userResult.rows[0];
 
     // Calculate current gold based on mining
     const currentTime = Math.floor(Date.now() / 1000);
@@ -75,8 +63,6 @@ export default async function handler(req, res) {
 
     // Check if user has enough gold
     if (totalGold < amountGold) {
-      await client.query('ROLLBACK');
-      client.release();
       return res.status(400).json({ 
         error: `Insufficient gold. You have ${Math.floor(totalGold).toLocaleString()} gold but need ${amountGold.toLocaleString()} gold.`,
         currentGold: Math.floor(totalGold)
@@ -89,72 +75,80 @@ export default async function handler(req, res) {
 
     console.log(`✅ Sale approved - Deducting ${amountGold} gold, remaining: ${newGoldAmount.toFixed(2)}`);
 
-    // Update user's gold and timestamp in database
-    await client.query(`
-      UPDATE users 
-      SET 
-        last_checkpoint_gold = $1,
-        checkpoint_timestamp = $2,
-        last_activity = $2
-      WHERE address = $3
-    `, [newGoldAmount, currentTime, address]);
+    // Neon Serverless transactions using BEGIN/COMMIT
+    // Note: Neon Serverless supports transactions via multiple queries
+    try {
+      // BEGIN transaction
+      await sql`BEGIN`;
 
-    // Create gold_sales table if it doesn't exist (with admin audit columns)
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS gold_sales (
-        id SERIAL PRIMARY KEY,
-        user_address TEXT NOT NULL REFERENCES users(address),
-        gold_amount INTEGER NOT NULL,
-        payout_sol NUMERIC NOT NULL,
-        status TEXT DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT NOW(),
-        processed_at TIMESTAMP NULL,
-        transaction_signature TEXT NULL,
-        admin_notes TEXT NULL,
-        admin_approved_by VARCHAR(255),
-        admin_approved_at TIMESTAMP,
-        completed_by VARCHAR(255),
-        rejected_by VARCHAR(255),
-        rejected_at TIMESTAMP,
-        reject_reason TEXT,
-        tx_signature TEXT
-      )
-    `);
+      // Update user's gold and timestamp
+      await sql`
+        UPDATE users 
+        SET 
+          last_checkpoint_gold = ${newGoldAmount},
+          checkpoint_timestamp = ${currentTime},
+          last_activity = ${currentTime}
+        WHERE address = ${address}
+      `;
 
-    // Record the sale for admin processing
-    await client.query(`
-      INSERT INTO gold_sales (user_address, gold_amount, payout_sol, status)
-      VALUES ($1, $2, $3, 'pending')
-    `, [address, amountGold, payoutSol]);
+      // Create gold_sales table if it doesn't exist
+      await sql`
+        CREATE TABLE IF NOT EXISTS gold_sales (
+          id SERIAL PRIMARY KEY,
+          user_address TEXT NOT NULL REFERENCES users(address),
+          gold_amount INTEGER NOT NULL,
+          payout_sol NUMERIC NOT NULL,
+          status TEXT DEFAULT 'pending',
+          created_at TIMESTAMP DEFAULT NOW(),
+          processed_at TIMESTAMP NULL,
+          transaction_signature TEXT NULL,
+          admin_notes TEXT NULL,
+          admin_approved_by VARCHAR(255),
+          admin_approved_at TIMESTAMP,
+          completed_by VARCHAR(255),
+          rejected_by VARCHAR(255),
+          rejected_at TIMESTAMP,
+          reject_reason TEXT,
+          tx_signature TEXT
+        )
+      `;
 
-    // Commit transaction
-    await client.query('COMMIT');
+      // Record the sale for admin processing
+      await sql`
+        INSERT INTO gold_sales (user_address, gold_amount, payout_sol, status)
+        VALUES (${address}, ${amountGold}, ${payoutSol}, 'pending')
+      `;
 
-    console.log(`✅ Gold sale completed successfully - ${address.slice(0, 8)}... sold ${amountGold} gold`);
+      // COMMIT transaction
+      await sql`COMMIT`;
 
-    return res.status(200).json({
-      success: true,
-      payoutSol: payoutSol.toFixed(6),
-      newGold: Math.floor(newGoldAmount),
-      oldGold: Math.floor(totalGold),
-      goldDeducted: amountGold,
-      mode: 'pending',
-      message: `Successfully sold ${amountGold.toLocaleString()} gold for ${payoutSol.toFixed(6)} SOL!`,
-      note: 'Gold has been deducted from your account. Sale pending admin approval.',
-      timestamp: currentTime
-    });
+      console.log(`✅ Gold sale completed successfully - ${address.slice(0, 8)}... sold ${amountGold} gold`);
+
+      return res.status(200).json({
+        success: true,
+        payoutSol: payoutSol.toFixed(6),
+        newGold: Math.floor(newGoldAmount),
+        oldGold: Math.floor(totalGold),
+        goldDeducted: amountGold,
+        mode: 'pending',
+        message: `Successfully sold ${amountGold.toLocaleString()} gold for ${payoutSol.toFixed(6)} SOL!`,
+        note: 'Gold has been deducted from your account. Sale pending admin approval.',
+        timestamp: currentTime
+      });
+
+    } catch (transactionError) {
+      // Rollback on error
+      try {
+        await sql`ROLLBACK`;
+        console.log('🔄 Transaction rolled back');
+      } catch (rollbackError) {
+        console.error('❌ Rollback error:', rollbackError.message);
+      }
+      throw transactionError;
+    }
 
   } catch (e) {
-    // Rollback transaction on error
-    if (client) {
-      try {
-        await client.query('ROLLBACK');
-      } catch (rollbackError) {
-        console.error('Rollback error:', rollbackError.message);
-      }
-    }
-    
-    console.error('❌ Working sell error:', e.message);
+    console.error('❌ Neon Serverless sell error:', e.message);
     console.error('❌ Stack:', e.stack);
     
     return res.status(500).json({
@@ -162,15 +156,5 @@ export default async function handler(req, res) {
       message: e.message,
       details: 'Transaction has been rolled back, no gold was deducted'
     });
-    
-  } finally {
-    // Always release database client back to pool
-    if (client) {
-      try {
-        client.release();
-      } catch (releaseError) {
-        console.error('Client release error:', releaseError.message);
-      }
-    }
   }
 }
