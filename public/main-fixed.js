@@ -2777,7 +2777,7 @@ function showNetheriteChallengePopup() {
               cursor: pointer;
             "
           >
-            🐦 Tweet
+            <span style="font-size: 14px;">𝕏</span> Post on X
           </button>
           <button 
             onclick="shareOnDiscord()"
@@ -2899,11 +2899,11 @@ window.copyNetheriteLink = function() {
   }, 2000);
 };
 
-// Share on Twitter
+// Share on X (Twitter)
 window.shareOnTwitter = function() {
   const link = `https://www.thegoldmining.com/?ref=${state.address}`;
-  const text = `🔥 Join me on Gold Mining Game and get 1000 FREE GOLD! I'm doing the Netherite Challenge - if you buy Netherite pickaxe in the next hour, I get one FREE! ⏰`;
-  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
+  const text = `🔥 Join me on Gold Mining Game and get 1000 FREE GOLD! I'm doing the Netherite Challenge - if you buy Netherite pickaxe in the next hour, I get one FREE! ⏰ ${link}`;
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank', 'width=600,height=400');
 };
 
