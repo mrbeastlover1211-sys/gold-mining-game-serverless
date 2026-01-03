@@ -1527,7 +1527,6 @@ function showReferralCompletionNotification(result) {
     <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
       <div>🔨 ${rewards.pickaxe_count || 1}x ${(rewards.pickaxe_type || 'silver').toUpperCase()} Pickaxe</div>
       <div>💰 ${rewards.gold_reward || 100} Gold</div>
-      <div>🪙 ${rewards.sol_reward || 0.01} SOL</div>
     </div>
     <div style="font-size: 12px; opacity: 0.9;">
       Referrals completed: ${rewards.new_referral_count || 1}
