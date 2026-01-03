@@ -122,60 +122,55 @@ export default async function handler(req, res) {
         last_activity: nowSec()
       };
       try {
-        const { pool } = await import('../database.js');
-        const client = await pool.connect();
+        const { sql } = await import('../database.js');
         
-        try {
-          // Check if user came from referral link (using session cookie OR converted address)
-          let referralCheck;
+        // Check if user came from referral link (using session cookie OR converted address)
+        let referralCheck;
+        
+        if (sessionId) {
+          // Try session cookie first (most reliable)
+          referralCheck = await sql`
+            SELECT referrer_address, session_id 
+            FROM referral_visits 
+            WHERE session_id = ${sessionId}
+              AND expires_at > CURRENT_TIMESTAMP
+            LIMIT 1
+          `;
           
-          if (sessionId) {
-            // Try session cookie first (most reliable)
-            referralCheck = await client.query(`
-              SELECT referrer_address, session_id 
-              FROM referral_visits 
-              WHERE session_id = $1
-                AND expires_at > CURRENT_TIMESTAMP
-              LIMIT 1
-            `, [sessionId]);
-            
-            console.log('🔍 Referral check by session cookie:', referralCheck.rows.length > 0 ? 'FOUND' : 'NOT FOUND');
-            
-            // If found, link this wallet to the session
-            if (referralCheck.rows.length > 0) {
-              await client.query(`
-                UPDATE referral_visits 
-                SET converted_address = $1, converted = true, converted_timestamp = CURRENT_TIMESTAMP
-                WHERE session_id = $2
-              `, [address, sessionId]);
-              
-              console.log('✅ Linked wallet to referral session');
-            }
-          } else {
-            // Fallback: try converted address
-            referralCheck = await client.query(`
-              SELECT referrer_address, session_id 
-              FROM referral_visits 
-              WHERE converted_address = $1 
-                AND converted = true
-              LIMIT 1
-            `, [address]);
-            
-            console.log('🔍 Referral check by converted address:', referralCheck.rows.length > 0 ? 'FOUND' : 'NOT FOUND');
-          }
+          console.log('🔍 Referral check by session cookie:', referralCheck.length > 0 ? 'FOUND' : 'NOT FOUND');
           
-          if (referralCheck.rows.length > 0) {
-            // User was referred! Give 1000 gold bonus
-            const currentGold = parseFloat(updatedUser.last_checkpoint_gold || 0);
-            updatedUser.last_checkpoint_gold = currentGold + 1000;
-            referralBonusGiven = true;
+          // If found, link this wallet to the session
+          if (referralCheck.length > 0) {
+            await sql`
+              UPDATE referral_visits 
+              SET converted_address = ${address}, converted = true, converted_timestamp = CURRENT_TIMESTAMP
+              WHERE session_id = ${sessionId}
+            `;
             
-            console.log(`🎁 Referral bonus: Gave ${address.slice(0, 8)}... 1000 gold (from referrer: ${referralCheck.rows[0].referrer_address.slice(0, 8)}...)`);
-          } else {
-            console.log('ℹ️ No referral session found - no bonus given');
+            console.log('✅ Linked wallet to referral session');
           }
-        } finally {
-          client.release();
+        } else {
+          // Fallback: try converted address
+          referralCheck = await sql`
+            SELECT referrer_address, session_id 
+            FROM referral_visits 
+            WHERE converted_address = ${address}
+              AND converted = true
+            LIMIT 1
+          `;
+          
+          console.log('🔍 Referral check by converted address:', referralCheck.length > 0 ? 'FOUND' : 'NOT FOUND');
+        }
+        
+        if (referralCheck.length > 0) {
+          // User was referred! Give 1000 gold bonus
+          const currentGold = parseFloat(updatedUser.last_checkpoint_gold || 0);
+          updatedUser.last_checkpoint_gold = currentGold + 1000;
+          referralBonusGiven = true;
+          
+          console.log(`🎁 Referral bonus: Gave ${address.slice(0, 8)}... 1000 gold (from referrer: ${referralCheck[0].referrer_address.slice(0, 8)}...)`);
+        } else {
+          console.log('ℹ️ No referral session found - no bonus given');
         }
       } catch (bonusError) {
         console.log('⚠️ Could not check referral bonus:', bonusError.message);

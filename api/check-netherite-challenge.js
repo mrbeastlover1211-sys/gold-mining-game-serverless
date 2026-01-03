@@ -1,4 +1,4 @@
-import { pool } from '../database.js';
+import { sql } from '../database.js';
 
 export default async function handler(req, res) {
   // Enable CORS
@@ -14,8 +14,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  let client;
-
   try {
     const { address } = req.query;
 
@@ -26,19 +24,17 @@ export default async function handler(req, res) {
       });
     }
 
-    client = await pool.connect();
-
     // Check if user has active challenge
-    const activeChallenge = await client.query(`
+    const activeChallenge = await sql`
       SELECT * FROM netherite_challenges
-      WHERE referrer_address = $1
+      WHERE referrer_address = ${address}
         AND is_active = true
         AND challenge_expires_at > CURRENT_TIMESTAMP
       ORDER BY challenge_started_at DESC
       LIMIT 1
-    `, [address]);
+    `;
 
-    if (activeChallenge.rows.length === 0) {
+    if (activeChallenge.length === 0) {
       return res.json({
         success: true,
         has_active_challenge: false,
@@ -46,7 +42,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const challenge = activeChallenge.rows[0];
+    const challenge = activeChallenge[0];
     const now = new Date();
     const expiresAt = new Date(challenge.challenge_expires_at);
     const timeRemaining = Math.floor((expiresAt - now) / 1000);
@@ -72,9 +68,5 @@ export default async function handler(req, res) {
       error: 'Failed to check challenge',
       details: error.message 
     });
-  } finally {
-    if (client) {
-      client.release();
-    }
   }
 }

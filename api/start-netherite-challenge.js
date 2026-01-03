@@ -1,4 +1,4 @@
-import { pool } from '../database.js';
+import { sql } from '../database.js';
 
 export default async function handler(req, res) {
   // Enable CORS
@@ -14,8 +14,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  let client;
-
   try {
     const { referrer_address } = req.body;
 
@@ -28,20 +26,18 @@ export default async function handler(req, res) {
 
     console.log('🔥 Starting Netherite Challenge for:', referrer_address.slice(0, 8) + '...');
 
-    client = await pool.connect();
-
     // Check if user already has an active challenge
-    const existingChallenge = await client.query(`
+    const existingChallenge = await sql`
       SELECT * FROM netherite_challenges
-      WHERE referrer_address = $1
+      WHERE referrer_address = ${referrer_address}
         AND is_active = true
         AND challenge_expires_at > CURRENT_TIMESTAMP
       ORDER BY challenge_started_at DESC
       LIMIT 1
-    `, [referrer_address]);
+    `;
 
-    if (existingChallenge.rows.length > 0) {
-      const challenge = existingChallenge.rows[0];
+    if (existingChallenge.length > 0) {
+      const challenge = existingChallenge[0];
       const timeRemaining = Math.floor((new Date(challenge.challenge_expires_at) - new Date()) / 1000);
       
       console.log('⚠️ User already has active challenge, time remaining:', timeRemaining);
@@ -58,14 +54,14 @@ export default async function handler(req, res) {
     }
 
     // Create new challenge (1 hour duration)
-    const newChallenge = await client.query(`
+    const newChallenge = await sql`
       INSERT INTO netherite_challenges 
       (referrer_address, challenge_expires_at, is_active)
-      VALUES ($1, CURRENT_TIMESTAMP + INTERVAL '1 hour', true)
+      VALUES (${referrer_address}, CURRENT_TIMESTAMP + INTERVAL '1 hour', true)
       RETURNING *
-    `, [referrer_address]);
+    `;
 
-    const challenge = newChallenge.rows[0];
+    const challenge = newChallenge[0];
 
     console.log('✅ Netherite Challenge created:', {
       id: challenge.id,
@@ -74,12 +70,12 @@ export default async function handler(req, res) {
     });
 
     // Update user record to mark challenge as accepted
-    await client.query(`
+    await sql`
       INSERT INTO users (address, netherite_challenge_accepted)
-      VALUES ($1, true)
+      VALUES (${referrer_address}, true)
       ON CONFLICT (address) 
       DO UPDATE SET netherite_challenge_accepted = true
-    `, [referrer_address]);
+    `;
 
     return res.json({
       success: true,
@@ -103,9 +99,5 @@ export default async function handler(req, res) {
       stack: error.stack,
       fullError: JSON.stringify(error, Object.getOwnPropertyNames(error))
     });
-  } finally {
-    if (client) {
-      client.release();
-    }
   }
 }
