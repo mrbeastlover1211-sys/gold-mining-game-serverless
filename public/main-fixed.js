@@ -1591,7 +1591,15 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
   console.log(`💰 Current gold check: ${currentGold.toFixed(2)} (checkpoint-based), need: ${goldCost}`);
   
   if (currentGold < goldCost) {
-    alert(`Not enough gold! You need ${goldCost.toLocaleString()} gold but only have ${currentGold.toFixed(0).toLocaleString()}`);
+    const msgDiv = $('#modalStoreMsg');
+    msgDiv.textContent = `❌ Not enough gold! You need ${goldCost.toLocaleString()} gold but only have ${currentGold.toFixed(0).toLocaleString()}`;
+    msgDiv.style.color = '#ff4444';
+    msgDiv.style.display = 'block';
+    
+    // Hide message after 5 seconds
+    setTimeout(() => {
+      msgDiv.style.display = 'none';
+    }, 5000);
     return;
   }
 
@@ -1610,9 +1618,12 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
   })
   .then(response => response.json())
   .then(result => {
+    const msgDiv = $('#modalStoreMsg');
+    msgDiv.style.display = 'block';
+    
     if (result.success) {
-      $('#modalStoreMsg').textContent = `✅ Successfully purchased ${pickaxeType} pickaxe with gold!`;
-      $('#modalStoreMsg').style.color = '#4CAF50';
+      msgDiv.textContent = `✅ Successfully purchased ${pickaxeType} pickaxe with gold!`;
+      msgDiv.style.color = '#4CAF50';
       
       // Update state and UI immediately with the new gold value from API
       if (result.newGold !== undefined) {
@@ -1677,9 +1688,10 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
         console.log('⚠️ Client-side referral check failed:', err);
       });
       
-      // Clear success message after 3 seconds
+      // Hide success message after 3 seconds and close modal
       setTimeout(() => {
-        $('#modalStoreMsg').textContent = '';
+        msgDiv.style.display = 'none';
+        closeGoldStoreModal();
       }, 3000);
     } else {
       throw new Error(result.error || 'Purchase failed');
@@ -1687,12 +1699,14 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
   })
   .catch(error => {
     console.error('❌ Gold purchase failed:', error);
-    $('#modalStoreMsg').textContent = `❌ Purchase failed: ${error.message}`;
-    $('#modalStoreMsg').style.color = '#f44336';
+    const msgDiv = $('#modalStoreMsg');
+    msgDiv.textContent = `❌ Purchase failed: ${error.message}`;
+    msgDiv.style.color = '#f44336';
+    msgDiv.style.display = 'block';
     
-    // Clear error message after 5 seconds
+    // Hide error message after 5 seconds
     setTimeout(() => {
-      $('#modalStoreMsg').textContent = '';
+      msgDiv.style.display = 'none';
     }, 5000);
   });
 }
