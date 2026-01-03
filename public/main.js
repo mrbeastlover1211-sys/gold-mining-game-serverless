@@ -1886,9 +1886,9 @@ function copyReferralLink() {
 
 // 📱 Social Sharing Functions
 function sharePromotersOnTwitter() {
-  const text = "🚀 Join this amazing gold mining game and earn SOL! Get 1000 gold signup bonus to start!";
   const url = $('#promotersLink').value || 'https://www.thegoldmining.com';
-  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+  const text = `🚀 Join this amazing gold mining game and earn SOL! Get 1000 gold signup bonus to start! ${url}`;
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(twitterUrl, '_blank');
 }
 
@@ -2100,9 +2100,9 @@ window.addEventListener('DOMContentLoaded', async function() {
   const shareX = $('#shareX');
   if (shareX) {
     shareX.addEventListener('click', () => {
-      const text = "🚀 Join this amazing gold mining game and earn SOL! Get 1000 gold signup bonus to start!";
       const url = $('#referralLink').value || 'https://www.thegoldmining.com';
-      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+      const text = `🚀 Join this amazing gold mining game and earn SOL! Get 1000 gold signup bonus to start! ${url}`;
+      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
       window.open(twitterUrl, '_blank');
     });
   }
@@ -2120,8 +2120,8 @@ window.addEventListener('DOMContentLoaded', async function() {
   const shareTelegram = $('#shareTelegram');
   if (shareTelegram) {
     shareTelegram.addEventListener('click', () => {
-      const text = "🚀 Join this amazing gold mining game and earn SOL! Get 1000 gold signup bonus to start!";
       const url = $('#referralLink').value || 'https://www.thegoldmining.com';
+      const text = `🚀 Join this amazing gold mining game and earn SOL! Get 1000 gold signup bonus to start! ${url}`;
       const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
       window.open(telegramUrl, '_blank');
     });
