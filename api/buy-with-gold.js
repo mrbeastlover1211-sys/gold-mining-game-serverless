@@ -104,17 +104,18 @@ export default async function handler(req, res) {
                           diamondCount * 100 + 
                           netheriteCount * 1000;
     
-    // Update user data
+    // ✅ Update user data and CREATE NEW CHECKPOINT
     user.total_mining_power = newMiningPower;
     user.checkpoint_timestamp = currentTime;
     user.last_checkpoint_gold = newGold;
     user.last_activity = currentTime;
     
-    console.log(`🔄 Updating user after purchase:`, {
+    console.log(`💾 Creating checkpoint after purchase:`, {
       silver: user.silver_pickaxes,
       gold: user.gold_pickaxes,
       newGold: newGold.toFixed(2),
-      newMiningPower
+      newMiningPower,
+      checkpointTime: currentTime
     });
     
     // Save user data using same method as status.js

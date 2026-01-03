@@ -110,11 +110,8 @@ function startOptimizedMining() {
       lastDisplayUpdate = now;
     }
     
-    // Sync with server every 30000ms (30 seconds)
-    if (now - lastSyncUpdate >= 30000) {
-      syncWithServer();
-      lastSyncUpdate = now;
-    }
+    // ✅ NO MORE 30-SECOND SYNC! Pure client-side calculation
+    // Checkpoints are only created on user actions (buy, sell, etc.)
     
     // Continue loop with requestAnimationFrame (much more CPU efficient)
     requestAnimationFrame(optimizedMiningLoop);
@@ -151,44 +148,49 @@ function updateMiningDisplay() {
   }
 }
 
-// Sync with server (reduced frequency)
-async function syncWithServer() {
+// Create checkpoint (called only on user actions)
+async function createCheckpoint() {
   if (!window.state || !window.state.address) return;
   
   try {
     const currentGold = calculateCurrentGold();
     
-    // Only sync if significant time has passed or gold amount is substantial
-    const timeSinceLastSync = Date.now() - window.miningState.lastSyncTime;
-    if (timeSinceLastSync < 25000 && currentGold - window.miningState.baseGold < 100) {
-      return; // Skip sync if minimal progress
-    }
+    console.log('💾 Creating checkpoint...', currentGold.toFixed(2), 'gold');
     
-    console.log('🔄 Syncing with server...');
-    
-    const response = await fetch('/api/status', {
+    const response = await fetch('/api/save-checkpoint', {
       method: 'POST', 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         address: window.state.address,
-        clientGold: currentGold,
-        syncUpdate: true
+        gold: currentGold,
+        timestamp: Math.floor(Date.now() / 1000)
       })
     });
     
     const data = await response.json();
     
     if (data.success) {
-      // Update base gold to server value
-      window.miningState.baseGold = data.last_checkpoint_gold || currentGold;
+      // Update checkpoint in mining state
+      window.miningState.baseGold = currentGold;
       window.miningState.startTime = Date.now();
       window.miningState.lastSyncTime = Date.now();
       
-      console.log('✅ Synced with server:', window.miningState.baseGold, 'gold');
+      // Broadcast to other tabs
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('checkpoint', JSON.stringify({
+          gold: currentGold,
+          timestamp: Date.now(),
+          miningPower: window.miningState.totalRate
+        }));
+      }
+      
+      console.log('✅ Checkpoint created:', currentGold.toFixed(2), 'gold');
+      return true;
     }
     
   } catch (error) {
-    console.log('⚠️ Sync failed (continuing with client-side):', error.message);
+    console.log('⚠️ Checkpoint creation failed:', error.message);
+    return false;
   }
 }
 
@@ -271,6 +273,73 @@ function getMiningState() {
   };
 }
 
+// Save checkpoint on page close (reliable sync)
+function saveCheckpointOnClose() {
+  if (!window.state?.address) return;
+  
+  const currentGold = calculateCurrentGold();
+  const data = JSON.stringify({
+    address: window.state.address,
+    gold: currentGold,
+    timestamp: Math.floor(Date.now() / 1000),
+    finalSync: true
+  });
+  
+  // Use sendBeacon for reliable delivery even when page is closing
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon('/api/save-checkpoint', data);
+    console.log('💾 Final checkpoint sent via beacon:', currentGold.toFixed(2), 'gold');
+  } else {
+    // Fallback for older browsers (synchronous XHR)
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/save-checkpoint', false); // Synchronous
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.send(data);
+      console.log('💾 Final checkpoint sent via XHR:', currentGold.toFixed(2), 'gold');
+    } catch (e) {
+      console.error('❌ Failed to save final checkpoint:', e);
+    }
+  }
+}
+
+// Listen for page unload events
+window.addEventListener('beforeunload', saveCheckpointOnClose);
+window.addEventListener('pagehide', saveCheckpointOnClose); // Better mobile support
+
+// Listen for visibility changes (switching tabs)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    // User switched away - create checkpoint
+    console.log('👋 User switched tabs - creating checkpoint');
+    createCheckpoint();
+  } else {
+    // User came back - could reload fresh data if needed
+    console.log('👀 User returned to tab');
+  }
+});
+
+// Listen for storage events (multi-tab sync)
+window.addEventListener('storage', (e) => {
+  if (e.key === 'checkpoint' && e.newValue) {
+    try {
+      const checkpoint = JSON.parse(e.newValue);
+      
+      // Update from another tab
+      console.log('📡 Checkpoint updated from another tab:', checkpoint.gold);
+      
+      window.miningState.baseGold = checkpoint.gold;
+      window.miningState.startTime = checkpoint.timestamp;
+      window.miningState.lastSyncTime = checkpoint.timestamp;
+      
+      // Force display update
+      updateMiningDisplay();
+    } catch (e) {
+      console.error('❌ Failed to parse checkpoint from storage:', e);
+    }
+  }
+});
+
 // Export functions to global scope
 window.initializeMiningEngine = initializeMiningEngine;
 window.startOptimizedMining = startOptimizedMining;
@@ -279,5 +348,6 @@ window.addPickaxeToMining = addPickaxeToMining;
 window.subtractGoldFromMining = subtractGoldFromMining;
 window.getMiningState = getMiningState;
 window.calculateCurrentGold = calculateCurrentGold;
+window.createCheckpoint = createCheckpoint; // Export for use in buy/sell actions
 
-console.log('✅ Complete Optimized Mining Engine loaded successfully!');
+console.log('✅ Complete Optimized Mining Engine with Checkpoint System loaded!');
