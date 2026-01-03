@@ -113,53 +113,45 @@ export default async function handler(req, res) {
       console.log('🔥 Netherite purchase detected! Checking for active challenge...');
       
       try {
-        // Use the shared pool from database.js
-        const { pool } = await import('../database.js');
+        // Use Neon Serverless (HTTP-based queries)
+        const { sql } = await import('../database.js');
         
-        if (!pool) {
-          console.error('⚠️ Database pool not available');
-          return;
-        }
+        // Get session ID from cookie
+        const cookies = req.headers.cookie || '';
+        const sessionMatch = cookies.match(/referral_session=([^;]+)/);
+        const sessionId = sessionMatch ? sessionMatch[1] : null;
         
-        const client = await pool.connect();
+        console.log('🍪 Cookie header:', cookies ? 'EXISTS' : 'MISSING');
+        console.log('🍪 Session ID:', sessionId ? sessionId.slice(0, 20) + '...' : 'NOT FOUND');
         
-        try {
-          // Get session ID from cookie
-          const cookies = req.headers.cookie || '';
-          const sessionMatch = cookies.match(/referral_session=([^;]+)/);
-          const sessionId = sessionMatch ? sessionMatch[1] : null;
+        if (sessionId) {
+          console.log('✅ Session ID found, querying for Netherite Challenge...');
           
-          console.log('🍪 Cookie header:', cookies ? 'EXISTS' : 'MISSING');
-          console.log('🍪 Session ID:', sessionId ? sessionId.slice(0, 20) + '...' : 'NOT FOUND');
+          // Find referral visit with active challenge using Neon Serverless
+          // NOTE: We DON'T check bonus_claimed = false because multiple people can earn bonus!
+          const challengeCheck = await sql`
+            SELECT 
+              rv.referrer_address,
+              rv.purchased_netherite,
+              nc.id as challenge_id,
+              nc.challenge_started_at,
+              nc.challenge_expires_at,
+              EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - nc.challenge_started_at)) as seconds_elapsed
+            FROM referral_visits rv
+            INNER JOIN netherite_challenges nc ON rv.netherite_challenge_id = nc.id
+            WHERE rv.session_id = ${sessionId}
+              AND nc.is_active = true
+              AND nc.challenge_expires_at > CURRENT_TIMESTAMP
+              AND rv.purchased_netherite = false
+          `;
           
-          if (sessionId) {
-            console.log('✅ Session ID found, querying for Netherite Challenge...');
+          console.log('📊 Challenge query result:', {
+            rowsFound: challengeCheck.length,
+            data: challengeCheck[0] || 'NONE'
+          });
             
-            // Find referral visit with active challenge
-            // NOTE: We DON'T check bonus_claimed = false because multiple people can earn bonus!
-            const challengeCheck = await client.query(`
-              SELECT 
-                rv.referrer_address,
-                rv.purchased_netherite,
-                nc.id as challenge_id,
-                nc.challenge_started_at,
-                nc.challenge_expires_at,
-                EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - nc.challenge_started_at)) as seconds_elapsed
-              FROM referral_visits rv
-              INNER JOIN netherite_challenges nc ON rv.netherite_challenge_id = nc.id
-              WHERE rv.session_id = $1
-                AND nc.is_active = true
-                AND nc.challenge_expires_at > CURRENT_TIMESTAMP
-                AND rv.purchased_netherite = false
-            `, [sessionId]);
-            
-            console.log('📊 Challenge query result:', {
-              rowsFound: challengeCheck.rows.length,
-              data: challengeCheck.rows[0] || 'NONE'
-            });
-            
-            if (challengeCheck.rows.length > 0) {
-              const challenge = challengeCheck.rows[0];
+            if (challengeCheck.length > 0) {
+              const challenge = challengeCheck[0];
               const secondsElapsed = parseFloat(challenge.seconds_elapsed);
               const withinTimeLimit = secondsElapsed <= 3600; // 1 hour
               
@@ -199,19 +191,19 @@ export default async function handler(req, res) {
                   await saveUserOptimized(challenge.referrer_address, referrerData);
                   
                   // Mark challenge as awarded (but DON'T set bonus_claimed to allow multiple bonuses!)
-                  await client.query(`
+                  await sql`
                     UPDATE netherite_challenges
                     SET bonus_awarded = true
-                    WHERE id = $1
-                  `, [challenge.challenge_id]);
+                    WHERE id = ${challenge.challenge_id}
+                  `;
                   
-                  // Update visit record
-                  await client.query(`
+                  // Update visit record using Neon Serverless
+                  await sql`
                     UPDATE referral_visits
                     SET purchased_netherite = true,
                         netherite_purchase_time = CURRENT_TIMESTAMP
-                    WHERE session_id = $1
-                  `, [sessionId]);
+                    WHERE session_id = ${sessionId}
+                  `;
                   
                   console.log('✅ Netherite bonus awarded to referrer:', challenge.referrer_address.slice(0, 8) + '...');
                   console.log('🎉 Referrer now has', referrerData.netherite_pickaxes, 'Netherite pickaxes!');
@@ -233,9 +225,6 @@ export default async function handler(req, res) {
           } else {
             console.log('ℹ️ No referral session cookie found');
           }
-        } finally {
-          client.release();
-        }
       } catch (challengeError) {
         console.error('⚠️ Netherite Challenge check failed (non-critical):', challengeError);
       }
