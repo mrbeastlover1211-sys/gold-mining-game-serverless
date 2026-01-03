@@ -4359,6 +4359,7 @@ h6 { font-size: 12px; }
 /* Premium Modal */
 .spin-wheel-modal-premium {
   max-width: 1200px;
+  max-height: 95vh;
   width: 95%;
   background: linear-gradient(145deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
   border: 4px solid #ffd700;
@@ -4367,7 +4368,23 @@ h6 { font-size: 12px; }
     inset 0 0 40px rgba(255, 215, 0, 0.1);
   border-radius: 25px;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.spin-wheel-modal-premium::-webkit-scrollbar {
+  width: 12px;
+}
+
+.spin-wheel-modal-premium::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+}
+
+.spin-wheel-modal-premium::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ffd700, #ff8c00);
+  border-radius: 10px;
+  border: 2px solid rgba(0, 0, 0, 0.3);
 }
 
 .spin-wheel-modal-premium::before {
@@ -4413,7 +4430,22 @@ h6 { font-size: 12px; }
 }
 
 .modal-body-premium {
-  padding: 30px;
+  padding: 20px;
+  max-height: calc(95vh - 40px);
+  overflow-y: auto;
+}
+
+.modal-body-premium::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body-premium::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-body-premium::-webkit-scrollbar-thumb {
+  background: rgba(255, 215, 0, 0.5);
+  border-radius: 10px;
 }
 
 /* Header Section */
@@ -4470,8 +4502,10 @@ h6 { font-size: 12px; }
 
 .wheel-stage {
   position: relative;
-  width: 500px;
-  height: 500px;
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  aspect-ratio: 1;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -4505,6 +4539,10 @@ h6 { font-size: 12px; }
 }
 
 #wheelCanvas {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto !important;
+  height: auto !important;
   border-radius: 50%;
   box-shadow: 
     0 0 40px rgba(255, 215, 0, 0.8),
@@ -4930,25 +4968,19 @@ h6 { font-size: 12px; }
 
 @media (max-width: 768px) {
   .modal-body-premium {
-    padding: 20px;
+    padding: 15px;
   }
   
   .title-glow {
-    font-size: 32px;
+    font-size: 28px;
   }
   
   .subtitle {
-    font-size: 14px;
+    font-size: 13px;
   }
   
   .wheel-stage {
-    width: 350px;
-    height: 350px;
-  }
-  
-  #wheelCanvas {
-    width: 350px !important;
-    height: 350px !important;
+    max-width: 350px;
   }
   
   .spin-btn-premium {
@@ -4977,32 +5009,39 @@ h6 { font-size: 12px; }
   }
   
   .prizes-card {
-    max-height: 300px;
+    max-height: 250px;
+  }
+  
+  .wheel-header {
+    margin-bottom: 20px;
   }
 }
 
 @media (max-width: 480px) {
+  .spin-wheel-modal-premium {
+    max-height: 98vh;
+    width: 98%;
+  }
+  
   .modal-body-premium {
-    padding: 15px;
+    padding: 10px;
   }
   
   .title-glow {
-    font-size: 24px;
-    letter-spacing: 1px;
+    font-size: 22px;
+    letter-spacing: 0px;
   }
   
   .subtitle {
-    font-size: 12px;
+    font-size: 11px;
+  }
+  
+  .wheel-header {
+    margin-bottom: 15px;
   }
   
   .wheel-stage {
-    width: 280px;
-    height: 280px;
-  }
-  
-  #wheelCanvas {
-    width: 280px !important;
-    height: 280px !important;
+    max-width: 280px;
   }
   
   .wheel-pointer-container svg {
@@ -5037,8 +5076,16 @@ h6 { font-size: 12px; }
     font-size: 32px;
   }
   
+  .card-label {
+    font-size: 12px;
+  }
+  
   .card-value {
     font-size: 24px;
+  }
+  
+  .prizes-card {
+    max-height: 200px;
   }
   
   .prize-row {
