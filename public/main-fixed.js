@@ -2997,3 +2997,297 @@ fadeOutStyle.textContent = `
 `;
 document.head.appendChild(fadeOutStyle);
 
+
+// ================================
+// 🎰 SPIN WHEEL FUNCTIONALITY
+// ================================
+
+// Wheel prizes configuration (must match backend)
+const WHEEL_PRIZES = [
+  { id: 'silver', name: 'Silver Pickaxe', color: '#C0C0C0', emoji: '🥈' },
+  { id: 'gold_pickaxe', name: 'Gold Pickaxe', color: '#FFD700', emoji: '🥇' },
+  { id: 'diamond', name: 'Diamond Pickaxe', color: '#00FFFF', emoji: '💎' },
+  { id: 'netherite', name: 'Netherite Pickaxe', color: '#FF00FF', emoji: '⛏️' },
+  { id: 'gold_100', name: '100 Gold', color: '#4CAF50', emoji: '💰' },
+  { id: 'gold_500', name: '500 Gold', color: '#66BB6A', emoji: '💰' },
+  { id: 'gold_1000', name: '1000 Gold', color: '#81C784', emoji: '💰' },
+  { id: 'gold_10000', name: '10000 Gold', color: '#A5D6A7', emoji: '💰' },
+  { id: 'better_luck', name: 'Better Luck', color: '#666666', emoji: '😢' },
+  { id: 'retry', name: 'Free Retry', color: '#2196F3', emoji: '🔄' }
+];
+
+let wheelCanvas = null;
+let wheelCtx = null;
+let currentRotation = 0;
+let isSpinning = false;
+
+// Show spin wheel modal
+window.showSpinWheelModal = function() {
+  console.log('🎰 Opening spin wheel modal');
+  
+  const modal = document.getElementById('spinWheelModal');
+  if (!modal) {
+    console.error('❌ Spin wheel modal not found');
+    return;
+  }
+  
+  modal.style.display = 'flex';
+  
+  // Initialize wheel canvas
+  setTimeout(() => {
+    initializeWheel();
+    updateSpinGoldDisplay();
+  }, 100);
+};
+
+// Close spin wheel modal
+window.closeSpinWheelModal = function() {
+  const modal = document.getElementById('spinWheelModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+  isSpinning = false;
+};
+
+// Initialize wheel canvas
+function initializeWheel() {
+  wheelCanvas = document.getElementById('wheelCanvas');
+  if (!wheelCanvas) {
+    console.error('❌ Wheel canvas not found');
+    return;
+  }
+  
+  wheelCtx = wheelCanvas.getContext('2d');
+  drawWheel(0);
+}
+
+// Draw the wheel
+function drawWheel(rotation) {
+  if (!wheelCtx || !wheelCanvas) return;
+  
+  const centerX = wheelCanvas.width / 2;
+  const centerY = wheelCanvas.height / 2;
+  const radius = wheelCanvas.width / 2 - 10;
+  const numSegments = WHEEL_PRIZES.length;
+  const anglePerSegment = (2 * Math.PI) / numSegments;
+  
+  // Clear canvas
+  wheelCtx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
+  
+  // Draw segments
+  for (let i = 0; i < numSegments; i++) {
+    const startAngle = rotation + i * anglePerSegment - Math.PI / 2;
+    const endAngle = startAngle + anglePerSegment;
+    
+    // Draw segment
+    wheelCtx.beginPath();
+    wheelCtx.moveTo(centerX, centerY);
+    wheelCtx.arc(centerX, centerY, radius, startAngle, endAngle);
+    wheelCtx.closePath();
+    
+    wheelCtx.fillStyle = WHEEL_PRIZES[i].color;
+    wheelCtx.fill();
+    
+    wheelCtx.strokeStyle = '#000';
+    wheelCtx.lineWidth = 3;
+    wheelCtx.stroke();
+    
+    // Draw text
+    wheelCtx.save();
+    wheelCtx.translate(centerX, centerY);
+    wheelCtx.rotate(startAngle + anglePerSegment / 2 + Math.PI / 2);
+    wheelCtx.textAlign = 'center';
+    wheelCtx.fillStyle = '#000';
+    wheelCtx.font = 'bold 16px Arial';
+    wheelCtx.fillText(WHEEL_PRIZES[i].emoji, 0, -radius + 40);
+    wheelCtx.font = 'bold 12px Arial';
+    wheelCtx.fillText(WHEEL_PRIZES[i].name, 0, -radius + 60);
+    wheelCtx.restore();
+  }
+  
+  // Draw center circle
+  wheelCtx.beginPath();
+  wheelCtx.arc(centerX, centerY, 30, 0, 2 * Math.PI);
+  wheelCtx.fillStyle = '#FFD700';
+  wheelCtx.fill();
+  wheelCtx.strokeStyle = '#000';
+  wheelCtx.lineWidth = 4;
+  wheelCtx.stroke();
+}
+
+// Update gold display
+function updateSpinGoldDisplay() {
+  const goldDisplay = document.getElementById('spinGoldDisplay');
+  if (goldDisplay && window.currentGold !== undefined) {
+    goldDisplay.textContent = Math.floor(window.currentGold).toLocaleString();
+  }
+}
+
+// Spin the wheel
+window.spinWheel = async function() {
+  if (isSpinning) {
+    console.log('⚠️ Wheel is already spinning');
+    return;
+  }
+  
+  if (!window.userWallet) {
+    alert('❌ Please connect your wallet first!');
+    return;
+  }
+  
+  if (!window.hasLand) {
+    alert('❌ You must own land to use the spin wheel!');
+    return;
+  }
+  
+  const currentGold = window.currentGold || 0;
+  if (currentGold < 1000) {
+    alert(`❌ Insufficient gold! You have ${Math.floor(currentGold)} gold but need 1000 gold to spin.`);
+    return;
+  }
+  
+  const spinButton = document.getElementById('spinButton');
+  if (spinButton) {
+    spinButton.disabled = true;
+    spinButton.classList.add('spinning');
+    spinButton.textContent = '🎰 SPINNING...';
+  }
+  
+  isSpinning = true;
+  
+  try {
+    console.log('🎰 Sending spin request to server...');
+    
+    const response = await fetch('/api/spin-wheel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: window.userWallet })
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Spin failed');
+    }
+    
+    console.log('🎁 Spin result:', result);
+    
+    // Find the prize index
+    const prizeIndex = WHEEL_PRIZES.findIndex(p => p.id === result.prize.id);
+    if (prizeIndex === -1) {
+      throw new Error('Prize not found in wheel');
+    }
+    
+    // Calculate rotation to land on prize
+    const anglePerSegment = (2 * Math.PI) / WHEEL_PRIZES.length;
+    const targetAngle = prizeIndex * anglePerSegment;
+    const spins = 5; // Number of full rotations
+    const totalRotation = currentRotation + (spins * 2 * Math.PI) + (2 * Math.PI - targetAngle);
+    
+    // Animate the wheel
+    animateWheel(currentRotation, totalRotation, 4000, () => {
+      // Animation complete
+      currentRotation = totalRotation % (2 * Math.PI);
+      
+      // Update gold display
+      window.currentGold = result.goldAfter;
+      updateSpinGoldDisplay();
+      updateGoldDisplay();
+      
+      // Update inventory if pickaxe won
+      if (result.newInventory) {
+        window.inventory = result.newInventory;
+        updateInventoryDisplay();
+      }
+      
+      // Show result
+      showSpinResult(result);
+      
+      // Re-enable button
+      if (spinButton) {
+        spinButton.disabled = false;
+        spinButton.classList.remove('spinning');
+        spinButton.textContent = '🎰 Pay 1000 Gold & Spin';
+      }
+      
+      isSpinning = false;
+    });
+    
+  } catch (error) {
+    console.error('❌ Spin error:', error);
+    alert('❌ Spin failed: ' + error.message);
+    
+    if (spinButton) {
+      spinButton.disabled = false;
+      spinButton.classList.remove('spinning');
+      spinButton.textContent = '🎰 Pay 1000 Gold & Spin';
+    }
+    
+    isSpinning = false;
+  }
+};
+
+// Animate wheel rotation
+function animateWheel(startRotation, endRotation, duration, callback) {
+  const startTime = Date.now();
+  
+  function animate() {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    // Easing function (ease-out)
+    const easeOut = 1 - Math.pow(1 - progress, 3);
+    
+    const currentAngle = startRotation + (endRotation - startRotation) * easeOut;
+    drawWheel(currentAngle);
+    
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      callback();
+    }
+  }
+  
+  animate();
+}
+
+// Show spin result
+function showSpinResult(result) {
+  const resultDiv = document.getElementById('spinResult');
+  if (!resultDiv) return;
+  
+  resultDiv.style.display = 'block';
+  resultDiv.className = 'spin-result';
+  
+  let resultClass = 'win';
+  let resultText = result.message;
+  
+  if (result.prize.type === 'nothing') {
+    resultClass = 'lose';
+  } else if (result.prize.type === 'pickaxe' && result.prize.value === 'netherite') {
+    resultClass = 'legendary-win';
+  }
+  
+  resultDiv.classList.add(resultClass);
+  resultDiv.innerHTML = `
+    <div style="font-size: 48px; margin-bottom: 10px;">
+      ${result.prize.type === 'pickaxe' ? '⛏️' : 
+        result.prize.type === 'gold' ? '💰' : 
+        result.prize.type === 'retry' ? '🔄' : '😢'}
+    </div>
+    <div>${resultText}</div>
+    <div style="margin-top: 15px; font-size: 18px;">
+      Gold: ${result.goldBefore.toLocaleString()} → ${result.goldAfter.toLocaleString()}
+    </div>
+  `;
+  
+  // Show notification
+  showNotification(resultText, result.prize.type === 'nothing' ? 'error' : 'success');
+  
+  // Hide result after 5 seconds
+  setTimeout(() => {
+    resultDiv.style.display = 'none';
+  }, 5000);
+}
+
+console.log('🎰 Spin wheel functions loaded');
