@@ -261,7 +261,10 @@ export default async function handler(req, res) {
       
       const completeReferralResponse = await fetch(`${baseUrl}/api/complete-referral`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cookie': req.headers.cookie || '' // Forward cookies to complete-referral
+        },
         body: JSON.stringify({ address })
       });
       
