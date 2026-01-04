@@ -577,6 +577,86 @@
             color: #333;
         }
 
+        /* Admin Utilities */
+        .utilities-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border: 3px solid #ef4444;
+        }
+
+        .utilities-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .utility-card {
+            background: #fff5f5;
+            border: 2px solid #fecaca;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .utility-card h3 {
+            color: #dc2626;
+            margin-top: 0;
+            font-size: 18px;
+        }
+
+        .utility-card p {
+            color: #666;
+            font-size: 14px;
+            margin: 10px 0 15px 0;
+        }
+
+        .btn-danger {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .utility-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            animation: slideDown 0.3s ease;
+        }
+
+        .utility-result.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #10b981;
+        }
+
+        .utility-result.error {
+            background: #fee;
+            color: #c33;
+            border: 2px solid #fcc;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .dashboard-header {
@@ -696,6 +776,48 @@
                     <div class="stat-value" id="statPendingPayouts">0</div>
                     <div class="stat-subtext"><span id="statPendingSol">0</span> SOL pending</div>
                 </div>
+            </div>
+
+            <!-- Admin Utilities Section -->
+            <div class="utilities-section">
+                <div class="section-header">
+                    <h2 class="section-title">🔧 Admin Utilities</h2>
+                    <p class="section-subtitle" style="color: #ef4444;">⚠️ Dangerous operations - use with caution</p>
+                </div>
+
+                <div class="utilities-container">
+                    <div class="utility-card">
+                        <h3>🗑️ Clear All Users</h3>
+                        <p>Delete all user accounts from database</p>
+                        <button onclick="executeUtility('clear_all_users')" class="btn-danger">Clear Users</button>
+                    </div>
+
+                    <div class="utility-card">
+                        <h3>💥 Clear Database</h3>
+                        <p>Wipe all data from all tables</p>
+                        <button onclick="executeUtility('clear_database')" class="btn-danger">Clear Database</button>
+                    </div>
+
+                    <div class="utility-card">
+                        <h3>☢️ Nuclear Clear</h3>
+                        <p>Complete wipe + reset sequences</p>
+                        <button onclick="executeUtility('nuclear_clear')" class="btn-danger">Nuclear Clear</button>
+                    </div>
+
+                    <div class="utility-card">
+                        <h3>🔨 Force Clear</h3>
+                        <p>Clear specific table or user</p>
+                        <button onclick="showForceClearModal()" class="btn-danger">Force Clear</button>
+                    </div>
+
+                    <div class="utility-card">
+                        <h3>🏠 Clear Land Ownership</h3>
+                        <p>Reset all land ownership (keeps gold/pickaxes)</p>
+                        <button onclick="executeUtility('force_clear_land')" class="btn-danger">Clear Land</button>
+                    </div>
+                </div>
+
+                <div id="utilityResult" class="utility-result hidden"></div>
             </div>
 
             <!-- Free Rewards Section -->
@@ -1365,6 +1487,146 @@
             if (confirm('Reset the form? All entered data will be cleared.')) {
                 document.getElementById('rewardsForm').reset();
                 document.getElementById('rewardsAlert').classList.add('hidden');
+            }
+        }
+
+        // ========================================
+        // ADMIN UTILITIES SYSTEM
+        // ========================================
+
+        async function executeUtility(action) {
+            const actionNames = {
+                'clear_all_users': 'Clear All Users',
+                'clear_database': 'Clear Database',
+                'nuclear_clear': 'Nuclear Clear',
+                'force_clear_land': 'Clear Land Ownership'
+            };
+
+            const actionName = actionNames[action] || action;
+
+            // Triple confirmation for dangerous operations
+            if (!confirm(`⚠️ WARNING: You are about to execute "${actionName}"!\n\nThis operation is IRREVERSIBLE!\n\nAre you sure you want to continue?`)) {
+                return;
+            }
+
+            if (!confirm(`⚠️ FINAL WARNING: This will ${actionName}!\n\nAll affected data will be PERMANENTLY DELETED!\n\nType YES in the next prompt to confirm.`)) {
+                return;
+            }
+
+            const confirmation = prompt('Type "YES" in capital letters to confirm this dangerous operation:');
+            if (confirmation !== 'YES') {
+                alert('Operation cancelled. You must type "YES" to confirm.');
+                return;
+            }
+
+            // Generate confirmation code: ACTION_YYYY-MM-DD
+            const today = new Date().toISOString().slice(0, 10);
+            const confirmationCode = `${action.toUpperCase()}_${today}`;
+
+            const resultDiv = document.getElementById('utilityResult');
+            resultDiv.innerHTML = '⏳ Executing dangerous operation...';
+            resultDiv.className = 'utility-result';
+            resultDiv.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/admin/utilities', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        action: action,
+                        confirmationCode: confirmationCode
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.className = 'utility-result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ ${actionName} Completed</h3>
+                        <pre>${JSON.stringify(data.result, null, 2)}</pre>
+                        <p><small>Performed by: ${data.performedBy} at ${data.timestamp}</small></p>
+                    `;
+                } else {
+                    resultDiv.className = 'utility-result error';
+                    resultDiv.innerHTML = `<strong>❌ Error:</strong> ${data.error || 'Unknown error'}`;
+                }
+
+            } catch (error) {
+                resultDiv.className = 'utility-result error';
+                resultDiv.innerHTML = `<strong>❌ Network Error:</strong> ${error.message}`;
+            }
+        }
+
+        function showForceClearModal() {
+            const table = prompt('Enter table name to clear (e.g., users, transactions, referrals):');
+            if (!table) return;
+
+            const clearAll = confirm('Clear entire table? (Cancel to clear specific user)');
+
+            if (clearAll) {
+                executeForceClear(table, null);
+            } else {
+                const address = prompt('Enter user wallet address to clear from ' + table + ':');
+                if (address) {
+                    executeForceClear(table, address);
+                }
+            }
+        }
+
+        async function executeForceClear(targetTable, targetAddress) {
+            if (!confirm(`⚠️ Force clear ${targetAddress ? 'specific user' : 'entire table'} from ${targetTable}?\n\nThis is IRREVERSIBLE!`)) {
+                return;
+            }
+
+            const confirmation = prompt('Type "YES" to confirm:');
+            if (confirmation !== 'YES') {
+                alert('Cancelled.');
+                return;
+            }
+
+            const today = new Date().toISOString().slice(0, 10);
+            const confirmationCode = `FORCE_CLEAR_${today}`;
+
+            const resultDiv = document.getElementById('utilityResult');
+            resultDiv.innerHTML = '⏳ Executing force clear...';
+            resultDiv.className = 'utility-result';
+            resultDiv.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/admin/utilities', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        action: 'force_clear',
+                        confirmationCode: confirmationCode,
+                        targetTable: targetTable,
+                        targetAddress: targetAddress
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.className = 'utility-result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Force Clear Completed</h3>
+                        <pre>${JSON.stringify(data.result, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.className = 'utility-result error';
+                    resultDiv.innerHTML = `<strong>❌ Error:</strong> ${data.error}`;
+                }
+
+            } catch (error) {
+                resultDiv.className = 'utility-result error';
+                resultDiv.innerHTML = `<strong>❌ Error:</strong> ${error.message}`;
             }
         }
 

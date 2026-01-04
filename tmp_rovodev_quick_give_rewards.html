@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Give Rewards - No Auth</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 { color: #667eea; }
+        .form-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover { transform: scale(1.02); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #10b981;
+        }
+        .error {
+            background: #fee;
+            color: #c33;
+            border: 2px solid #fcc;
+        }
+        .warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 2px solid #fbbf24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎁 Quick Give Rewards</h1>
+        <div class="warning">
+            ⚠️ <strong>Temporary Tool:</strong> This bypasses authentication. Use only for testing!
+        </div>
+        
+        <div class="form-group">
+            <label>Recipient Address:</label>
+            <input type="text" id="address" placeholder="Solana wallet address" value="iUwgtGumterUrA8foqTLzwwQUBtrdFiRDtXLcYpS6nD">
+        </div>
+        
+        <div class="form-group">
+            <label>Gold Amount:</label>
+            <input type="number" id="gold" value="1000" min="0">
+        </div>
+        
+        <div class="form-group">
+            <label>Pickaxe Type:</label>
+            <select id="pickaxeType">
+                <option value="">None</option>
+                <option value="silver">🥈 Silver</option>
+                <option value="gold" selected>🥇 Gold</option>
+                <option value="diamond">💎 Diamond</option>
+                <option value="netherite">🔥 Netherite</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Pickaxe Quantity:</label>
+            <input type="number" id="quantity" value="5" min="0">
+        </div>
+        
+        <div class="form-group">
+            <label>Reason:</label>
+            <input type="text" id="reason" value="Quick admin gift">
+        </div>
+        
+        <button onclick="giveRewards()" id="sendBtn">🎁 Send Rewards Now</button>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        async function giveRewards() {
+            const btn = document.getElementById('sendBtn');
+            const result = document.getElementById('result');
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Sending...';
+            result.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/admin/give-rewards-simple', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        recipientAddress: document.getElementById('address').value,
+                        goldAmount: parseFloat(document.getElementById('gold').value),
+                        pickaxeType: document.getElementById('pickaxeType').value || null,
+                        pickaxeQuantity: parseInt(document.getElementById('quantity').value),
+                        reason: document.getElementById('reason').value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <h3>✅ Success!</h3>
+                        <p><strong>Recipient:</strong> ${data.gift.recipient.slice(0,8)}...${data.gift.recipient.slice(-8)}</p>
+                        <p><strong>Gold Given:</strong> ${data.gift.goldGiven}</p>
+                        <p><strong>Pickaxes:</strong> ${data.gift.pickaxesGiven}</p>
+                        <p><strong>Mining Power Added:</strong> +${data.gift.miningPowerAdded}</p>
+                        <hr>
+                        <p><strong>New Stats:</strong></p>
+                        <p>💰 Gold: ${data.gift.newUserStats.last_checkpoint_gold}</p>
+                        <p>⚡ Mining Power: ${data.gift.newUserStats.total_mining_power}</p>
+                        <p>🥈 ${data.gift.newUserStats.silver_pickaxes} | 🥇 ${data.gift.newUserStats.gold_pickaxes} | 💎 ${data.gift.newUserStats.diamond_pickaxes} | 🔥 ${data.gift.newUserStats.netherite_pickaxes}</p>
+                        <p style="margin-top:15px; color: #059669;">✓ User should refresh their page to see the rewards!</p>
+                    `;
+                } else {
+                    result.className = 'result error';
+                    result.innerHTML = `<strong>❌ Error:</strong> ${data.error}<br><small>${data.details || ''}</small>`;
+                }
+                
+                result.style.display = 'block';
+                
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `<strong>❌ Network Error:</strong> ${error.message}`;
+                result.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🎁 Send Rewards Now';
+            }
+        }
+    </script>
+</body>
+</html>

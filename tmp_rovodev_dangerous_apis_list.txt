@@ -1,0 +1,289 @@
+🚨 COMPLETE LIST OF DANGEROUS APIs & DAMAGE ASSESSMENT
+═══════════════════════════════════════════════════════════════════════
+
+CATEGORY 1: 🔥 CRITICAL - DELETE IMMEDIATELY (Can Destroy Everything)
+═══════════════════════════════════════════════════════════════════════
+
+1. /api/clear-all-users.js
+   💀 DAMAGE: Deletes ALL users from database
+   🎯 ATTACK: curl -X POST /api/clear-all-users
+   💥 RESULT: Everyone's account deleted, game over
+   🔴 RISK: CRITICAL - GAME DESTROYER
+
+2. /api/clear-database.js
+   💀 DAMAGE: Wipes entire database
+   🎯 ATTACK: curl -X POST /api/clear-database
+   💥 RESULT: All data gone forever
+   🔴 RISK: CRITICAL - GAME DESTROYER
+
+3. /api/nuclear-clear.js
+   💀 DAMAGE: Nuclear option - wipes everything
+   🎯 ATTACK: curl -X POST /api/nuclear-clear
+   💥 RESULT: Complete database wipe
+   🔴 RISK: CRITICAL - GAME DESTROYER
+
+4. /api/force-clear.js
+   💀 DAMAGE: Force deletes data
+   🎯 ATTACK: curl -X POST /api/force-clear
+   💥 RESULT: Data loss
+   🔴 RISK: CRITICAL - GAME DESTROYER
+
+5. /api/force-clear-land-ownership.js
+   💀 DAMAGE: Clears all land ownership
+   🎯 ATTACK: curl -X POST /api/force-clear-land-ownership
+   💥 RESULT: Everyone loses their land
+   🔴 RISK: CRITICAL - REVENUE LOSS
+
+═══════════════════════════════════════════════════════════════════════
+
+CATEGORY 2: 💰 ECONOMY BREAKERS (Unlimited Resources)
+═══════════════════════════════════════════════════════════════════════
+
+6. /api/test-give-gold.js
+   💀 DAMAGE: Gives unlimited gold to anyone
+   🎯 ATTACK: curl -X POST /api/test-give-gold \
+              -d '{"address":"attacker","goldAmount":999999999}'
+   💥 RESULT: Attacker gets 999M gold instantly
+   🔴 RISK: CRITICAL - ECONOMY DESTROYED
+
+7. /api/admin/give-rewards-simple.js
+   💀 DAMAGE: Give unlimited gold + pickaxes (NO AUTH!)
+   🎯 ATTACK: curl -X POST /api/admin/give-rewards-simple \
+              -d '{"recipientAddress":"attacker","goldAmount":999999999,
+                   "pickaxeType":"netherite","pickaxeQuantity":1000}'
+   💥 RESULT: Unlimited gold + 1000 netherite pickaxes
+   🔴 RISK: CRITICAL - NO AUTHENTICATION!
+
+8. /api/force-give-referral-reward.js
+   💀 DAMAGE: Force gives referral rewards (hardcoded address)
+   🎯 ATTACK: curl -X POST /api/force-give-referral-reward
+   💥 RESULT: Specific address gets free pickaxe + gold
+   🟡 RISK: HIGH - Limited to one address but still bad
+
+9. /api/give-reward-now.js
+   💀 DAMAGE: Instant reward package (hardcoded)
+   🎯 ATTACK: curl -X POST /api/give-reward-now
+   💥 RESULT: Free silver pickaxe + 100 gold
+   🟡 RISK: HIGH - Limited impact
+
+10. /api/manual-reward.js
+    💀 DAMAGE: Manual referral reward
+    🎯 ATTACK: curl -X POST /api/manual-reward
+    💥 RESULT: Free pickaxe + gold + referral count
+    🟡 RISK: HIGH
+
+11. /api/force-land.js
+    💀 DAMAGE: Force gives land to anyone
+    🎯 ATTACK: curl -X POST /api/force-land \
+               -d '{"address":"attacker"}'
+    💥 RESULT: Get free land without paying SOL
+    🔴 RISK: CRITICAL - REVENUE LOSS
+
+═══════════════════════════════════════════════════════════════════════
+
+CATEGORY 3: 🎰 UNSECURED USER WRITE APIs (Can Cheat Game)
+═══════════════════════════════════════════════════════════════════════
+
+12. /api/track-referral.js
+    💀 DAMAGE: Create fake referral records
+    🎯 ATTACK: curl -X POST /api/track-referral \
+               -d '{"referrer":"me","referee":"fake1"}'
+               (repeat 100 times with different addresses)
+    💥 RESULT: 100 fake referrals, unlimited rewards
+    🟡 RISK: HIGH - Referral spam
+
+13. /api/spin-wheel.js
+    💀 DAMAGE: Spin premium wheel without paying
+    🎯 ATTACK: curl -X POST /api/spin-wheel \
+               -d '{"address":"attacker"}' (repeat 1000 times)
+    💥 RESULT: Get all prizes for free
+    🟡 RISK: HIGH - Revenue loss
+
+14. /api/start-netherite-challenge.js
+    💀 DAMAGE: Start unlimited challenges
+    🎯 ATTACK: curl -X POST /api/start-netherite-challenge \
+               -d '{"address":"attacker"}' (spam)
+    💥 RESULT: Multiple concurrent challenges, game abuse
+    🟡 RISK: MEDIUM - Can spam challenges
+
+15. /api/purchase-land.js
+    💀 DAMAGE: Initiate fake land purchases
+    🎯 ATTACK: curl -X POST /api/purchase-land \
+               -d '{"address":"attacker","landId":1}'
+    💥 RESULT: Claim land without blockchain verification
+    🟡 RISK: HIGH - If not checking blockchain properly
+
+16. /api/purchase-confirm.js
+    💀 DAMAGE: Confirm fake purchases with fake signature
+    🎯 ATTACK: curl -X POST /api/purchase-confirm \
+               -d '{"address":"attacker","signature":"fake123"}'
+    💥 RESULT: Get land without paying if signature not verified
+    🔴 RISK: CRITICAL - If not verifying blockchain
+
+17. /api/buy-with-gold.js (OLD VERSION)
+    💀 DAMAGE: Buy items without checking balance
+    🎯 ATTACK: curl -X POST /api/buy-with-gold \
+               -d '{"address":"attacker","item":"netherite","qty":1000}'
+    💥 RESULT: 1000 netherite pickaxes without gold
+    🟡 RISK: HIGH - If using old unsecured version
+
+18. /api/complete-referral.js (OLD VERSION)
+    💀 DAMAGE: Complete fake referrals without requirements
+    🎯 ATTACK: curl -X POST /api/complete-referral \
+               -d '{"referrer":"me","referee":"fake"}' (spam 100 times)
+    💥 RESULT: 100 free pickaxes + 10,000 gold
+    🟡 RISK: HIGH - If using old unsecured version
+
+19. /api/save-checkpoint.js (OLD VERSION)
+    💀 DAMAGE: Save fake gold amounts
+    🎯 ATTACK: curl -X POST /api/save-checkpoint \
+               -d '{"address":"attacker","gold":999999999}'
+    💥 RESULT: 999M gold instantly
+    🔴 RISK: CRITICAL - If using old unsecured version
+
+═══════════════════════════════════════════════════════════════════════
+
+CATEGORY 4: 🐛 DEBUG/TEST APIs (Should Not Be in Production)
+═══════════════════════════════════════════════════════════════════════
+
+20. /api/debug.js
+21. /api/debug-datatypes.js
+22. /api/debug-live-purchase.js
+23. /api/debug-netherite-session.js
+24. /api/debug-referral-database.js
+25. /api/debug-referral-flow.js
+26. /api/debug-referrals.js
+27. /api/debug-session-tracking.js
+28. /api/debug-specific-referral.js
+29. /api/debug-user-constraints.js
+30. /api/debug-user-inventory.js
+31. /api/debug-user.js
+    💀 DAMAGE: Expose sensitive database info
+    🎯 ATTACK: curl /api/debug-user.js
+    💥 RESULT: See all users, addresses, balances
+    🟡 RISK: MEDIUM - Info leak
+
+32. /api/test-basic.js
+33. /api/test-complete-referral.js
+34. /api/test-db-connection.js
+35. /api/test-direct-sql.js
+36. /api/test-frontend.js
+37. /api/test-netherite-flow.js
+38. /api/test-netherite-table.js
+39. /api/test-referral-manual.js
+40. /api/test-referral.js
+41. /api/test-save.js
+42. /api/test-transaction-log.js
+43. /api/test-ui-data.js
+44. /api/test.js
+    💀 DAMAGE: Run test operations on live database
+    🎯 ATTACK: curl /api/test-*.js
+    💥 RESULT: Corrupt data, test records in production
+    🟡 RISK: MEDIUM - Database pollution
+
+═══════════════════════════════════════════════════════════════════════
+
+CATEGORY 5: 🔧 ADMIN/MANUAL APIs (Dangerous If Exposed)
+═══════════════════════════════════════════════════════════════════════
+
+45. /api/manual-complete-referral.js
+46. /api/manual-test-referral.js
+47. /api/manual-trigger-referral.js
+    💀 DAMAGE: Manually trigger rewards
+    🎯 ATTACK: curl -X POST /api/manual-complete-referral
+    💥 RESULT: Free rewards
+    🟡 RISK: HIGH
+
+48. /api/delete-referral-data.js
+    💀 DAMAGE: Delete referral records
+    🎯 ATTACK: curl -X POST /api/delete-referral-data
+    💥 RESULT: Lose referral history
+    🟡 RISK: MEDIUM
+
+49. /api/emergency-schema-fix.js
+50. /api/fix-database-schema.js
+51. /api/fix-full-address-storage.js
+52. /api/fix-netherite-database.js
+53. /api/fix-referral-system.js
+54. /api/fix-schema-now.js
+55. /api/fix-session-linking.js
+56. /api/fix-swapped-addresses.js
+    💀 DAMAGE: Run database migrations on live
+    🎯 ATTACK: curl -X POST /api/fix-*.js
+    💥 RESULT: Corrupt database schema
+    🔴 RISK: CRITICAL - Can break database
+
+57. /api/recreate-referral-database.js
+58. /api/recreate-referral-system.js
+    💀 DAMAGE: Recreate tables (deletes data!)
+    🎯 ATTACK: curl -X POST /api/recreate-referral-database
+    💥 RESULT: All referral data deleted
+    🔴 RISK: CRITICAL - DATA LOSS
+
+59. /api/setup-netherite-tables.js
+    💀 DAMAGE: Recreate netherite tables
+    🎯 ATTACK: curl -X POST /api/setup-netherite-tables
+    💥 RESULT: Challenge data lost
+    🟡 RISK: MEDIUM
+
+═══════════════════════════════════════════════════════════════════════
+
+CATEGORY 6: 📊 VIEW/CHECK APIs (Lower Risk but Info Leak)
+═══════════════════════════════════════════════════════════════════════
+
+60. /api/view-all-challenges.js
+61. /api/view-referral-database.js
+62. /api/referral-status.js
+63. /api/check-referrals-simple.js
+64. /api/check-netherite-challenge.js
+65. /api/check-transactions.js
+66. /api/quick-db-check.js
+    💀 DAMAGE: Expose user data
+    🎯 ATTACK: curl /api/view-referral-database
+    💥 RESULT: See all referrals, addresses, rewards
+    🟢 RISK: LOW - Info only, but privacy concern
+
+═══════════════════════════════════════════════════════════════════════
+
+📊 DAMAGE SUMMARY
+═══════════════════════════════════════════════════════════════════════
+
+🔴 CRITICAL (Game Destroyer): 11 APIs
+   - Can wipe database
+   - Can delete all users
+   - Can give unlimited resources
+   - Can break economy completely
+
+🟡 HIGH (Economy Breaker): 15 APIs
+   - Can get free gold/pickaxes
+   - Can spam referrals
+   - Can cheat game mechanics
+   - Can steal revenue
+
+🟢 MEDIUM (Data Leak/Corruption): 40+ APIs
+   - Expose sensitive data
+   - Test/debug in production
+   - Can corrupt database
+
+═══════════════════════════════════════════════════════════════════════
+
+🎯 IMMEDIATE ACTION REQUIRED
+═══════════════════════════════════════════════════════════════════════
+
+DELETE THESE 11 IMMEDIATELY:
+1. clear-all-users.js
+2. clear-database.js
+3. nuclear-clear.js
+4. force-clear.js
+5. test-give-gold.js
+6. admin/give-rewards-simple.js
+7. force-clear-land-ownership.js
+8. recreate-referral-database.js
+9. recreate-referral-system.js
+10. fix-database-schema.js (any fix-*.js)
+11. force-land.js
+
+THESE CAN DESTROY YOUR GAME IN 1 SECOND!
+
+═══════════════════════════════════════════════════════════════════════
+
