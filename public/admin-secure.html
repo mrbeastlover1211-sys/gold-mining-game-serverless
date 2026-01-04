@@ -1543,6 +1543,9 @@
 
                 const data = await response.json();
 
+                console.log('Response status:', response.status);
+                console.log('Response data:', data);
+
                 if (data.success) {
                     resultDiv.className = 'utility-result success';
                     resultDiv.innerHTML = `
@@ -1552,12 +1555,22 @@
                     `;
                 } else {
                     resultDiv.className = 'utility-result error';
-                    resultDiv.innerHTML = `<strong>❌ Error:</strong> ${data.error || 'Unknown error'}`;
+                    let errorMsg = `<strong>❌ Error:</strong> ${data.error || 'Unknown error'}`;
+                    if (data.details) {
+                        errorMsg += `<br><small>Details: ${data.details}</small>`;
+                    }
+                    if (data.hint) {
+                        errorMsg += `<br><small>Hint: ${data.hint}</small>`;
+                    }
+                    errorMsg += `<br><br><small>Status: ${response.status}</small>`;
+                    errorMsg += `<br><small>Check browser console (F12) for full details</small>`;
+                    resultDiv.innerHTML = errorMsg;
                 }
 
             } catch (error) {
+                console.error('Full error:', error);
                 resultDiv.className = 'utility-result error';
-                resultDiv.innerHTML = `<strong>❌ Network Error:</strong> ${error.message}`;
+                resultDiv.innerHTML = `<strong>❌ Network Error:</strong> ${error.message}<br><small>Check browser console (F12) for full error details</small>`;
             }
         }
 
