@@ -3,6 +3,7 @@
 
 import { sql } from '../../database.js';
 import { getUserOptimized, saveUserOptimized } from '../../database.js';
+import crypto from 'crypto';
 
 // Pickaxe mining power values (gold per minute)
 const MINING_POWER = {
@@ -11,6 +12,32 @@ const MINING_POWER = {
   diamond: 100,
   netherite: 1000
 };
+
+// Token validation (matches auth.js)
+function validateSessionToken(token) {
+  try {
+    const [payloadBase64, signature] = token.split('.');
+    const payload = JSON.parse(Buffer.from(payloadBase64, 'base64').toString());
+    
+    // Verify signature
+    const expectedSignature = crypto.createHmac('sha256', process.env.ADMIN_SALT || 'default-secret')
+      .update(JSON.stringify(payload))
+      .digest('hex');
+    
+    if (signature !== expectedSignature) {
+      return { valid: false, error: 'Invalid signature' };
+    }
+    
+    // Check expiry
+    if (payload.expiresAt < Date.now()) {
+      return { valid: false, error: 'Session expired' };
+    }
+    
+    return { valid: true, username: payload.username, expiresAt: payload.expiresAt };
+  } catch (error) {
+    return { valid: false, error: 'Invalid token format' };
+  }
+}
 
 export default async function handler(req, res) {
   // Only accept POST requests
@@ -27,21 +54,15 @@ export default async function handler(req, res) {
 
     const token = authHeader.substring(7);
 
-    // Verify token (simplified - matches your auth.js implementation)
-    const adminSession = await sql`
-      SELECT username, created_at
-      FROM admin_sessions
-      WHERE session_token = ${token}
-        AND expires_at > NOW()
-        AND is_active = true
-      LIMIT 1
-    `;
-
-    if (adminSession.length === 0) {
-      return res.status(401).json({ error: 'Invalid or expired session', requireLogin: true });
+    // Verify token using same method as auth.js
+    const validation = validateSessionToken(token);
+    
+    if (!validation.valid) {
+      console.log('❌ Token validation failed:', validation.error);
+      return res.status(401).json({ error: validation.error || 'Invalid or expired session', requireLogin: true });
     }
 
-    const adminUsername = adminSession[0].username;
+    const adminUsername = validation.username;
 
     // 📝 Get request parameters
     const {
