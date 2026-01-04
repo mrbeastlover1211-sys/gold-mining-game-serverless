@@ -1253,12 +1253,23 @@
                 return;
             }
 
+            // Check if logged in
+            if (!authToken) {
+                showRewardAlert('error', '❌ Not authenticated! Please login again.');
+                return;
+            }
+
             // Disable button and show loading
             sendBtn.disabled = true;
             sendBtn.textContent = '⏳ Sending...';
             alertDiv.classList.add('hidden');
 
             try {
+                console.log('🎁 Sending gift request...');
+                console.log('Recipient:', recipientAddress);
+                console.log('Gold:', goldAmount);
+                console.log('Pickaxe:', pickaxeQuantity, 'x', pickaxeType);
+                
                 const response = await fetch('/api/admin/give-rewards', {
                     method: 'POST',
                     headers: {
@@ -1274,7 +1285,17 @@
                     })
                 });
 
+                console.log('Response status:', response.status);
                 const data = await response.json();
+                console.log('Response data:', data);
+
+                if (response.status === 401 || data.requireLogin) {
+                    showRewardAlert('error', '❌ Session expired! Please login again.');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                    return;
+                }
 
                 if (data.success) {
                     // Show success message with details
@@ -1315,12 +1336,17 @@
                     alertDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     
                 } else {
-                    showRewardAlert('error', `❌ Failed: ${data.error || 'Unknown error'}`);
+                    let errorMsg = `❌ Failed: ${data.error || 'Unknown error'}`;
+                    if (data.details) {
+                        errorMsg += `<br><small>Details: ${data.details}</small>`;
+                    }
+                    showRewardAlert('error', errorMsg);
+                    console.error('API Error:', data);
                 }
 
             } catch (error) {
                 console.error('Rewards error:', error);
-                showRewardAlert('error', `❌ Network error: ${error.message}`);
+                showRewardAlert('error', `❌ Network error: ${error.message}<br><small>Check browser console for details</small>`);
             } finally {
                 sendBtn.disabled = false;
                 sendBtn.textContent = '🎁 Send Rewards';
