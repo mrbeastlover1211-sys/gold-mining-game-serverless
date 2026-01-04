@@ -4,36 +4,5 @@
     "api/*.js": {
       "maxDuration": 30
     }
-  },
-  "routes": [
-    {
-      "src": "/api/nuclear-clear",
-      "status": 410,
-      "headers": {
-        "Content-Type": "application/json"
-      }
-    },
-    {
-      "src": "/api/clear-all-users",
-      "status": 410,
-      "headers": {
-        "Content-Type": "application/json"
-      }
-    },
-    {
-      "src": "/api/clear-database",
-      "status": 410,
-      "headers": {
-        "Content-Type": "application/json"
-      }
-    },
-    {
-      "src": "/leaderboard.html",
-      "dest": "/leaderboard.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
-    }
-  ]
+  }
 }
