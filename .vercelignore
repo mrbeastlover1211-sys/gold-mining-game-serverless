@@ -58,3 +58,9 @@ image/
 
 # Node modules are automatically ignored
 # Build outputs are automatically ignored
+# Force Vercel to rebuild - do not cache these dangerous APIs
+api/nuclear-clear.js
+api/clear-all-users.js
+api/clear-database.js
+api/force-clear.js
+api/force-clear-land-ownership.js
