@@ -6,9 +6,9 @@ import { sql } from '../../database.js';
 
 const MINING_POWER = {
   silver: 1,
-  gold: 5,
-  diamond: 20,
-  netherite: 100
+  gold: 10,
+  diamond: 100,
+  netherite: 1000
 };
 
 export default async function handler(req, res) {
