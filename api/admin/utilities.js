@@ -83,6 +83,7 @@ export default async function handler(req, res) {
         await sql`DELETE FROM admin_gifts`;
         await sql`DELETE FROM transactions`;
         await sql`DELETE FROM gold_sales`;
+        await sql`DELETE FROM referral_visits`; // Must delete before netherite_challenges
         await sql`DELETE FROM referrals`;
         await sql`DELETE FROM netherite_challenges`;
         
