@@ -425,6 +425,158 @@
             display: none !important;
         }
 
+        /* Rewards Section */
+        .rewards-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .section-subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .rewards-form-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .rewards-form {
+            margin-top: 25px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-hint {
+            display: block;
+            color: #999;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .rewards-form select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background: white;
+            cursor: pointer;
+        }
+
+        .rewards-form select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .btn-primary {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            padding: 15px 30px;
+            background: #f3f4f6;
+            color: #666;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+            border-color: #d1d5db;
+        }
+
+        .rewards-alert {
+            margin-top: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            animation: slideDown 0.3s ease;
+        }
+
+        .rewards-alert.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #10b981;
+        }
+
+        .rewards-alert.error {
+            background: #fee;
+            color: #c33;
+            border: 2px solid #fcc;
+        }
+
+        .reward-summary {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .reward-summary h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .reward-summary p {
+            color: #666;
+            font-size: 13px;
+            margin: 5px 0;
+        }
+
+        .reward-summary strong {
+            color: #333;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .dashboard-header {
@@ -543,6 +695,104 @@
                     </div>
                     <div class="stat-value" id="statPendingPayouts">0</div>
                     <div class="stat-subtext"><span id="statPendingSol">0</span> SOL pending</div>
+                </div>
+            </div>
+
+            <!-- Free Rewards Section -->
+            <div class="rewards-section">
+                <div class="section-header">
+                    <h2 class="section-title">🎁 Give Free Rewards</h2>
+                    <p class="section-subtitle">Grant gold and pickaxes to any user</p>
+                </div>
+
+                <div class="rewards-form-container">
+                    <form id="rewardsForm" class="rewards-form">
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label for="recipientAddress">🔑 Recipient Wallet Address *</label>
+                                <input 
+                                    type="text" 
+                                    id="recipientAddress" 
+                                    name="recipientAddress"
+                                    placeholder="Enter Solana wallet address (e.g., 7xKX...abc123)"
+                                    required
+                                    pattern="[1-9A-HJ-NP-Za-km-z]{32,44}"
+                                    minlength="32"
+                                    maxlength="44"
+                                >
+                                <small class="form-hint">Full Solana wallet address of the recipient</small>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="goldAmount">💰 Gold Amount</label>
+                                <input 
+                                    type="number" 
+                                    id="goldAmount" 
+                                    name="goldAmount"
+                                    placeholder="0"
+                                    min="0"
+                                    max="10000000"
+                                    step="1"
+                                    value="0"
+                                >
+                                <small class="form-hint">0 to 10,000,000 gold</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="pickaxeType">⛏️ Pickaxe Type</label>
+                                <select id="pickaxeType" name="pickaxeType">
+                                    <option value="">None</option>
+                                    <option value="silver">🥈 Silver (1 power)</option>
+                                    <option value="gold">🥇 Gold (5 power)</option>
+                                    <option value="diamond">💎 Diamond (20 power)</option>
+                                    <option value="netherite">🔥 Netherite (100 power)</option>
+                                </select>
+                                <small class="form-hint">Select pickaxe type</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="pickaxeQuantity">📊 Pickaxe Quantity</label>
+                                <input 
+                                    type="number" 
+                                    id="pickaxeQuantity" 
+                                    name="pickaxeQuantity"
+                                    placeholder="0"
+                                    min="0"
+                                    max="1000"
+                                    step="1"
+                                    value="0"
+                                >
+                                <small class="form-hint">0 to 1,000 pickaxes</small>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label for="rewardReason">📝 Reason (Optional)</label>
+                                <input 
+                                    type="text" 
+                                    id="rewardReason" 
+                                    name="rewardReason"
+                                    placeholder="e.g., New user welcome gift, Bug compensation, Contest prize"
+                                    maxlength="200"
+                                >
+                                <small class="form-hint">Why are you giving this reward? (for audit logs)</small>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" onclick="resetRewardsForm()">
+                                🔄 Reset Form
+                            </button>
+                            <button type="submit" class="btn-primary" id="sendRewardsBtn">
+                                🎁 Send Rewards
+                            </button>
+                        </div>
+                    </form>
+
+                    <div id="rewardsAlert" class="rewards-alert hidden"></div>
                 </div>
             </div>
 
@@ -943,6 +1193,153 @@
             const timer = document.getElementById('lockoutTimer');
             timer.classList.remove('hidden');
             timer.textContent = 'Account temporarily locked due to too many failed attempts';
+        }
+
+        // ========================================
+        // FREE REWARDS SYSTEM
+        // ========================================
+
+        // Handle rewards form submission
+        document.getElementById('rewardsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const recipientAddress = document.getElementById('recipientAddress').value.trim();
+            const goldAmount = parseFloat(document.getElementById('goldAmount').value) || 0;
+            const pickaxeType = document.getElementById('pickaxeType').value;
+            const pickaxeQuantity = parseInt(document.getElementById('pickaxeQuantity').value) || 0;
+            const rewardReason = document.getElementById('rewardReason').value.trim() || 'Admin gift';
+
+            const sendBtn = document.getElementById('sendRewardsBtn');
+            const alertDiv = document.getElementById('rewardsAlert');
+
+            // Validation
+            if (!recipientAddress || recipientAddress.length < 32) {
+                showRewardAlert('error', '❌ Please enter a valid Solana wallet address');
+                return;
+            }
+
+            if (goldAmount === 0 && pickaxeQuantity === 0) {
+                showRewardAlert('error', '❌ You must give at least some gold or pickaxes');
+                return;
+            }
+
+            if (pickaxeQuantity > 0 && !pickaxeType) {
+                showRewardAlert('error', '❌ Please select a pickaxe type when quantity > 0');
+                return;
+            }
+
+            // Confirmation
+            let confirmMessage = `🎁 You are about to give:\n\n`;
+            confirmMessage += `👤 To: ${recipientAddress.slice(0, 8)}...${recipientAddress.slice(-8)}\n\n`;
+            
+            if (goldAmount > 0) {
+                confirmMessage += `💰 Gold: ${goldAmount.toLocaleString()}\n`;
+            }
+            
+            if (pickaxeQuantity > 0) {
+                const pickaxeEmoji = {
+                    'silver': '🥈',
+                    'gold': '🥇',
+                    'diamond': '💎',
+                    'netherite': '🔥'
+                };
+                confirmMessage += `⛏️ Pickaxes: ${pickaxeQuantity}x ${pickaxeEmoji[pickaxeType]} ${pickaxeType}\n`;
+            }
+            
+            confirmMessage += `\n📝 Reason: ${rewardReason}\n\n`;
+            confirmMessage += `Are you sure you want to send these rewards?`;
+
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            // Disable button and show loading
+            sendBtn.disabled = true;
+            sendBtn.textContent = '⏳ Sending...';
+            alertDiv.classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/admin/give-rewards', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        recipientAddress,
+                        goldAmount,
+                        pickaxeType: pickaxeType || null,
+                        pickaxeQuantity,
+                        reason: rewardReason
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Show success message with details
+                    const successHtml = `
+                        <div class="rewards-alert success">
+                            <h3 style="margin: 0 0 10px 0; color: #065f46;">✅ Rewards Delivered Successfully!</h3>
+                            <p style="margin: 5px 0;">Recipient: <strong>${recipientAddress.slice(0, 8)}...${recipientAddress.slice(-8)}</strong></p>
+                            <p style="margin: 5px 0;">Gift ID: <strong>#${data.gift.id}</strong></p>
+                            
+                            <div class="reward-summary">
+                                <h4>📦 What was given:</h4>
+                                ${goldAmount > 0 ? `<p>💰 Gold: <strong>${goldAmount.toLocaleString()}</strong></p>` : ''}
+                                ${data.gift.pickaxesGiven !== 'none' ? `<p>⛏️ Pickaxes: <strong>${data.gift.pickaxesGiven}</strong></p>` : ''}
+                                ${data.gift.miningPowerAdded > 0 ? `<p>⚡ Mining Power Added: <strong>+${data.gift.miningPowerAdded}</strong></p>` : ''}
+                                
+                                <h4 style="margin-top: 15px;">📊 User's New Stats:</h4>
+                                <p>💰 Total Gold: <strong>${data.gift.newUserStats.totalGold.toLocaleString()}</strong></p>
+                                <p>⚡ Total Mining Power: <strong>${data.gift.newUserStats.totalMiningPower}</strong></p>
+                                <p>🥈 Silver: ${data.gift.newUserStats.silverPickaxes} | 
+                                   🥇 Gold: ${data.gift.newUserStats.goldPickaxes} | 
+                                   💎 Diamond: ${data.gift.newUserStats.diamondPickaxes} | 
+                                   🔥 Netherite: ${data.gift.newUserStats.netheritePickaxes}</p>
+                            </div>
+                            
+                            <p style="margin-top: 10px; font-size: 12px; color: #059669;">
+                                ✓ Logged in database at ${new Date(data.gift.createdAt).toLocaleString()}
+                            </p>
+                        </div>
+                    `;
+                    
+                    alertDiv.innerHTML = successHtml;
+                    alertDiv.classList.remove('hidden');
+                    
+                    // Reset form
+                    document.getElementById('rewardsForm').reset();
+                    
+                    // Scroll to alert
+                    alertDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    
+                } else {
+                    showRewardAlert('error', `❌ Failed: ${data.error || 'Unknown error'}`);
+                }
+
+            } catch (error) {
+                console.error('Rewards error:', error);
+                showRewardAlert('error', `❌ Network error: ${error.message}`);
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.textContent = '🎁 Send Rewards';
+            }
+        });
+
+        function showRewardAlert(type, message) {
+            const alertDiv = document.getElementById('rewardsAlert');
+            alertDiv.className = `rewards-alert ${type}`;
+            alertDiv.innerHTML = message;
+            alertDiv.classList.remove('hidden');
+            alertDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function resetRewardsForm() {
+            if (confirm('Reset the form? All entered data will be cleared.')) {
+                document.getElementById('rewardsForm').reset();
+                document.getElementById('rewardsAlert').classList.add('hidden');
+            }
         }
 
         // Optional: Auto-refresh dashboard every 30 minutes (1,800,000 ms)
