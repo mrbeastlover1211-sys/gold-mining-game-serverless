@@ -77,12 +77,23 @@ export default async function handler(req, res) {
         const users = await sql`SELECT COUNT(*) as count FROM users`;
         const userCount = users[0].count;
         
+        // Delete related records first (foreign key constraints)
+        console.log('Deleting related records...');
+        await sql`DELETE FROM admin_logs WHERE target_user IS NOT NULL`;
+        await sql`DELETE FROM admin_gifts`;
+        await sql`DELETE FROM transactions`;
+        await sql`DELETE FROM gold_sales`;
+        await sql`DELETE FROM referrals`;
+        await sql`DELETE FROM netherite_challenges`;
+        
+        // Now delete users
         await sql`DELETE FROM users`;
         
         result = {
           action: 'Clear All Users',
           usersDeleted: userCount,
-          message: `${userCount} users deleted from database`
+          relatedRecordsDeleted: true,
+          message: `${userCount} users deleted from database (along with related records)`
         };
         break;
       }
