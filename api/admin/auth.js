@@ -54,14 +54,13 @@ const SESSION_DURATION = 60 * 60 * 1000; // 1 hour
 const SESSION_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 // 🛡️ IP WHITELIST - Only these IPs can access admin panel
-const ALLOWED_ADMIN_IPS = [
-  '183.83.146.141',  // Your current IP (Ahmedabad, India)
-  '127.0.0.1',       // Localhost for testing
-  '::1',             // Localhost IPv6
-  // Add more IPs here as needed:
-  // 'xxx.xxx.xxx.xxx',  // Office IP
-  // 'yyy.yyy.yyy.yyy',  // Home IP
-];
+// Get IPs from environment variable (comma-separated)
+const ALLOWED_ADMIN_IPS = process.env.ADMIN_ALLOWED_IPS 
+  ? process.env.ADMIN_ALLOWED_IPS.split(',').map(ip => ip.trim())
+  : [
+      '127.0.0.1',       // Localhost for testing
+      '::1',             // Localhost IPv6
+    ];
 
 // Clean up expired sessions periodically
 setInterval(() => {
