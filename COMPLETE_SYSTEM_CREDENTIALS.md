@@ -1,5 +1,110 @@
 # 🎮 GOLD MINING GAME - COMPLETE SYSTEM DOCUMENTATION
 
+## 🔒 CRITICAL SECURITY UPDATE - JANUARY 14, 2026
+
+### ✅ **BLOCKCHAIN TRANSACTION VERIFICATION SYSTEM - DEPLOYED**
+
+**Status:** 🟢 **LIVE & PROTECTING ALL TRANSACTIONS**
+
+#### **What Was Fixed:**
+Previously, the game had CRITICAL security vulnerabilities:
+- ❌ Anyone could send fake transaction signatures
+- ❌ Unlimited free pickaxes possible
+- ❌ Unlimited free land possible
+- ❌ No replay attack protection
+- ❌ No on-chain verification
+
+#### **Security Implementation:**
+✅ **Full On-Chain Transaction Verification**
+- Every purchase verified on Solana blockchain
+- Checks transaction actually exists and succeeded
+- Validates sender, recipient, and amount
+- Prevents replay attacks (signature can only be used once)
+- Complete audit trail in database
+
+#### **Files Created/Modified:**
+- ✅ `api/verify-transaction.js` - Core verification module
+- ✅ `api/purchase-confirm.js` - Secure pickaxe purchases (replaced)
+- ✅ `api/confirm-land-purchase.js` - Secure land purchases (replaced)
+- ✅ `api/setup-security-tables.js` - Database table creation
+- ✅ Database table: `verified_transactions` - Tracks all verified transactions
+
+#### **Security Features Active:**
+1. **On-Chain Verification** - Fetches transaction from blockchain
+2. **Replay Attack Prevention** - Database tracks used signatures
+3. **Amount Validation** - Verifies exact payment amount
+4. **Treasury Validation** - Confirms payment to correct wallet
+5. **Audit Trail** - All verified transactions logged
+
+#### **Testing Results:**
+- ✅ Fake signatures: **BLOCKED**
+- ✅ Replay attacks: **BLOCKED**
+- ✅ Wrong amounts: **BLOCKED**
+- ✅ Database setup: **SUCCESS**
+- ✅ Production deployment: **LIVE**
+
+#### **Environment Variables Updated:**
+```bash
+# Helius RPC (For Reliable Transaction Verification)
+SOLANA_CLUSTER_URL=https://devnet.helius-rpc.com/?api-key=cf5cf03b-f83b-4a21-8a75-c763d16d7301
+
+# Treasury Wallet (Verified on Every Transaction)
+TREASURY_PUBLIC_KEY=UPvCdUdJBgobf8QjEWvwArnd1c5CEGX576tmK6KtHSy
+
+# Admin Panel IP Whitelist (Comma-separated)
+ADMIN_ALLOWED_IPS=127.0.0.1,::1,183.83.146.126
+```
+
+#### **Database Schema Added:**
+```sql
+CREATE TABLE verified_transactions (
+  id SERIAL PRIMARY KEY,
+  signature TEXT UNIQUE NOT NULL,
+  user_address TEXT NOT NULL,
+  transaction_type TEXT NOT NULL,
+  amount_lamports BIGINT NOT NULL,
+  verified_at TIMESTAMP DEFAULT NOW(),
+  block_time BIGINT
+);
+
+CREATE INDEX idx_verified_tx_signature ON verified_transactions(signature);
+```
+
+#### **Purchase Flow (New Secure Process):**
+```
+1. User creates Solana transaction
+2. User signs with wallet
+3. Transaction sent to blockchain
+4. User submits signature to API
+5. 🔒 SERVER VERIFICATION:
+   ✓ Check if signature already used (replay protection)
+   ✓ Fetch transaction from blockchain
+   ✓ Verify sender = user's wallet
+   ✓ Verify recipient = treasury wallet
+   ✓ Verify amount = expected cost
+   ✓ Check transaction succeeded
+   ✓ Record in database
+6. Grant item ONLY if all checks pass
+```
+
+#### **What Users Experience:**
+- **Legitimate users:** Same flow, slightly longer verification (1-2 seconds)
+- **Attackers:** Fake signatures immediately rejected with error messages
+
+#### **Monitoring:**
+Check Vercel logs for:
+- ✅ "Transaction verified on blockchain!"
+- ❌ "REPLAY ATTACK DETECTED"
+- ❌ "Transaction not found on blockchain"
+- ❌ "Sender/Recipient/Amount mismatch"
+
+**Deployment Date:** January 14, 2026  
+**Security Level:** 🔒 Maximum  
+**Risk to Users:** 🟢 None (backward compatible)  
+**Protection Level:** 🛡️ Complete
+
+---
+
 ## 🎉 LATEST UPDATES - DECEMBER 27, 2024
 
 ### ✅ Custom Domain Integration:
