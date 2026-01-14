@@ -1675,12 +1675,12 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
         
         // Update UI with new values
         updateDisplay({
-          gold: result.newGold,
-          inventory: result.inventory || state.status.inventory,
+          gold: result.goldRemaining,
+          inventory: result.newInventory || state.status.pickaxes,
           checkpoint: state.checkpoint
         });
         
-        console.log(`✅ Gold deducted: ${currentGold.toFixed(2)} → ${result.newGold.toFixed(2)}`);
+        console.log(`✅ Gold deducted: ${currentGold.toFixed(2)} → ${result.goldRemaining.toFixed(2)}`);
         console.log(`✅ Mining power updated to: ${newTotalMiningPower}/min`);
       }
       
