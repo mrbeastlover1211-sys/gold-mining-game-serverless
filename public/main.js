@@ -1999,24 +1999,142 @@ async function updateReferralStatus() {
   }
 }
 
-// 🔥 Netherite Challenge - Opens referral modal with info
+// 🔥 Netherite Challenge - Show info and open referral modal
 function showNetheriteChallengePopup() {
-  console.log('🔥 Opening Netherite Challenge info...');
+  console.log('🔥 Showing Netherite Challenge popup...');
   
-  // Show alert explaining the challenge
-  alert('🔥 NETHERITE CHALLENGE 🔥\n\n' +
-        '⏰ Get 3 referrals who buy Netherite pickaxes within 1 hour!\n\n' +
-        '🎁 REWARD: Free Netherite Pickaxe!\n\n' +
-        'How it works:\n' +
-        '1. Share your referral link\n' +
-        '2. Get 3 people to buy Netherite pickaxes\n' +
-        '3. Complete within 1 hour\n' +
-        '4. Earn a FREE Netherite pickaxe!\n\n' +
-        'Click "Refer & Earn" to get started!');
+  if (!state.address) {
+    alert('Please connect your wallet first to access the Netherite Challenge!');
+    return;
+  }
   
-  // Open the referral modal
-  showReferralModal();
+  // Create modal dynamically
+  const existingModal = document.getElementById('netheriteModal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  const modal = document.createElement('div');
+  modal.id = 'netheriteModal';
+  modal.className = 'modal-overlay';
+  modal.style.display = 'flex';
+  modal.style.zIndex = '10000';
+  
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 600px; background: linear-gradient(135deg, #1a1a1a, #2d2d2d);">
+      <div class="modal-header">
+        <div class="modal-title">🔥 NETHERITE CHALLENGE</div>
+        <button class="modal-close-btn" onclick="closeNetheriteModal()">✖</button>
+      </div>
+      
+      <div class="modal-body" style="text-align: center;">
+        <!-- Icon -->
+        <div style="font-size: 80px; margin: 20px 0;">🎁</div>
+        
+        <!-- Title -->
+        <h2 style="color: #ff6b00; font-size: 28px; margin-bottom: 15px;">SECRET DROP FOR YOU!</h2>
+        <p style="color: #ffd700; font-size: 16px; font-weight: bold;">🔥 Limited Time Offer! 🔥</p>
+        
+        <!-- Timer Box -->
+        <div style="background: linear-gradient(135deg, #ff6b00, #ff8c00); border-radius: 15px; padding: 20px; margin: 25px 0; box-shadow: 0 5px 20px rgba(255, 107, 0, 0.3);">
+          <div style="color: white; font-size: 18px; margin-bottom: 10px;">⏰ Challenge Duration</div>
+          <div style="font-size: 48px; font-weight: bold; color: white; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">1 HOUR</div>
+        </div>
+        
+        <!-- Description -->
+        <div style="background: rgba(255, 107, 0, 0.1); border-left: 4px solid #ff6b00; padding: 20px; border-radius: 10px; text-align: left; margin: 25px 0;">
+          <div style="color: #ff6b00; font-size: 18px; font-weight: bold; margin-bottom: 15px;">🎯 HOW IT WORKS:</div>
+          <div style="color: var(--text-primary); font-size: 15px; line-height: 1.8;">
+            1️⃣ Share your referral link below<br/>
+            2️⃣ Get people to join using your link<br/>
+            3️⃣ When someone buys a <strong style="color: #ffd700;">NETHERITE PICKAXE</strong> within 1 hour<br/>
+            4️⃣ You get a <strong style="color: #ff6b00;">FREE NETHERITE PICKAXE</strong>! 🔥
+          </div>
+        </div>
+        
+        <!-- Referral Link -->
+        <div style="margin: 25px 0;">
+          <div style="color: var(--text-primary); font-size: 14px; margin-bottom: 10px; text-align: left;">🔗 Your Referral Link:</div>
+          <div style="display: flex; gap: 10px;">
+            <input type="text" id="netheriteReferralLink" readonly 
+              value="https://www.thegoldmining.com/?ref=${state.address}"
+              style="flex: 1; padding: 12px; background: var(--bg-accent); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px;">
+            <button onclick="copyNetheriteLink()" 
+              style="padding: 12px 20px; background: #4CAF50; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer;">
+              📋 Copy
+            </button>
+          </div>
+        </div>
+        
+        <!-- Share Buttons -->
+        <div style="display: flex; gap: 10px; margin: 25px 0;">
+          <button onclick="shareNetheriteOnX()" 
+            style="flex: 1; padding: 15px; background: linear-gradient(45deg, #1DA1F2, #0d8bd9); border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer;">
+            𝕏 Post on X
+          </button>
+          <button onclick="openReferralModalFromNetherite()" 
+            style="flex: 1; padding: 15px; background: linear-gradient(45deg, #FFD700, #FFA500); border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer;">
+            📱 More Options
+          </button>
+        </div>
+        
+        <!-- Important Note -->
+        <div style="background: rgba(255, 215, 0, 0.1); border-left: 4px solid #ffd700; padding: 15px; border-radius: 10px; text-align: left; margin-top: 25px;">
+          <div style="color: #ffd700; font-size: 14px; font-weight: bold; margin-bottom: 8px;">⚠️ Important:</div>
+          <div style="color: var(--text-secondary); font-size: 13px; line-height: 1.6;">
+            • Challenge starts when someone clicks your link<br/>
+            • They have 1 hour to buy Netherite pickaxe<br/>
+            • You can earn this bonus multiple times!<br/>
+            • Share your link widely to maximize chances!
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
 }
+
+// Close Netherite Modal
+window.closeNetheriteModal = function() {
+  const modal = document.getElementById('netheriteModal');
+  if (modal) {
+    modal.remove();
+  }
+};
+
+// Copy Netherite referral link
+window.copyNetheriteLink = function() {
+  const input = document.getElementById('netheriteReferralLink');
+  if (input) {
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value).then(() => {
+      const btn = event.target;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '✅ Copied!';
+      btn.style.background = '#4CAF50';
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.style.background = '#4CAF50';
+      }, 2000);
+    });
+  }
+};
+
+// Share Netherite Challenge on X
+window.shareNetheriteOnX = function() {
+  const link = `https://www.thegoldmining.com/?ref=${state.address}`;
+  const text = `🔥 Join me on Gold Mining Game and get 1000 FREE GOLD!\n\nI'm doing the Netherite Challenge - if you buy Netherite pickaxe in the next hour, I get one FREE! ⏰\n\n${link}\n\n#GoldMining #Solana #Web3Gaming`;
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank');
+};
+
+// Open referral modal from Netherite
+window.openReferralModalFromNetherite = function() {
+  closeNetheriteModal();
+  showReferralModal();
+};
 
 // 💰 Free Gold Modal Functions
 function showFreeGoldModal() {
