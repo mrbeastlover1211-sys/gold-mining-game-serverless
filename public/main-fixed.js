@@ -222,10 +222,10 @@ function renderShop() {
   grid.innerHTML = '';
   
   const pickaxes = [
-    { key: 'silver', name: 'Silver Pickaxe', rate: 1, cost: state.config.pickaxes.silver.costSol },
-    { key: 'gold', name: 'Gold Pickaxe', rate: 10, cost: state.config.pickaxes.gold.costSol },
-    { key: 'diamond', name: 'Diamond Pickaxe', rate: 100, cost: state.config.pickaxes.diamond.costSol },
-    { key: 'netherite', name: 'Netherite Pickaxe', rate: 1000, cost: state.config.pickaxes.netherite.costSol }
+    { key: 'silver', name: 'Silver Pickaxe', rate: 1, cost: state.config.pickaxes.silver.costSol, roi: '7 DAYS', roiClass: 'roi-slow' },
+    { key: 'gold', name: 'Gold Pickaxe', rate: 10, cost: state.config.pickaxes.gold.costSol, roi: '18 HOURS', roiClass: 'roi-medium' },
+    { key: 'diamond', name: 'Diamond Pickaxe', rate: 100, cost: state.config.pickaxes.diamond.costSol, roi: '2 HOURS', roiClass: 'roi-fast' },
+    { key: 'netherite', name: 'Netherite Pickaxe', rate: 1000, cost: state.config.pickaxes.netherite.costSol, roi: '50 MINUTES', roiClass: 'roi-instant' }
   ];
   
   console.log('🔧 renderShop: Creating pickaxe items...');
@@ -262,10 +262,11 @@ function renderShop() {
         </div>
         <div class="pickaxe-info">
           <div class="pickaxe-name">${pickaxe.name}</div>
-          <div class="pickaxe-rate">${pickaxe.rate} gold/min</div>
+          <div class="pickaxe-rate">⚡ ${pickaxe.rate} gold/min</div>
+          <div class="pickaxe-roi ${pickaxe.roiClass}">⏱️ ROI: ${pickaxe.roi}</div>
         </div>
       </div>
-      <div class="pickaxe-price">${pickaxe.cost} SOL each</div>
+      <div class="pickaxe-price">💰 ${pickaxe.cost} SOL each</div>
       <div id="owned-${pickaxe.key}" class="pickaxe-owned" style="display: none;">Owned: 0</div>
       <div class="quantity-controls">
         <button class="qty-btn" onclick="changeQuantity('${pickaxe.key}', -1)">-</button>
