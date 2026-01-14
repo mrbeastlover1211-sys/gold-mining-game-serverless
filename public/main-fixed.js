@@ -1612,10 +1612,17 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
     body: JSON.stringify({
       address: state.address,
       pickaxeType: pickaxeType,
-      goldCost: goldCost
+      quantity: 1  // 🐛 FIX: API expects "quantity", not "goldCost"
     })
   })
-  .then(response => response.json())
+  .then(async response => {
+    // 🐛 FIX: Get detailed error message from server
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || errorData.message || `Server error (${response.status})`);
+    }
+    return response.json();
+  })
   .then(result => {
     const msgDiv = $('#modalStoreMsg');
     msgDiv.style.display = 'block';
