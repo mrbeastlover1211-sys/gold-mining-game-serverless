@@ -39,21 +39,58 @@ export async function verifyTransaction(signature, expectedSender, expectedRecip
       };
     }
 
-    // 2. Connect to Solana and fetch transaction
+    // 2. Connect to Solana and fetch transaction with retry logic
     const SOLANA_CLUSTER_URL = process.env.SOLANA_CLUSTER_URL || 'https://api.devnet.solana.com';
     const connection = new Connection(SOLANA_CLUSTER_URL, 'confirmed');
     
     console.log('🔗 Fetching transaction from blockchain...');
-    const txInfo = await connection.getTransaction(signature, {
-      maxSupportedTransactionVersion: 0,
-      commitment: 'confirmed'
-    });
+    
+    // Retry logic: Try up to 5 times with increasing delays
+    let txInfo = null;
+    const maxRetries = 5;
+    const retryDelays = [1000, 2000, 3000, 4000, 5000]; // 1s, 2s, 3s, 4s, 5s
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        console.log(`🔄 Attempt ${attempt + 1}/${maxRetries} to fetch transaction...`);
+        
+        txInfo = await connection.getTransaction(signature, {
+          maxSupportedTransactionVersion: 0,
+          commitment: 'confirmed'
+        });
+        
+        if (txInfo) {
+          console.log(`✅ Transaction found on attempt ${attempt + 1}`);
+          break;
+        }
+        
+        // If not found and not the last attempt, wait before retrying
+        if (attempt < maxRetries - 1) {
+          const delay = retryDelays[attempt];
+          console.log(`⏳ Transaction not found yet, waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        
+      } catch (fetchError) {
+        console.log(`⚠️ Error fetching transaction on attempt ${attempt + 1}:`, fetchError.message);
+        
+        // If it's the last attempt, throw the error
+        if (attempt === maxRetries - 1) {
+          throw fetchError;
+        }
+        
+        // Otherwise, wait and retry
+        const delay = retryDelays[attempt];
+        console.log(`⏳ Waiting ${delay}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
 
     if (!txInfo) {
-      console.log('❌ Transaction not found on blockchain');
+      console.log('❌ Transaction not found on blockchain after all retries');
       return {
         valid: false,
-        error: 'Transaction not found on blockchain. Please wait a few seconds and try again.'
+        error: 'Transaction not found after waiting 15 seconds. The transaction may still be processing. Please try confirming again in a moment.'
       };
     }
 

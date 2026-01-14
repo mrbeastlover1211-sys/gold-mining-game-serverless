@@ -428,10 +428,12 @@ async function buyPickaxe(pickaxeType) {
     $('#shopMsg').style.color = '#FF9800';
     
     const sig = await state.wallet.signAndSendTransaction(tx);
-    $('#shopMsg').textContent = `Transaction submitted: ${sig.signature.slice(0, 8)}...`;
+    $('#shopMsg').textContent = `⏳ Transaction sent! Waiting for blockchain confirmation...`;
     $('#shopMsg').style.color = '#2196F3';
+    
+    console.log('⏳ Waiting for blockchain to confirm transaction:', sig.signature);
 
-    // Confirm with server
+    // Confirm with server (this may take up to 15 seconds with retries)
     const r2 = await fetch('/api/purchase-confirm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -440,7 +442,19 @@ async function buyPickaxe(pickaxeType) {
     
     if (!r2.ok) {
       const errorText = await r2.text();
-      throw new Error(`Purchase confirmation failed: ${errorText}`);
+      let errorObj;
+      try {
+        errorObj = JSON.parse(errorText);
+      } catch (e) {
+        throw new Error(`Purchase confirmation failed: ${errorText}`);
+      }
+      
+      // If it's a "transaction not found" error, give helpful advice
+      if (errorObj.error && errorObj.error.includes('Transaction not found')) {
+        throw new Error('Transaction is still processing on the blockchain. Please wait 10 seconds and click "Refresh Status" or refresh the page. Your purchase will appear once confirmed.');
+      }
+      
+      throw new Error(`Purchase confirmation failed: ${errorObj.error || errorText}`);
     }
     
     const responseText = await r2.text();
