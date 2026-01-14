@@ -255,6 +255,9 @@ function renderShop() {
     
     console.log(`🔨 Creating ${pickaxe.key} pickaxe item (${index + 1}/4)`);
     
+    // Calculate gold per hour
+    const goldPerHour = pickaxe.rate * 60;
+    
     item.innerHTML = `
       <div class="pickaxe-header">
         <div class="pickaxe-icon ${pickaxe.key}">
@@ -266,6 +269,9 @@ function renderShop() {
         </div>
       </div>
       <div class="pickaxe-price">${pickaxe.cost} SOL each</div>
+      <div class="pickaxe-roi" style="color: #4CAF50; font-size: 12px; margin: 5px 0; font-weight: bold;">
+        💰 ${goldPerHour} gold/hour
+      </div>
       <div id="owned-${pickaxe.key}" class="pickaxe-owned" style="display: none;">Owned: 0</div>
       <div class="quantity-controls">
         <button class="qty-btn" onclick="changeQuantity('${pickaxe.key}', -1)">-</button>
