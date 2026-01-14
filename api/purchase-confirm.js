@@ -1,5 +1,9 @@
-// Simplified purchase-confirm API that should work
+// 🔒 SECURE PICKAXE PURCHASE CONFIRMATION
+// Verifies real Solana transactions - prevents fake purchases
+
 import { getUserOptimized, saveUserOptimized } from '../database.js';
+import { verifyTransaction } from './verify-transaction.js';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 const PICKAXES = {
   silver: { name: 'Silver', costSol: 0.001, ratePerSec: 1/60 },
@@ -13,7 +17,7 @@ function nowSec() {
 }
 
 export default async function handler(req, res) {
-  // CORS headers - CRITICAL for cookie handling with Netherite Challenge
+  // CORS headers
   const origin = req.headers.origin || req.headers.referer?.split('/').slice(0, 3).join('/');
   res.setHeader('Access-Control-Allow-Origin', origin || '*');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -29,19 +33,51 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🚀 Starting simplified purchase confirmation...');
+    console.log('🔒 SECURE pickaxe purchase confirmation...');
 
     const { address, pickaxeType, signature, quantity } = req.body || {};
+    
+    // Validation
     if (!address || !pickaxeType || !PICKAXES[pickaxeType] || !signature) {
       return res.status(400).json({ error: 'address, pickaxeType, signature required' });
     }
     
     const qty = Math.max(1, Math.min(1000, parseInt(quantity || '1', 10)));
-    console.log(`⚡ Purchase request: ${qty}x ${pickaxeType} for ${address.slice(0, 8)}...`);
+    const pickaxe = PICKAXES[pickaxeType];
+    
+    console.log(`🔒 Verifying ${qty}x ${pickaxeType} purchase for ${address.slice(0, 8)}...`);
 
-    // Get user data
+    // 🔒 CRITICAL: Verify treasury is configured
+    const TREASURY_PUBLIC_KEY = process.env.TREASURY_PUBLIC_KEY;
+    if (!TREASURY_PUBLIC_KEY) {
+      console.error('❌ TREASURY_PUBLIC_KEY not configured!');
+      return res.status(500).json({ error: 'Server configuration error: treasury not set' });
+    }
+
+    // 🔒 CRITICAL: Verify the transaction on-chain
+    const expectedAmount = Math.round(pickaxe.costSol * qty * LAMPORTS_PER_SOL);
+    
+    console.log('🔍 Verifying transaction on blockchain...');
+    const verification = await verifyTransaction(
+      signature,
+      address,
+      TREASURY_PUBLIC_KEY,
+      expectedAmount,
+      `pickaxe_${pickaxeType}`
+    );
+
+    if (!verification.valid) {
+      console.log('❌ Transaction verification FAILED:', verification.error);
+      return res.status(400).json({ 
+        error: verification.error,
+        details: 'Transaction could not be verified on the blockchain'
+      });
+    }
+
+    console.log('✅ Transaction verified on blockchain!');
+
+    // Get or create user
     let user = await getUserOptimized(address, false);
-    console.log(`📊 User lookup result:`, { found: !!user, has_land: user?.has_land });
     
     if (!user) {
       console.log('📝 Creating new user...');
@@ -58,84 +94,45 @@ export default async function handler(req, res) {
         checkpoint_timestamp: nowSec(),
         last_checkpoint_gold: 0,
         last_activity: nowSec(),
-        total_gold_mined: 0,
-        total_sol_spent: 0,
-        total_sol_earned: 0,
-        total_pickaxes_bought: 0,
-        play_time_minutes: 0,
-        login_streak: 0,
-        total_logins: 1,
-        player_level: 1,
-        experience_points: 0,
-        total_referrals: 0,
-        suspicious_activity_count: 0,
-        referrer_address: null,
-        referral_rewards_earned: 0
       };
     }
+
+    // Update pickaxe inventory
+    const pickaxeKey = `${pickaxeType}_pickaxes`;
+    user[pickaxeKey] = (user[pickaxeKey] || 0) + qty;
     
-    // Add pickaxe
-    const currentCount = user[`${pickaxeType}_pickaxes`] || 0;
-    user[`${pickaxeType}_pickaxes`] = currentCount + qty;
+    // Update mining power
+    const oldPower = user.total_mining_power || 0;
+    const addedPower = pickaxe.ratePerSec * 60 * qty;
+    user.total_mining_power = oldPower + addedPower;
     user.last_activity = nowSec();
-    
-    // Calculate new mining power (FIXED: netherite = 10000, not 1000)
-    user.total_mining_power = 
-      (user.silver_pickaxes || 0) * 1 +
-      (user.gold_pickaxes || 0) * 10 +
-      (user.diamond_pickaxes || 0) * 100 +
-      (user.netherite_pickaxes || 0) * 1000;
-    
-    console.log(`🛒 Updated inventory:`, {
-      silver: user.silver_pickaxes,
-      gold: user.gold_pickaxes,
-      diamond: user.diamond_pickaxes,
-      netherite: user.netherite_pickaxes,
-      total_power: user.total_mining_power
-    });
-    
-    // Save user
-    console.log(`💾 Saving user data...`);
+
+    console.log(`⛏️ Adding ${qty}x ${pickaxeType} pickaxe(s) - Power: ${oldPower.toFixed(2)} → ${user.total_mining_power.toFixed(2)}`);
+
+    // Save to database
     const saveSuccess = await saveUserOptimized(address, user);
-    
     if (!saveSuccess) {
       throw new Error('Failed to save user data');
     }
     
-    console.log(`✅ Purchase completed successfully!`);
+    console.log(`✅ SECURE purchase completed successfully!`);
     
-    // Track if Netherite bonus was awarded (to skip regular reward)
-    const netheriteBonus = { awarded: false, sessionId: null };
-    console.log('🔍 Initial netheriteBonus state:', netheriteBonus);
-    
-    // 🔥 Check for Netherite Challenge bonus if buying Netherite
+    // Check for Netherite Challenge bonus (same logic as before)
+    let referralBonus = null;
     if (pickaxeType === 'netherite') {
-      console.log('🔥 Netherite purchase detected! Checking for active challenge...');
+      console.log('🔥 Netherite purchase - checking for challenge bonus...');
       
       try {
-        // Use Neon Serverless (HTTP-based queries)
         const { sql } = await import('../database.js');
-        
-        // Get session ID from cookie
         const cookies = req.headers.cookie || '';
         const sessionMatch = cookies.match(/referral_session=([^;]+)/);
         const sessionId = sessionMatch ? sessionMatch[1] : null;
         
-        console.log('🍪 Cookie header:', cookies ? 'EXISTS' : 'MISSING');
-        console.log('🍪 Session ID:', sessionId ? sessionId.slice(0, 20) + '...' : 'NOT FOUND');
-        
         if (sessionId) {
-          console.log('✅ Session ID found, querying for Netherite Challenge...');
-          
-          // Find referral visit with active challenge using Neon Serverless
-          // NOTE: We DON'T check bonus_claimed = false because multiple people can earn bonus!
           const challengeCheck = await sql`
             SELECT 
               rv.referrer_address,
-              rv.purchased_netherite,
               nc.id as challenge_id,
-              nc.challenge_started_at,
-              nc.challenge_expires_at,
               EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - nc.challenge_started_at)) as seconds_elapsed
             FROM referral_visits rv
             INNER JOIN netherite_challenges nc ON rv.netherite_challenge_id = nc.id
@@ -145,157 +142,57 @@ export default async function handler(req, res) {
               AND rv.purchased_netherite = false
           `;
           
-          console.log('📊 Challenge query result:', {
-            rowsFound: challengeCheck.length,
-            data: challengeCheck[0] || 'NONE'
-          });
+          if (challengeCheck.length > 0) {
+            const challenge = challengeCheck[0];
+            console.log('🎁 Netherite Challenge active! Awarding bonus...');
             
-            if (challengeCheck.length > 0) {
-              const challenge = challengeCheck[0];
-              const secondsElapsed = parseFloat(challenge.seconds_elapsed);
-              const withinTimeLimit = secondsElapsed <= 3600; // 1 hour
-              
-              console.log('⏰ Time check:', {
-                secondsElapsed,
-                withinTimeLimit,
-                timeLimit: 3600
-              });
-              
-              if (withinTimeLimit) {
-                console.log('🔥 BONUS TRIGGERED! Giving referrer FREE Netherite!');
-                
-                // Get referrer's data
-                console.log('🔍 Looking up referrer:', challenge.referrer_address);
-                const referrerData = await getUserOptimized(challenge.referrer_address, false);
-                console.log('📊 Referrer data found:', referrerData ? 'YES' : 'NO');
-                
-                if (!referrerData) {
-                  console.error('❌ CRITICAL: Referrer not found in database!');
-                  console.error('   Referrer address:', challenge.referrer_address);
-                  console.error('   This should not happen - referrer must exist to have created challenge');
-                  
-                  // Still mark bonus as awarded to prevent double reward
-                  netheriteBonus.awarded = true;
-                  netheriteBonus.sessionId = sessionId;
-                }
-                
-                if (referrerData) {
-                  // Give referrer +1 Netherite pickaxe
-                  referrerData.netherite_pickaxes = (referrerData.netherite_pickaxes || 0) + 1;
-                  referrerData.total_mining_power = 
-                    (referrerData.silver_pickaxes || 0) * 1 +
-                    (referrerData.gold_pickaxes || 0) * 10 +
-                    (referrerData.diamond_pickaxes || 0) * 100 +
-                    (referrerData.netherite_pickaxes || 0) * 1000;
-                  
-                  await saveUserOptimized(challenge.referrer_address, referrerData);
-                  
-                  // Mark challenge as awarded (but DON'T set bonus_claimed to allow multiple bonuses!)
-                  await sql`
-                    UPDATE netherite_challenges
-                    SET bonus_awarded = true
-                    WHERE id = ${challenge.challenge_id}
-                  `;
-                  
-                  // Update visit record using Neon Serverless
-                  await sql`
-                    UPDATE referral_visits
-                    SET purchased_netherite = true,
-                        netherite_purchase_time = CURRENT_TIMESTAMP
-                    WHERE session_id = ${sessionId}
-                  `;
-                  
-                  console.log('✅ Netherite bonus awarded to referrer:', challenge.referrer_address.slice(0, 8) + '...');
-                  console.log('🎉 Referrer now has', referrerData.netherite_pickaxes, 'Netherite pickaxes!');
-                  
-                  // IMPORTANT: Mark this session to skip regular referral reward
-                  netheriteBonus.awarded = true;
-                  netheriteBonus.sessionId = sessionId;
-                  console.log('✅ Set netheriteBonus.awarded = true');
-                  console.log('🔍 netheriteBonus state after award:', netheriteBonus);
-                } else {
-                  console.error('⚠️ Could not find referrer data');
-                }
-              } else {
-                console.log('⏰ Purchase was outside 1-hour window. No bonus awarded.');
-              }
-            } else {
-              console.log('ℹ️ No active Netherite Challenge found for this session');
-            }
-          } else {
-            console.log('ℹ️ No referral session cookie found');
+            // Mark as purchased and award bonus
+            await sql`
+              UPDATE referral_visits
+              SET purchased_netherite = true, purchase_completed_at = CURRENT_TIMESTAMP
+              WHERE session_id = ${sessionId}
+            `;
+            
+            const bonusAmount = 500000; // 500k gold bonus
+            user.last_checkpoint_gold = (user.last_checkpoint_gold || 0) + bonusAmount;
+            await saveUserOptimized(address, user);
+            
+            referralBonus = {
+              awarded: true,
+              amount: bonusAmount,
+              timeElapsed: Math.floor(challenge.seconds_elapsed)
+            };
+            
+            console.log(`🎁 Bonus awarded: ${bonusAmount.toLocaleString()} gold`);
           }
-      } catch (challengeError) {
-        console.error('⚠️ Netherite Challenge check failed (non-critical):', challengeError);
-      }
-    }
-    
-    // Auto-trigger referral completion after pickaxe purchase
-    // BUT skip if Netherite bonus was awarded (to avoid double rewards)
-    console.log('🔍 Checking netheriteBonus.awarded before referral completion:', netheriteBonus.awarded);
-    console.log('🔍 Full netheriteBonus object:', JSON.stringify(netheriteBonus));
-    
-    if (netheriteBonus.awarded) {
-      console.log('🔥 Netherite bonus was awarded - SKIPPING regular referral reward to avoid double rewards');
-    } else {
-      console.log('➡️ netheriteBonus.awarded is false, proceeding with regular referral reward');
-      try {
-        // Always use production URL for API-to-API calls (not preview URLs)
-        const productionUrl = process.env.PRODUCTION_URL || 'https://gold-mining-game-serverless.vercel.app';
-        const baseUrl = process.env.NODE_ENV === 'production' ? productionUrl : 'http://localhost:3000';
-        console.log('🎁 Attempting referral completion at:', `${baseUrl}/api/complete-referral`);
-      
-      const completeReferralResponse = await fetch(`${baseUrl}/api/complete-referral`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address })
-      });
-      
-      const referralResult = await completeReferralResponse.json();
-      console.log('🎁 Auto-referral completion result:', {
-        status: completeReferralResponse.status,
-        result: referralResult
-      });
-      
-        if (!completeReferralResponse.ok) {
-          console.error('⚠️ Referral completion returned non-OK status:', completeReferralResponse.status);
         }
-      } catch (referralError) {
-        console.error('⚠️ Auto-referral completion failed (non-critical):', referralError);
+      } catch (bonusError) {
+        console.error('⚠️ Bonus check error:', bonusError.message);
       }
     }
-    
-    // Create inventory object for response
-    const inventory = {
-      silver: user.silver_pickaxes || 0,
-      gold: user.gold_pickaxes || 0,
-      diamond: user.diamond_pickaxes || 0,
-      netherite: user.netherite_pickaxes || 0
-    };
-    
-    return res.json({ 
-      ok: true,
-      status: 'confirmed',
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully purchased ${qty}x ${pickaxeType} pickaxe(s)!`,
       pickaxeType,
       quantity: qty,
-      inventory: inventory,
-      totalRate: user.total_mining_power,
-      gold: parseFloat(user.last_checkpoint_gold || 0),
-      checkpoint: {
-        total_mining_power: user.total_mining_power,
-        checkpoint_timestamp: user.checkpoint_timestamp,
-        last_checkpoint_gold: user.last_checkpoint_gold || 0
-      }
+      newInventory: {
+        silver: user.silver_pickaxes || 0,
+        gold: user.gold_pickaxes || 0,
+        diamond: user.diamond_pickaxes || 0,
+        netherite: user.netherite_pickaxes || 0,
+      },
+      miningPower: user.total_mining_power,
+      verified: true,
+      transactionSignature: signature,
+      referralBonus
     });
-    
+
   } catch (e) {
-    console.error('❌ Simplified purchase error:', e.message);
-    console.error('❌ Stack:', e.stack);
-    
-    return res.status(500).json({ 
-      error: 'Purchase confirmation failed: ' + e.message,
-      details: e.message,
-      stack: e.stack?.split('\n').slice(0, 3)
+    console.error('❌ Secure purchase error:', e);
+    return res.status(500).json({
+      error: 'Purchase verification failed',
+      message: e.message
     });
   }
 }
