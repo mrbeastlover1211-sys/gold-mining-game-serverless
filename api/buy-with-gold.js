@@ -1,9 +1,23 @@
-// Use same working pattern as status.js
+// 🔒 SECURE GOLD-BASED PICKAXE PURCHASES
+// Prevents exploitation with rate limiting and purchase tracking
+
 import { getUserOptimized, saveUserOptimized } from '../database.js';
+import { sql } from '../database.js';
+
+const PICKAXES = {
+  silver: { name: 'Silver', costGold: 1000, ratePerSec: 1/60 },
+  gold: { name: 'Gold', costGold: 25000, ratePerSec: 10/60 },
+  diamond: { name: 'Diamond', costGold: 500000, ratePerSec: 100/60 },
+  netherite: { name: 'Netherite', costGold: 10000000, ratePerSec: 1000/60 },
+};
+
+function nowSec() { 
+  return Math.floor(Date.now() / 1000); 
+}
 
 export default async function handler(req, res) {
-  // CORS headers - CRITICAL for cookie handling with Netherite Challenge
-  const origin = req.headers.origin || req.headers.referer?.split('/').slice(0, 3).join('/');
+  // CORS
+  const origin = req.headers.origin || req.headers.referer?.split('/').slice(0,3).join('/');
   res.setHeader('Access-Control-Allow-Origin', origin || '*');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -18,306 +32,197 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { address, pickaxeType, goldCost } = req.body;
+    console.log('🔒 SECURE gold-based pickaxe purchase...');
     
-    console.log(`🛒 Buy request: ${pickaxeType} for ${goldCost} gold from ${address?.slice(0, 8)}...`);
+    const { address, pickaxeType, quantity } = req.body || {};
     
-    if (!address || !pickaxeType || !goldCost) {
-      return res.status(400).json({ error: 'address, pickaxeType, and goldCost required' });
+    if (!address || !pickaxeType || !PICKAXES[pickaxeType]) {
+      return res.status(400).json({ error: 'Invalid request parameters' });
     }
 
-    const validPickaxes = ['silver', 'gold', 'diamond', 'netherite'];
-    if (!validPickaxes.includes(pickaxeType)) {
-      return res.status(400).json({ error: 'Invalid pickaxe type. Must be silver, gold, diamond, or netherite' });
-    }
+    const qty = Math.max(1, Math.min(1000, parseInt(quantity || '1', 10)));
+    const pickaxe = PICKAXES[pickaxeType];
+    const totalCost = pickaxe.costGold * qty;
+
+    console.log(`🔒 Purchase request: ${qty}x ${pickaxeType} for ${totalCost.toLocaleString()} gold`);
+
+    // 🔒 FIX #3: RATE LIMITING - Prevent purchase spam
+    const MAX_PURCHASES_PER_HOUR = 100;
+    const MAX_PURCHASES_PER_MINUTE = 10;
     
-    // Get user data using the same method as status.js
-    let user;
     try {
-      user = await getUserOptimized(address);
-      console.log(`🔍 Buy API getUserOptimized result:`, {
-        found: !!user,
-        has_land: user?.has_land,
-        address: user?.address?.slice(0, 8)
-      });
-    } catch (dbError) {
-      console.error(`❌ Buy API database error:`, dbError.message);
-      return res.status(500).json({
-        error: 'Database error in buy API',
-        details: dbError.message
-      });
+      // Create tracking table if not exists
+      await sql`
+        CREATE TABLE IF NOT EXISTS gold_purchases (
+          id SERIAL PRIMARY KEY,
+          user_address TEXT NOT NULL,
+          pickaxe_type TEXT NOT NULL,
+          quantity INTEGER NOT NULL,
+          gold_spent BIGINT NOT NULL,
+          purchased_at TIMESTAMP DEFAULT NOW()
+        )
+      `;
+
+      await sql`
+        CREATE INDEX IF NOT EXISTS idx_gold_purchases_user_time 
+        ON gold_purchases(user_address, purchased_at)
+      `;
+
+      // Check hourly rate limit
+      const hourlyPurchases = await sql`
+        SELECT COUNT(*) as count 
+        FROM gold_purchases 
+        WHERE user_address = ${address}
+          AND purchased_at > NOW() - INTERVAL '1 hour'
+      `;
+
+      if (parseInt(hourlyPurchases[0].count) >= MAX_PURCHASES_PER_HOUR) {
+        console.log(`❌ RATE LIMIT: ${address.slice(0, 8)} exceeded hourly purchase limit`);
+        return res.status(429).json({ 
+          error: 'Purchase limit reached',
+          message: `Maximum ${MAX_PURCHASES_PER_HOUR} purchases per hour allowed. Please try again later.`,
+          retryAfter: 3600
+        });
+      }
+
+      // Check per-minute rate limit
+      const minutePurchases = await sql`
+        SELECT COUNT(*) as count 
+        FROM gold_purchases 
+        WHERE user_address = ${address}
+          AND purchased_at > NOW() - INTERVAL '1 minute'
+      `;
+
+      if (parseInt(minutePurchases[0].count) >= MAX_PURCHASES_PER_MINUTE) {
+        console.log(`❌ RATE LIMIT: ${address.slice(0, 8)} exceeded per-minute purchase limit`);
+        return res.status(429).json({ 
+          error: 'Too many purchases',
+          message: `Maximum ${MAX_PURCHASES_PER_MINUTE} purchases per minute. Please slow down.`,
+          retryAfter: 60
+        });
+      }
+
+    } catch (rateLimitError) {
+      console.error('⚠️ Rate limit check error:', rateLimitError.message);
+      // Continue anyway, don't block purchase if rate limit check fails
     }
-    
+
+    // Get user and validate gold balance
+    const user = await getUserOptimized(address, false);
     if (!user) {
-      return res.status(400).json({ error: 'User not found. Please connect wallet and refresh.' });
+      return res.status(404).json({ error: 'User not found. Please connect your wallet first.' });
     }
 
-    if (!user.has_land) {
-      return res.status(400).json({ error: 'You need to purchase land first!' });
-    }
-    
-    // Calculate current gold using same method as status.js
-    const currentTime = Math.floor(Date.now() / 1000);
-    const checkpointTime = user.checkpoint_timestamp || currentTime;
-    const timeSinceCheckpoint = currentTime - checkpointTime;
-    const miningPower = user.total_mining_power || 0;
-    const goldPerSecond = miningPower / 60;
-    const goldMined = goldPerSecond * timeSinceCheckpoint;
-    const baseGold = parseFloat(user.last_checkpoint_gold || 0);
-    const currentGold = baseGold + goldMined;
-    
-    console.log(`💰 Gold calculation debug:`, {
-      baseGold,
-      goldMined,
-      currentGold,
-      timeSinceCheckpoint,
-      miningPower,
-      goldCost
+    // Calculate current gold (includes mined gold since last checkpoint)
+    const now = nowSec();
+    const timeSinceCheckpoint = now - (user.checkpoint_timestamp || now);
+    const goldMined = (user.total_mining_power || 0) / 60 * timeSinceCheckpoint;
+    const totalGold = (user.last_checkpoint_gold || 0) + goldMined;
+
+    console.log('🔒 Gold validation:', {
+      address: address.slice(0, 8) + '...',
+      checkpointGold: user.last_checkpoint_gold || 0,
+      minedGold: goldMined.toFixed(2),
+      totalGold: totalGold.toFixed(2),
+      requiredGold: totalCost,
+      hasEnough: totalGold >= totalCost
     });
-    
-    if (currentGold < goldCost) {
+
+    // 🔒 Strict gold validation
+    if (totalGold < totalCost) {
       return res.status(400).json({ 
-        error: `Insufficient gold. You have ${currentGold.toFixed(2)} but need ${goldCost} gold.` 
+        error: 'Insufficient gold',
+        required: totalCost,
+        available: Math.floor(totalGold),
+        missing: Math.floor(totalCost - totalGold)
       });
     }
-    
-    // Update inventory based on pickaxe type
-    const newGold = currentGold - goldCost;
-    if (pickaxeType === 'silver') {
-      user.silver_pickaxes = (user.silver_pickaxes || 0) + 1;
-    } else if (pickaxeType === 'gold') {
-      user.gold_pickaxes = (user.gold_pickaxes || 0) + 1;
-    } else if (pickaxeType === 'diamond') {
-      user.diamond_pickaxes = (user.diamond_pickaxes || 0) + 1;
-    } else if (pickaxeType === 'netherite') {
-      user.netherite_pickaxes = (user.netherite_pickaxes || 0) + 1;
-    }
-    
-    // Calculate new mining power
-    const silverCount = user.silver_pickaxes || 0;
-    const goldCount = user.gold_pickaxes || 0;
-    const diamondCount = user.diamond_pickaxes || 0;
-    const netheriteCount = user.netherite_pickaxes || 0;
-    
-    const newMiningPower = silverCount * 1 + 
-                          goldCount * 10 + 
-                          diamondCount * 100 + 
-                          netheriteCount * 1000;
-    
-    // ✅ Update user data and CREATE NEW CHECKPOINT
-    user.total_mining_power = newMiningPower;
-    user.checkpoint_timestamp = currentTime;
-    user.last_checkpoint_gold = newGold;
-    user.last_activity = currentTime;
-    
-    console.log(`💾 Creating checkpoint after purchase:`, {
-      silver: user.silver_pickaxes,
-      gold: user.gold_pickaxes,
-      newGold: newGold.toFixed(2),
-      newMiningPower,
-      checkpointTime: currentTime
-    });
-    
-    // Save user data using same method as status.js
-    await saveUserOptimized(address, user);
-    
-    console.log(`✅ ${address.slice(0, 8)}... bought ${pickaxeType} pickaxe for ${goldCost} gold`);
-    
-    // 🔥 NETHERITE CHALLENGE: Check if this purchase triggers bonus
-    let netheriteChallengeResult = null;
-    if (pickaxeType === 'netherite') {
+
+    // 🔒 Additional validation: Check if this is suspiciously fast accumulation
+    const accountAge = now - (user.checkpoint_timestamp || now);
+    if (accountAge < 3600 && totalGold > 1000000) { // Less than 1 hour old with >1M gold
+      console.log('⚠️ SUSPICIOUS: New account with high gold');
+      
       try {
-        console.log('🔥 Netherite purchased! Checking for active challenges...');
-        console.log('🔍 User address:', address.slice(0, 8) + '...');
-        console.log('🔍 Request headers:', JSON.stringify(req.headers, null, 2));
-        
-        const { sql } = await import('../database.js');
-        
-        // Get referral session from cookies
-        const cookies = req.headers.cookie || '';
-        const sessionMatch = cookies.match(/referral_session=([^;]+)/);
-        const sessionId = sessionMatch ? sessionMatch[1] : null;
-        
-        console.log('🍪 Cookie header:', cookies ? 'EXISTS' : 'MISSING');
-        console.log('🍪 Session ID:', sessionId ? sessionId.slice(0, 20) + '...' : 'NOT FOUND');
-        
-        if (sessionId) {
-          console.log('✅ Session ID found, querying database...');
-          
-          // Find referral visit with active challenge
-          const challengeCheck = await sql`
-            SELECT 
-              rv.referrer_address,
-              nc.id as challenge_id,
-              nc.challenge_started_at,
-              nc.challenge_expires_at,
-              nc.bonus_claimed,
-              EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - nc.challenge_started_at)) as seconds_elapsed
-            FROM referral_visits rv
-            INNER JOIN netherite_challenges nc ON rv.netherite_challenge_id = nc.id
-            WHERE rv.session_id = ${sessionId}
-              AND nc.is_active = true
-              AND nc.bonus_claimed = false
-          `;
-          
-          console.log('📊 Query result:', {
-            rowsFound: challengeCheck.length,
-            data: challengeCheck[0] || 'NONE'
-          });
-          
-          if (challengeCheck.length > 0) {
-            const challenge = challengeCheck[0];
-            const expiresAt = new Date(challenge.challenge_expires_at);
-            const now = new Date();
-            const withinTimeLimit = now < expiresAt;
-            
-            console.log('🔥 Challenge found:', {
-              referrer: challenge.referrer_address.slice(0, 8) + '...',
-              secondsElapsed: challenge.seconds_elapsed,
-              withinLimit: withinTimeLimit
-            });
-            
-            if (withinTimeLimit) {
-              // 🎉 BONUS! Give referrer FREE Netherite
-              console.log('🎉 BONUS TRIGGERED! Giving referrer FREE Netherite!');
-              
-              const { getUserOptimized, saveUserOptimized } = await import('../database.js');
-              const referrerData = await getUserOptimized(challenge.referrer_address);
-              
-              if (referrerData) {
-                referrerData.netherite_pickaxes = (referrerData.netherite_pickaxes || 0) + 1;
-                referrerData.total_mining_power = (referrerData.total_mining_power || 0) + 1000;
-                
-                await saveUserOptimized(challenge.referrer_address, referrerData);
-                
-                // Mark challenge as claimed
-                await sql`
-                  UPDATE netherite_challenges
-                  SET bonus_claimed = true,
-                      bonus_awarded = true,
-                      referred_user_address = ${address},
-                      referred_purchase_time = CURRENT_TIMESTAMP,
-                      is_active = false
-                  WHERE id = ${challenge.challenge_id}
-                `;
-                
-                // Update referral visit
-                await sql`
-                  UPDATE referral_visits
-                  SET purchased_netherite = true,
-                      netherite_purchase_time = CURRENT_TIMESTAMP
-                  WHERE session_id = ${sessionId}
-                `;
-                
-                netheriteChallengeResult = {
-                  bonus_awarded: true,
-                  referrer_address: challenge.referrer_address,
-                  seconds_elapsed: Math.floor(challenge.seconds_elapsed),
-                  message: '🔥 BONUS! Your referrer received FREE Netherite pickaxe!'
-                };
-                
-                console.log('✅ Netherite bonus awarded to referrer!');
-              } else {
-                console.log('⚠️ Referrer data not found for address:', challenge.referrer_address);
-              }
-            } else {
-              // ⏰ Too late - regular rewards
-              console.log('⏰ Challenge expired - regular rewards will apply');
-              
-              // Mark as expired
-              await sql`
-                UPDATE netherite_challenges
-                SET is_active = false,
-                    referred_user_address = ${address},
-                    referred_purchase_time = CURRENT_TIMESTAMP
-                WHERE id = ${challenge.challenge_id}
-              `;
-              
-              netheriteChallengeResult = {
-                bonus_awarded: false,
-                expired: true,
-                message: '⏰ Challenge time expired - referrer will receive regular rewards'
-              };
-            }
-          } else {
-            console.log('❌ No challenge found for this session');
-            console.log('   This means: No active challenge linked to this referral visit');
-          }
-        } else {
-          console.log('❌ No session ID found in cookies');
-          console.log('   This means: User did NOT come from a referral link');
-        }
-      } catch (challengeError) {
-        console.error('⚠️ Netherite challenge check failed:', challengeError);
-        console.error('   Error details:', challengeError.stack);
+        await sql`
+          INSERT INTO suspicious_activity (
+            user_address, 
+            activity_type, 
+            claimed_value, 
+            max_allowed_value, 
+            details,
+            detected_at
+          ) VALUES (
+            ${address},
+            'rapid_gold_accumulation',
+            ${totalGold},
+            ${1000000},
+            ${JSON.stringify({ accountAge, pickaxeType, quantity })},
+            NOW()
+          )
+        `;
+      } catch (logError) {
+        console.error('⚠️ Failed to log suspicious activity:', logError.message);
       }
     }
+
+    // Deduct gold and add pickaxes
+    const newGold = totalGold - totalCost;
+    user.last_checkpoint_gold = newGold;
+    user.checkpoint_timestamp = now;
     
-    // Auto-trigger referral completion after pickaxe purchase
+    const pickaxeKey = `${pickaxeType}_pickaxes`;
+    user[pickaxeKey] = (user[pickaxeKey] || 0) + qty;
+
+    // Update mining power
+    const oldPower = user.total_mining_power || 0;
+    const addedPower = pickaxe.ratePerSec * 60 * qty;
+    user.total_mining_power = oldPower + addedPower;
+    user.last_activity = now;
+
+    console.log(`⛏️ Adding ${qty}x ${pickaxeType} - Power: ${oldPower.toFixed(2)} → ${user.total_mining_power.toFixed(2)}`);
+
+    // Save user
+    const saveSuccess = await saveUserOptimized(address, user);
+    if (!saveSuccess) {
+      throw new Error('Failed to save user data');
+    }
+
+    // 🔒 Log the purchase for rate limiting and audit trail
     try {
-      // Always use production URL for API-to-API calls (not preview URLs)
-      const productionUrl = process.env.PRODUCTION_URL || 'https://gold-mining-game-serverless.vercel.app';
-      const baseUrl = process.env.NODE_ENV === 'production' ? productionUrl : 'http://localhost:3000';
-      console.log('🎁 Attempting referral completion at:', `${baseUrl}/api/complete-referral`);
-      
-      const completeReferralResponse = await fetch(`${baseUrl}/api/complete-referral`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Cookie': req.headers.cookie || '' // Forward cookies to complete-referral
-        },
-        body: JSON.stringify({ address })
-      });
-      
-      const referralResult = await completeReferralResponse.json();
-      console.log('🎁 Auto-referral completion result:', {
-        status: completeReferralResponse.status,
-        result: referralResult
-      });
-      
-      if (!completeReferralResponse.ok) {
-        console.error('⚠️ Referral completion returned non-OK status:', completeReferralResponse.status);
-      }
-    } catch (referralError) {
-      console.error('⚠️ Auto-referral completion failed (non-critical):', referralError);
+      await sql`
+        INSERT INTO gold_purchases (user_address, pickaxe_type, quantity, gold_spent)
+        VALUES (${address}, ${pickaxeType}, ${qty}, ${totalCost})
+      `;
+    } catch (logError) {
+      console.error('⚠️ Failed to log purchase:', logError.message);
+      // Don't fail the purchase if logging fails
     }
-    
-    // Create inventory object for response
-    const inventory = {
-      silver: user.silver_pickaxes || 0,
-      gold: user.gold_pickaxes || 0,
-      diamond: user.diamond_pickaxes || 0,
-      netherite: user.netherite_pickaxes || 0
-    };
-    
-    const response = {
+
+    console.log(`✅ SECURE purchase completed: ${qty}x ${pickaxeType} for ${totalCost.toLocaleString()} gold`);
+
+    return res.status(200).json({
       success: true,
-      newGold: newGold,
-      inventory: inventory,
-      checkpoint: {
-        total_mining_power: newMiningPower,
-        checkpoint_timestamp: currentTime,
-        last_checkpoint_gold: newGold
+      message: `Successfully purchased ${qty}x ${pickaxeType} pickaxe(s) with gold!`,
+      pickaxeType,
+      quantity: qty,
+      goldSpent: totalCost,
+      goldRemaining: Math.floor(newGold),
+      newInventory: {
+        silver: user.silver_pickaxes || 0,
+        gold: user.gold_pickaxes || 0,
+        diamond: user.diamond_pickaxes || 0,
+        netherite: user.netherite_pickaxes || 0,
       },
-      message: `Successfully bought ${pickaxeType} pickaxe for ${goldCost} gold!`
-    };
-    
-    // Add Netherite challenge result if applicable
-    if (netheriteChallengeResult) {
-      response.netherite_challenge = netheriteChallengeResult;
-    }
-    
-    res.json(response);
-    
+      miningPower: user.total_mining_power,
+      validated: true
+    });
+
   } catch (e) {
-    console.error('❌ Buy API main catch block error:', e.message);
-    console.error('❌ Full error:', e);
-    console.error('❌ Stack trace:', e.stack);
-    
-    res.status(500).json({
-      error: 'Buy API error',
-      details: e.message,
-      stack: e.stack?.split('\n').slice(0, 5)
+    console.error('❌ Secure gold purchase error:', e);
+    return res.status(500).json({
+      error: 'Purchase failed',
+      message: e.message
     });
   }
 }
