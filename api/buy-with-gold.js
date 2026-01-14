@@ -223,9 +223,11 @@ export default async function handler(req, res) {
 
   } catch (e) {
     console.error('❌ Secure gold purchase error:', e);
+    console.error('Error stack:', e.stack);
     return res.status(500).json({
       error: 'Purchase failed',
-      message: e.message
+      message: e.message,
+      details: process.env.NODE_ENV === 'development' ? e.stack : undefined
     });
   }
 }
