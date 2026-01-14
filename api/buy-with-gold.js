@@ -117,13 +117,13 @@ export default async function handler(req, res) {
     const now = nowSec();
     const timeSinceCheckpoint = now - (user.checkpoint_timestamp || now);
     const goldMined = (user.total_mining_power || 0) / 60 * timeSinceCheckpoint;
-    const totalGold = (user.last_checkpoint_gold || 0) + goldMined;
+    const totalGold = parseFloat((user.last_checkpoint_gold || 0)) + parseFloat(goldMined);
 
     console.log('🔒 Gold validation:', {
       address: address.slice(0, 8) + '...',
       checkpointGold: user.last_checkpoint_gold || 0,
-      minedGold: goldMined.toFixed(2),
-      totalGold: totalGold.toFixed(2),
+      minedGold: parseFloat(goldMined).toFixed(2),
+      totalGold: parseFloat(totalGold).toFixed(2),
       requiredGold: totalCost,
       hasEnough: totalGold >= totalCost
     });
