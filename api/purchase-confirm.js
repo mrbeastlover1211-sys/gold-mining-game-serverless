@@ -177,11 +177,16 @@ export default async function handler(req, res) {
       message: `Successfully purchased ${qty}x ${pickaxeType} pickaxe(s)!`,
       pickaxeType,
       quantity: qty,
-      newInventory: {
+      inventory: {
         silver: user.silver_pickaxes || 0,
         gold: user.gold_pickaxes || 0,
         diamond: user.diamond_pickaxes || 0,
         netherite: user.netherite_pickaxes || 0,
+      },
+      checkpoint: {
+        total_mining_power: user.total_mining_power || 0,
+        checkpoint_timestamp: user.checkpoint_timestamp || nowSec(),
+        last_checkpoint_gold: user.last_checkpoint_gold || 0
       },
       miningPower: user.total_mining_power,
       verified: true,

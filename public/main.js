@@ -472,28 +472,39 @@ async function buyPickaxe(pickaxeType) {
     console.log('🎁 Pickaxe purchased - checking referral completion...');
     await autoCheckReferralCompletion();
     
-    // Update with server response
-    if (j2.inventory) {
-      state.status.inventory = j2.inventory;
-      updateDisplay({
-        gold: state.status.gold,
-        inventory: j2.inventory,
-        checkpoint: j2.checkpoint
-      });
+    // 🔥 CRITICAL FIX: Update state with server response properly
+    const serverInventory = j2.inventory || j2.newInventory;
+    if (serverInventory) {
+      state.status.inventory = serverInventory;
+      console.log('✅ Updated inventory after SOL purchase:', serverInventory);
     }
     
     // Update checkpoint for mining
-    if (j2.checkpoint) {
-      state.checkpoint = {
-        total_mining_power: j2.checkpoint.total_mining_power || j2.totalRate,
-        checkpoint_timestamp: j2.checkpoint.checkpoint_timestamp || Math.floor(Date.now() / 1000),
-        last_checkpoint_gold: j2.checkpoint.last_checkpoint_gold || j2.gold || state.status.gold
-      };
-      
-      // Start mining if we have mining power
-      if (state.checkpoint.total_mining_power > 0) {
-        startCheckpointGoldLoop();
+    const now = Math.floor(Date.now() / 1000);
+    const newMiningPower = j2.miningPower || j2.checkpoint?.total_mining_power || 0;
+    
+    state.checkpoint = {
+      total_mining_power: newMiningPower,
+      checkpoint_timestamp: now,
+      last_checkpoint_gold: state.status.gold || 0
+    };
+    
+    console.log('✅ Updated checkpoint after SOL purchase:', state.checkpoint);
+    
+    // Update UI immediately with new values
+    updateDisplay({
+      gold: state.status.gold,
+      inventory: serverInventory || state.status.inventory,
+      checkpoint: state.checkpoint
+    });
+    
+    // Restart mining engine with new checkpoint
+    if (state.checkpoint.total_mining_power > 0) {
+      console.log('⛏️ Restarting mining engine after SOL purchase...');
+      if (state.optimizedMiningEngine) {
+        state.optimizedMiningEngine.stop();
       }
+      startCheckpointGoldLoop();
     }
     
     // 💾 NEW: Save checkpoint after purchase (server already saved, this is client confirmation)
@@ -1455,52 +1466,123 @@ function updateGoldStoreModal() {
   }
 }
 
-function buyPickaxeWithGold(pickaxeType, goldCost) {
+async function buyPickaxeWithGold(pickaxeType, goldCost) {
   if (!state.address) {
     alert('Please connect your wallet first');
     return;
   }
 
-  const currentGold = state.status.gold || 0;
+  // Calculate current gold from checkpoint (real-time)
+  let currentGold = 0;
+  if (state.checkpoint && state.checkpoint.total_mining_power > 0) {
+    currentGold = calculateGoldFromCheckpoint(state.checkpoint);
+  } else {
+    currentGold = state.status.gold || 0;
+  }
+
+  console.log(`💰 Current gold for purchase check: ${currentGold.toFixed(2)}`);
+
   if (currentGold < goldCost) {
-    alert(`Not enough gold! You need ${goldCost.toLocaleString()} gold but only have ${currentGold.toLocaleString()}`);
+    alert(`Not enough gold! You need ${goldCost.toLocaleString()} gold but only have ${Math.floor(currentGold).toLocaleString()}`);
     return;
   }
 
-  console.log(`🛒 Buying ${pickaxeType} pickaxe with ${goldCost} gold...`);
+  console.log(`🛒 Buying ${pickaxeType} pickaxe with ${goldCost.toLocaleString()} gold...`);
   
-  // This would connect to your gold purchase API
-  fetch('/api/buy-with-gold', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      address: state.address,
-      pickaxeType: pickaxeType,
-      quantity: 1  // Fixed: API expects "quantity", not "goldCost"
-    })
-  })
-  .then(response => response.json())
-  .then(async result => {
+  $('#modalStoreMsg').textContent = `Processing purchase...`;
+  $('#modalStoreMsg').style.color = '#2196F3';
+
+  try {
+    // Call the API
+    const response = await fetch('/api/buy-with-gold', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: state.address,
+        pickaxeType: pickaxeType,
+        quantity: 1
+      })
+    });
+
+    const result = await response.json();
+
     if (result.success) {
+      console.log('✅ Successfully purchased with gold!', result);
       $('#modalStoreMsg').textContent = `✅ Successfully purchased ${pickaxeType} pickaxe with gold!`;
       $('#modalStoreMsg').style.color = '#4CAF50';
       
-      // Update display
-      refreshStatus(true);
+      // 🔥 CRITICAL FIX: Update state immediately with server response
+      const newInventory = result.newInventory || result.inventory || {
+        silver: 0,
+        gold: 0,
+        diamond: 0,
+        netherite: 0
+      };
+
+      const newGold = result.goldRemaining || 0;
+      const newMiningPower = result.miningPower || 0;
+
+      console.log('🔄 Updating state with server data:', {
+        newGold,
+        newInventory,
+        newMiningPower
+      });
+
+      // Update global state
+      state.status.gold = newGold;
+      state.status.inventory = newInventory;
+
+      // Update checkpoint with new values
+      const now = Math.floor(Date.now() / 1000);
+      state.checkpoint = {
+        total_mining_power: newMiningPower,
+        checkpoint_timestamp: now,
+        last_checkpoint_gold: newGold
+      };
+
+      console.log('✅ State updated, refreshing UI...');
+
+      // Update UI immediately
+      updateDisplay({
+        gold: newGold,
+        inventory: newInventory,
+        checkpoint: state.checkpoint
+      });
+
+      // Restart mining engine with new checkpoint
+      if (state.checkpoint.total_mining_power > 0) {
+        console.log('⛏️ Restarting mining engine with new power...');
+        if (state.optimizedMiningEngine) {
+          state.optimizedMiningEngine.stop();
+        }
+        startCheckpointGoldLoop();
+      }
+
+      // Update gold store modal prices
       updateGoldStoreModal();
       
-      // 🎁 CRITICAL: Check if referral can be completed now
+      // 🎁 Check if referral can be completed now
       console.log('🎁 Pickaxe purchased with gold - checking referral completion...');
       await autoCheckReferralCompletion();
+
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        $('#modalStoreMsg').textContent = '';
+      }, 3000);
+
     } else {
       throw new Error(result.error || 'Purchase failed');
     }
-  })
-  .catch(error => {
+  } catch (error) {
     console.error('❌ Gold purchase failed:', error);
     $('#modalStoreMsg').textContent = `❌ Purchase failed: ${error.message}`;
     $('#modalStoreMsg').style.color = '#f44336';
-  });
+    
+    // Clear error after 5 seconds
+    setTimeout(() => {
+      $('#modalStoreMsg').textContent = '';
+    }, 5000);
+  }
 }
 
 // 💰 Sell Gold Function
