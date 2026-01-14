@@ -2140,10 +2140,38 @@ async function purchaseLand() {
     if (confirmData.error) throw new Error(confirmData.error);
     
     console.log('✅ Land purchase confirmed successfully!');
+    console.log('📊 Confirm data:', confirmData);
+    
+    // 🎁 Update gold if referral bonus was awarded
+    if (confirmData.gold !== undefined) {
+      console.log(`💰 Updating gold from land purchase: ${confirmData.gold}`);
+      state.status.gold = confirmData.gold;
+      
+      if (confirmData.checkpoint) {
+        state.checkpoint = {
+          last_checkpoint_gold: confirmData.checkpoint.last_checkpoint_gold,
+          checkpoint_timestamp: confirmData.checkpoint.checkpoint_timestamp,
+          total_mining_power: confirmData.checkpoint.total_mining_power
+        };
+        console.log('✅ Updated checkpoint with referral bonus:', state.checkpoint);
+      }
+      
+      // Update display immediately
+      updateDisplay({
+        gold: confirmData.gold,
+        inventory: state.status.inventory || {},
+        checkpoint: state.checkpoint
+      });
+    }
     
     // Show success message
     $('#landMsg').textContent = '✅ Land purchased successfully!';
     $('#landMsg').style.color = '#4CAF50';
+    
+    // Add referral bonus message if awarded
+    if (confirmData.referralBonus && confirmData.referralBonus.awarded) {
+      $('#landMsg').textContent = `✅ Land purchased! You received 1,000 gold bonus! 🎁`;
+    }
     
     // 🚩 CRITICAL FIX: Update cache and database status
     LAND_STATUS_CACHE.setLandStatus(state.address, true);

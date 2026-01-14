@@ -143,10 +143,21 @@ export default async function handler(req, res) {
           // Award bonus to NEW USER ONLY (referrer gets reward when they buy pickaxe)
           const bonusAmount = 1000; // 1k gold bonus for new user
           
+          // Fetch fresh user data (since we saved it above)
+          const freshUser = await getUserOptimized(address, false);
+          if (!freshUser) {
+            throw new Error('Could not fetch user data after land grant');
+          }
+          
           // Give bonus to new user (buyer) only
-          user.last_checkpoint_gold = (user.last_checkpoint_gold || 0) + bonusAmount;
-          await saveUserOptimized(address, user);
-          console.log(`🎁 Referral bonus awarded to new user: ${bonusAmount.toLocaleString()} gold`);
+          freshUser.last_checkpoint_gold = parseFloat(freshUser.last_checkpoint_gold || 0) + bonusAmount;
+          freshUser.checkpoint_timestamp = nowSec(); // Update timestamp
+          
+          console.log(`🎁 Adding ${bonusAmount} gold to user. Current gold: ${freshUser.last_checkpoint_gold}`);
+          
+          await saveUserOptimized(address, freshUser);
+          console.log(`✅ Referral bonus awarded to new user: ${bonusAmount.toLocaleString()} gold`);
+          console.log(`💰 User now has ${freshUser.last_checkpoint_gold} gold total`);
           console.log(`ℹ️ Referrer will receive pickaxe + 100 gold when new user buys a pickaxe`);
           
           referralBonus = {
@@ -160,6 +171,9 @@ export default async function handler(req, res) {
       console.error('⚠️ Referral bonus error:', referralError.message);
     }
 
+    // Get final user state to return (might have referral bonus added)
+    const finalUser = await getUserOptimized(address, false);
+    
     return res.status(200).json({
       success: true,
       message: 'Land purchase verified and granted!',
@@ -167,7 +181,13 @@ export default async function handler(req, res) {
       landType: 'basic',
       verified: true,
       transactionSignature: signature,
-      referralBonus
+      referralBonus,
+      gold: finalUser?.last_checkpoint_gold || 0,
+      checkpoint: {
+        last_checkpoint_gold: finalUser?.last_checkpoint_gold || 0,
+        checkpoint_timestamp: finalUser?.checkpoint_timestamp || nowSec(),
+        total_mining_power: finalUser?.total_mining_power || 0
+      }
     });
 
   } catch (e) {
