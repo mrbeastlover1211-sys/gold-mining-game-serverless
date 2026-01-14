@@ -500,11 +500,22 @@ async function buyPickaxe(pickaxeType) {
     
     // Restart mining engine with new checkpoint
     if (state.checkpoint.total_mining_power > 0) {
-      console.log('⛏️ Restarting mining engine after SOL purchase...');
-      if (state.optimizedMiningEngine) {
+      console.log('⛏️ Restarting mining engine after SOL purchase:', state.checkpoint.total_mining_power);
+      console.log('⛏️ New checkpoint data:', state.checkpoint);
+      
+      // Force stop the old engine
+      if (state.optimizedMiningEngine && state.optimizedMiningEngine.isRunning) {
+        console.log('🛑 Stopping old mining engine...');
         state.optimizedMiningEngine.stop();
+        
+        // Wait a moment for the engine to fully stop
+        setTimeout(() => {
+          console.log('▶️ Starting new mining engine with updated checkpoint...');
+          startCheckpointGoldLoop();
+        }, 100);
+      } else {
+        startCheckpointGoldLoop();
       }
-      startCheckpointGoldLoop();
     }
     
     // 💾 NEW: Save checkpoint after purchase (server already saved, this is client confirmation)
@@ -841,9 +852,15 @@ function startCheckpointGoldLoop() {
     };
   }
   
-  // Start the optimized engine
+  // Start the optimized engine with fresh checkpoint
   if (state.checkpoint && state.checkpoint.total_mining_power > 0) {
-    state.optimizedMiningEngine.start(state.checkpoint);
+    // Force update the checkpoint even if engine is running
+    if (state.optimizedMiningEngine.isRunning) {
+      console.log('⚠️ Mining engine already running, forcing checkpoint update...');
+      state.optimizedMiningEngine.checkpoint = state.checkpoint;
+    } else {
+      state.optimizedMiningEngine.start(state.checkpoint);
+    }
   }
 }
 
@@ -1360,12 +1377,20 @@ async function autoCheckReferralCompletion() {
       // Show success notification
       showReferralCompletionNotification(result);
       
-      // Refresh user data to show updated rewards
-      setTimeout(() => {
-        if (state.address) {
-          refreshStatus(true);
+      // Update gold directly from referral result (don't fetch from server)
+      if (result.newGold !== undefined) {
+        console.log('💰 Updating gold from referral completion:', result.newGold);
+        state.status.gold = result.newGold;
+        if (state.checkpoint) {
+          state.checkpoint.last_checkpoint_gold = result.newGold;
+          state.checkpoint.checkpoint_timestamp = Math.floor(Date.now() / 1000);
         }
-      }, 2000);
+        updateDisplay({
+          gold: result.newGold,
+          inventory: state.status.inventory,
+          checkpoint: state.checkpoint
+        });
+      }
       
     } else if (result.success && !result.referral_completed) {
       console.log('ℹ️ No referral completion needed:', result.message);
@@ -1551,11 +1576,22 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
 
       // Restart mining engine with new checkpoint
       if (state.checkpoint.total_mining_power > 0) {
-        console.log('⛏️ Restarting mining engine with new power...');
-        if (state.optimizedMiningEngine) {
+        console.log('⛏️ Restarting mining engine with new power:', state.checkpoint.total_mining_power);
+        console.log('⛏️ New checkpoint data:', state.checkpoint);
+        
+        // Force stop the old engine
+        if (state.optimizedMiningEngine && state.optimizedMiningEngine.isRunning) {
+          console.log('🛑 Stopping old mining engine...');
           state.optimizedMiningEngine.stop();
+          
+          // Wait a moment for the engine to fully stop
+          setTimeout(() => {
+            console.log('▶️ Starting new mining engine with updated checkpoint...');
+            startCheckpointGoldLoop();
+          }, 100);
+        } else {
+          startCheckpointGoldLoop();
         }
-        startCheckpointGoldLoop();
       }
 
       // Update gold store modal prices
