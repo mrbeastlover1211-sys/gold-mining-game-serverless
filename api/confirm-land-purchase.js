@@ -114,29 +114,37 @@ export default async function handler(req, res) {
       });
       
       if (sessionId) {
-        // Check if this is a referred purchase
+        // Check if this is a referred purchase (using correct column names)
         const referralCheck = await sql`
           SELECT 
             referrer_address,
-            bonus_claimed,
-            visited_at
+            converted,
+            visit_timestamp
           FROM referral_visits
           WHERE session_id = ${sessionId}
-            AND referee_address IS NULL
+            AND (converted = false OR converted IS NULL)
           LIMIT 1
         `;
         
+        console.log('🔍 Referral check result:', {
+          found: referralCheck.length > 0,
+          sessionId: sessionId.slice(0, 20) + '...'
+        });
+        
         if (referralCheck.length > 0) {
           const referral = referralCheck[0];
-          console.log('🎁 Referral found! Processing rewards...');
+          console.log('🎁 Referral found! Processing rewards...', {
+            referrer: referral.referrer_address.slice(0, 8) + '...',
+            newUser: address.slice(0, 8) + '...'
+          });
           
-          // Update referral record
+          // Update referral record (using correct column names)
           await sql`
             UPDATE referral_visits
             SET 
-              referee_address = ${address},
-              bonus_claimed = true,
-              land_purchased_at = CURRENT_TIMESTAMP
+              converted = true,
+              converted_address = ${address},
+              converted_timestamp = CURRENT_TIMESTAMP
             WHERE session_id = ${sessionId}
           `;
           
