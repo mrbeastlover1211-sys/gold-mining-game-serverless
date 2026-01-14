@@ -104,7 +104,8 @@ export default async function handler(req, res) {
     // Update mining power
     const oldPower = user.total_mining_power || 0;
     const addedPower = pickaxe.ratePerSec * 60 * qty;
-    user.total_mining_power = oldPower + addedPower;
+    // Round to avoid floating-point precision errors
+    user.total_mining_power = Math.round((oldPower + addedPower) * 100) / 100;
     user.last_activity = nowSec();
 
     console.log(`⛏️ Adding ${qty}x ${pickaxeType} pickaxe(s) - Power: ${oldPower.toFixed(2)} → ${user.total_mining_power.toFixed(2)}`);
