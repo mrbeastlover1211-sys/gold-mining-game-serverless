@@ -1,164 +1,228 @@
-// Secure Buy With Gold API
-// Server verifies balance BEFORE purchase - can't buy without gold!
+// 🔒 SECURE GOLD-BASED PICKAXE PURCHASES
+// Prevents exploitation with rate limiting and purchase tracking
 
+import { getUserOptimized, saveUserOptimized } from '../database.js';
 import { sql } from '../database.js';
 
-// Item prices and mining power values
-const ITEMS = {
-  silver_pickaxe: {
-    price: 100,
-    miningPower: 1
-  },
-  gold_pickaxe: {
-    price: 1000,
-    miningPower: 10
-  },
-  diamond_pickaxe: {
-    price: 10000,
-    miningPower: 100
-  },
-  netherite_pickaxe: {
-    price: 100000,
-    miningPower: 1000
-  }
+const PICKAXES = {
+  silver: { name: 'Silver', costGold: 1000, ratePerSec: 1/60 },
+  gold: { name: 'Gold', costGold: 25000, ratePerSec: 10/60 },
+  diamond: { name: 'Diamond', costGold: 500000, ratePerSec: 100/60 },
+  netherite: { name: 'Netherite', costGold: 10000000, ratePerSec: 1000/60 },
 };
 
+function nowSec() { 
+  return Math.floor(Date.now() / 1000); 
+}
+
 export default async function handler(req, res) {
+  // CORS
+  const origin = req.headers.origin || req.headers.referer?.split('/').slice(0,3).join('/');
+  res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { address, itemType, quantity = 1 } = req.body;
-
-    // Validate inputs
-    if (!address || address.length < 32) {
-      return res.status(400).json({ error: 'Invalid wallet address' });
+    console.log('🔒 SECURE gold-based pickaxe purchase...');
+    
+    const { address, pickaxeType, quantity } = req.body || {};
+    
+    if (!address || !pickaxeType || !PICKAXES[pickaxeType]) {
+      return res.status(400).json({ error: 'Invalid request parameters' });
     }
 
-    if (!itemType || !ITEMS[itemType]) {
-      return res.status(400).json({ 
-        error: 'Invalid item type',
-        validItems: Object.keys(ITEMS)
-      });
-    }
+    const qty = Math.max(1, Math.min(1000, parseInt(quantity || '1', 10)));
+    const pickaxe = PICKAXES[pickaxeType];
+    const totalCost = pickaxe.costGold * qty;
 
-    const qty = parseInt(quantity);
-    if (qty <= 0 || qty > 100) {
-      return res.status(400).json({ error: 'Quantity must be between 1 and 100' });
-    }
+    console.log(`🔒 Purchase request: ${qty}x ${pickaxeType} for ${totalCost.toLocaleString()} gold`);
 
-    console.log(`🛒 Purchase request from ${address.slice(0, 8)}...`);
-    console.log(`   Item: ${itemType}`);
-    console.log(`   Quantity: ${qty}`);
-
-    // Calculate total cost
-    const item = ITEMS[itemType];
-    const totalCost = item.price * qty;
-    const totalMiningPower = item.miningPower * qty;
-
-    console.log(`   Total cost: ${totalCost} gold`);
-
-    // 🔒 SECURITY: Get user's ACTUAL balance from database
-    const users = await sql`
-      SELECT 
-        address,
-        last_checkpoint_gold,
-        ${sql(itemType + 's')} as current_item_count,
-        total_mining_power
-      FROM users
-      WHERE address = ${address}
-      LIMIT 1
-    `;
-
-    if (users.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const user = users[0];
-    const currentGold = parseFloat(user.last_checkpoint_gold || 0);
-
-    console.log(`   User balance: ${currentGold} gold`);
-
-    // 🔒 SECURITY: Verify user has enough gold
-    if (currentGold < totalCost) {
-      console.log(`❌ Insufficient funds: ${currentGold} < ${totalCost}`);
-      return res.status(400).json({
-        error: 'Insufficient gold',
-        balance: currentGold,
-        required: totalCost,
-        shortage: totalCost - currentGold
-      });
-    }
-
-    // Calculate new values
-    const newGold = currentGold - totalCost;
-    const newItemCount = parseInt(user.current_item_count || 0) + qty;
-    const newMiningPower = parseInt(user.total_mining_power || 0) + totalMiningPower;
-
-    // 🔒 SECURITY: Use database transaction (atomic operation)
-    await sql.begin(async sql => {
-      // Deduct gold and add items
+    // 🔒 FIX #3: RATE LIMITING - Prevent purchase spam
+    const MAX_PURCHASES_PER_HOUR = 100;
+    const MAX_PURCHASES_PER_MINUTE = 10;
+    
+    try {
+      // Create tracking table if not exists
       await sql`
-        UPDATE users
-        SET 
-          last_checkpoint_gold = ${newGold},
-          ${sql(itemType + 's')} = ${newItemCount},
-          total_mining_power = ${newMiningPower},
-          checkpoint_timestamp = ${Math.floor(Date.now() / 1000)}
-        WHERE address = ${address}
-      `;
-
-      // Log the purchase
-      await sql`
-        INSERT INTO transactions (
-          user_address,
-          type,
-          amount,
-          details,
-          timestamp
-        ) VALUES (
-          ${address},
-          'purchase',
-          ${-totalCost},
-          ${JSON.stringify({
-            item: itemType,
-            quantity: qty,
-            price_per_item: item.price,
-            total_cost: totalCost,
-            mining_power_added: totalMiningPower
-          })},
-          NOW()
+        CREATE TABLE IF NOT EXISTS gold_purchases (
+          id SERIAL PRIMARY KEY,
+          user_address TEXT NOT NULL,
+          pickaxe_type TEXT NOT NULL,
+          quantity INTEGER NOT NULL,
+          gold_spent BIGINT NOT NULL,
+          purchased_at TIMESTAMP DEFAULT NOW()
         )
       `;
+
+      await sql`
+        CREATE INDEX IF NOT EXISTS idx_gold_purchases_user_time 
+        ON gold_purchases(user_address, purchased_at)
+      `;
+
+      // Check hourly rate limit
+      const hourlyPurchases = await sql`
+        SELECT COUNT(*) as count 
+        FROM gold_purchases 
+        WHERE user_address = ${address}
+          AND purchased_at > NOW() - INTERVAL '1 hour'
+      `;
+
+      if (parseInt(hourlyPurchases[0].count) >= MAX_PURCHASES_PER_HOUR) {
+        console.log(`❌ RATE LIMIT: ${address.slice(0, 8)} exceeded hourly purchase limit`);
+        return res.status(429).json({ 
+          error: 'Purchase limit reached',
+          message: `Maximum ${MAX_PURCHASES_PER_HOUR} purchases per hour allowed. Please try again later.`,
+          retryAfter: 3600
+        });
+      }
+
+      // Check per-minute rate limit
+      const minutePurchases = await sql`
+        SELECT COUNT(*) as count 
+        FROM gold_purchases 
+        WHERE user_address = ${address}
+          AND purchased_at > NOW() - INTERVAL '1 minute'
+      `;
+
+      if (parseInt(minutePurchases[0].count) >= MAX_PURCHASES_PER_MINUTE) {
+        console.log(`❌ RATE LIMIT: ${address.slice(0, 8)} exceeded per-minute purchase limit`);
+        return res.status(429).json({ 
+          error: 'Too many purchases',
+          message: `Maximum ${MAX_PURCHASES_PER_MINUTE} purchases per minute. Please slow down.`,
+          retryAfter: 60
+        });
+      }
+
+    } catch (rateLimitError) {
+      console.error('⚠️ Rate limit check error:', rateLimitError.message);
+      // Continue anyway, don't block purchase if rate limit check fails
+    }
+
+    // Get user and validate gold balance
+    const user = await getUserOptimized(address, false);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found. Please connect your wallet first.' });
+    }
+
+    // Calculate current gold (includes mined gold since last checkpoint)
+    const now = nowSec();
+    const timeSinceCheckpoint = now - (user.checkpoint_timestamp || now);
+    const goldMined = (user.total_mining_power || 0) / 60 * timeSinceCheckpoint;
+    const totalGold = (user.last_checkpoint_gold || 0) + goldMined;
+
+    console.log('🔒 Gold validation:', {
+      address: address.slice(0, 8) + '...',
+      checkpointGold: user.last_checkpoint_gold || 0,
+      minedGold: goldMined.toFixed(2),
+      totalGold: totalGold.toFixed(2),
+      requiredGold: totalCost,
+      hasEnough: totalGold >= totalCost
     });
 
-    console.log(`✅ Purchase completed!`);
-    console.log(`   New balance: ${newGold} gold`);
-    console.log(`   New ${itemType} count: ${newItemCount}`);
+    // 🔒 Strict gold validation
+    if (totalGold < totalCost) {
+      return res.status(400).json({ 
+        error: 'Insufficient gold',
+        required: totalCost,
+        available: Math.floor(totalGold),
+        missing: Math.floor(totalCost - totalGold)
+      });
+    }
+
+    // 🔒 Additional validation: Check if this is suspiciously fast accumulation
+    const accountAge = now - (user.checkpoint_timestamp || now);
+    if (accountAge < 3600 && totalGold > 1000000) { // Less than 1 hour old with >1M gold
+      console.log('⚠️ SUSPICIOUS: New account with high gold');
+      
+      try {
+        await sql`
+          INSERT INTO suspicious_activity (
+            user_address, 
+            activity_type, 
+            claimed_value, 
+            max_allowed_value, 
+            details,
+            detected_at
+          ) VALUES (
+            ${address},
+            'rapid_gold_accumulation',
+            ${totalGold},
+            ${1000000},
+            ${JSON.stringify({ accountAge, pickaxeType, quantity })},
+            NOW()
+          )
+        `;
+      } catch (logError) {
+        console.error('⚠️ Failed to log suspicious activity:', logError.message);
+      }
+    }
+
+    // Deduct gold and add pickaxes
+    const newGold = totalGold - totalCost;
+    user.last_checkpoint_gold = newGold;
+    user.checkpoint_timestamp = now;
+    
+    const pickaxeKey = `${pickaxeType}_pickaxes`;
+    user[pickaxeKey] = (user[pickaxeKey] || 0) + qty;
+
+    // Update mining power
+    const oldPower = user.total_mining_power || 0;
+    const addedPower = pickaxe.ratePerSec * 60 * qty;
+    user.total_mining_power = oldPower + addedPower;
+    user.last_activity = now;
+
+    console.log(`⛏️ Adding ${qty}x ${pickaxeType} - Power: ${oldPower.toFixed(2)} → ${user.total_mining_power.toFixed(2)}`);
+
+    // Save user
+    const saveSuccess = await saveUserOptimized(address, user);
+    if (!saveSuccess) {
+      throw new Error('Failed to save user data');
+    }
+
+    // 🔒 Log the purchase for rate limiting and audit trail
+    try {
+      await sql`
+        INSERT INTO gold_purchases (user_address, pickaxe_type, quantity, gold_spent)
+        VALUES (${address}, ${pickaxeType}, ${qty}, ${totalCost})
+      `;
+    } catch (logError) {
+      console.error('⚠️ Failed to log purchase:', logError.message);
+      // Don't fail the purchase if logging fails
+    }
+
+    console.log(`✅ SECURE purchase completed: ${qty}x ${pickaxeType} for ${totalCost.toLocaleString()} gold`);
 
     return res.status(200).json({
       success: true,
-      message: 'Purchase successful!',
-      purchase: {
-        item: itemType,
-        quantity: qty,
-        costPerItem: item.price,
-        totalCost: totalCost,
-        miningPowerAdded: totalMiningPower
+      message: `Successfully purchased ${qty}x ${pickaxeType} pickaxe(s) with gold!`,
+      pickaxeType,
+      quantity: qty,
+      goldSpent: totalCost,
+      goldRemaining: Math.floor(newGold),
+      newInventory: {
+        silver: user.silver_pickaxes || 0,
+        gold: user.gold_pickaxes || 0,
+        diamond: user.diamond_pickaxes || 0,
+        netherite: user.netherite_pickaxes || 0,
       },
-      newBalance: {
-        gold: newGold,
-        itemCount: newItemCount,
-        miningPower: newMiningPower
-      }
+      miningPower: user.total_mining_power,
+      validated: true
     });
 
-  } catch (error) {
-    console.error('❌ Purchase error:', error);
+  } catch (e) {
+    console.error('❌ Secure gold purchase error:', e);
     return res.status(500).json({
-      error: 'Failed to complete purchase',
-      details: error.message
+      error: 'Purchase failed',
+      message: e.message
     });
   }
 }

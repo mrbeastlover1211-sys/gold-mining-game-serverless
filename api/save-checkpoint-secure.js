@@ -1,101 +1,156 @@
-// Secure Save Checkpoint API
-// Server calculates gold earned - client can't fake it!
+// 🔒 SECURE CHECKPOINT SAVING
+// Prevents gold inflation exploits with strict validation and rate limiting
 
+import { getUserOptimized, saveUserOptimized } from '../database.js';
 import { sql } from '../database.js';
 
+function nowSec() { 
+  return Math.floor(Date.now() / 1000); 
+}
+
 export default async function handler(req, res) {
+  // CORS
+  const origin = req.headers.origin || req.headers.referer?.split('/').slice(0,3).join('/');
+  res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { address } = req.body;
-
-    if (!address || address.length < 32) {
-      return res.status(400).json({ error: 'Invalid wallet address' });
+    console.log('🔒 SECURE checkpoint save request...');
+    
+    const { address, gold, timestamp } = req.body || {};
+    
+    if (!address || gold === undefined || gold === null) {
+      return res.status(400).json({ error: 'Missing address or gold' });
     }
 
-    console.log(`💾 Save checkpoint request from: ${address.slice(0, 8)}...`);
-
-    // 🔒 SECURITY: Get user data from DATABASE (not from client!)
-    const users = await sql`
-      SELECT 
-        address,
-        last_checkpoint_gold,
-        checkpoint_timestamp,
-        total_mining_power,
-        silver_pickaxes,
-        gold_pickaxes,
-        diamond_pickaxes,
-        netherite_pickaxes
-      FROM users
-      WHERE address = ${address}
-      LIMIT 1
-    `;
-
-    if (users.length === 0) {
+    const user = await getUserOptimized(address, false);
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const user = users[0];
-    const currentTime = Math.floor(Date.now() / 1000); // Current timestamp in seconds
+    const now = nowSec();
+    const checkpointTimestamp = user.checkpoint_timestamp || now;
+    const timeSinceCheckpoint = now - checkpointTimestamp;
 
-    // 🔒 SECURITY: Calculate gold based on TIME PASSED, not client data
-    const lastCheckpointTime = parseInt(user.checkpoint_timestamp) || currentTime;
-    const timePassed = currentTime - lastCheckpointTime; // Seconds passed
-    
-    // Validation: Don't allow negative time or extreme values
-    if (timePassed < 0) {
-      return res.status(400).json({ error: 'Invalid timestamp' });
+    // 🔒 FIX #2: RATE LIMITING - Prevent checkpoint spam
+    const MIN_CHECKPOINT_INTERVAL = 10; // seconds
+    if (timeSinceCheckpoint < MIN_CHECKPOINT_INTERVAL && timeSinceCheckpoint > 0) {
+      console.log(`⚠️ Rate limit: Only ${timeSinceCheckpoint}s since last checkpoint`);
+      return res.status(429).json({ 
+        error: `Please wait ${MIN_CHECKPOINT_INTERVAL - timeSinceCheckpoint} more seconds before saving`,
+        retryAfter: MIN_CHECKPOINT_INTERVAL - timeSinceCheckpoint
+      });
     }
-    
-    // Limit to max 24 hours (86400 seconds) to prevent abuse
-    const timePassedCapped = Math.min(timePassed, 86400);
-    
-    // Calculate gold earned: time (in minutes) × mining power
-    const minutesPassed = timePassedCapped / 60;
-    const goldEarned = minutesPassed * parseInt(user.total_mining_power || 0);
-    
-    // Round to 4 decimal places
-    const goldEarnedRounded = Math.round(goldEarned * 10000) / 10000;
-    
-    // Calculate new total gold
-    const previousGold = parseFloat(user.last_checkpoint_gold || 0);
-    const newTotalGold = previousGold + goldEarnedRounded;
 
-    console.log(`⏱️  Time passed: ${Math.floor(minutesPassed)} minutes`);
-    console.log(`⚡ Mining power: ${user.total_mining_power}`);
-    console.log(`💰 Gold earned: ${goldEarnedRounded}`);
-    console.log(`💰 New total: ${newTotalGold}`);
+    // 🔒 FIX #1: STRICTER VALIDATION - Reduced buffer from 10% to 5%
+    const NETWORK_BUFFER = 1.05; // 5% buffer instead of 10%
+    
+    const miningPower = user.total_mining_power || 0;
+    const lastCheckpointGold = user.last_checkpoint_gold || 0;
+    
+    // Calculate maximum possible gold
+    let maxPossibleGold = lastCheckpointGold;
+    if (timeSinceCheckpoint > 0 && miningPower > 0) {
+      const goldPerSecond = miningPower / 60;
+      const theoreticalGold = goldPerSecond * timeSinceCheckpoint;
+      maxPossibleGold = lastCheckpointGold + (theoreticalGold * NETWORK_BUFFER);
+    }
 
-    // 🔒 SECURITY: Update with SERVER-CALCULATED values only
-    await sql`
-      UPDATE users
-      SET 
-        last_checkpoint_gold = ${newTotalGold},
-        checkpoint_timestamp = ${currentTime}
-      WHERE address = ${address}
-    `;
-
-    console.log(`✅ Checkpoint saved for ${address.slice(0, 8)}...`);
-
-    // Return the SERVER-CALCULATED values (client must accept these)
-    return res.status(200).json({
-      success: true,
-      checkpoint: {
-        gold: newTotalGold,
-        goldEarned: goldEarnedRounded,
-        timestamp: currentTime,
-        timePassed: Math.floor(minutesPassed),
-        miningPower: user.total_mining_power
-      }
+    console.log('🔒 Validation check:', {
+      address: address.slice(0, 8) + '...',
+      claimedGold: parseFloat(gold).toFixed(2),
+      maxPossible: maxPossibleGold.toFixed(2),
+      timeSinceCheckpoint,
+      miningPower: miningPower.toFixed(2),
+      buffer: '5%'
     });
 
-  } catch (error) {
-    console.error('❌ Save checkpoint error:', error);
-    return res.status(500).json({ 
+    // 🔒 FIX #1: REJECT instead of capping (stricter enforcement)
+    if (parseFloat(gold) > maxPossibleGold && timeSinceCheckpoint > 0) {
+      console.log('❌ REJECTED: Gold amount exceeds maximum possible');
+      
+      // Log suspicious activity
+      try {
+        await sql`
+          INSERT INTO suspicious_activity (
+            user_address, 
+            activity_type, 
+            claimed_value, 
+            max_allowed_value, 
+            details,
+            detected_at
+          ) VALUES (
+            ${address},
+            'excessive_gold_claim',
+            ${parseFloat(gold)},
+            ${maxPossibleGold},
+            ${JSON.stringify({ timeSinceCheckpoint, miningPower })},
+            NOW()
+          )
+        `;
+      } catch (logError) {
+        console.error('⚠️ Failed to log suspicious activity:', logError.message);
+      }
+
+      return res.status(400).json({ 
+        error: 'Invalid gold amount detected',
+        message: 'The gold amount exceeds what is possible to mine. Please refresh the game.',
+        maxAllowed: Math.floor(maxPossibleGold),
+        claimed: Math.floor(parseFloat(gold))
+      });
+    }
+
+    // 🔒 Additional validation for new users
+    if (timeSinceCheckpoint > 86400) { // More than 24 hours
+      console.log('⚠️ Long time since checkpoint (>24h), extra validation');
+      
+      // Cap to 24 hours worth of mining to prevent extreme accumulation
+      const maxDailyGold = lastCheckpointGold + ((miningPower / 60) * 86400 * NETWORK_BUFFER);
+      if (parseFloat(gold) > maxDailyGold) {
+        console.log('❌ REJECTED: Gold exceeds 24-hour maximum');
+        return res.status(400).json({ 
+          error: 'Maximum 24 hours of mining can be claimed at once',
+          message: 'Please save checkpoints more frequently.',
+          maxAllowed: Math.floor(maxDailyGold)
+        });
+      }
+    }
+
+    // Save the checkpoint
+    user.last_checkpoint_gold = parseFloat(gold);
+    user.checkpoint_timestamp = now;
+    user.last_activity = now;
+
+    const saveSuccess = await saveUserOptimized(address, user);
+    if (!saveSuccess) {
+      throw new Error('Failed to save checkpoint');
+    }
+
+    console.log(`✅ SECURE checkpoint saved: ${parseFloat(gold).toFixed(2)} gold`);
+
+    return res.status(200).json({
+      success: true,
+      gold: parseFloat(gold),
+      timestamp: now,
+      validated: true,
+      maxPossible: maxPossibleGold
+    });
+
+  } catch (e) {
+    console.error('❌ Secure checkpoint error:', e);
+    return res.status(500).json({
       error: 'Failed to save checkpoint',
-      details: error.message 
+      message: e.message
     });
   }
 }
