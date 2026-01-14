@@ -116,6 +116,11 @@ export default async function handler(req, res) {
       throw new Error('Failed to save user data');
     }
     
+    // 🔥 CRITICAL: Clear cache to force fresh data on next status check
+    const { cache } = await import('../database.js');
+    cache.delete(`user_${address}`);
+    console.log(`🗑️ Cleared cache for ${address.slice(0, 8)}... to force fresh data`);
+    
     console.log(`✅ SECURE purchase completed successfully!`);
     
     // Check for Netherite Challenge bonus (same logic as before)

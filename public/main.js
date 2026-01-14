@@ -1677,8 +1677,14 @@ async function sellGold() {
       }
       state.status.gold = newGold;
       
-      // Refresh status to show updated gold
-      await refreshStatus(true);
+      // Update UI with new gold amount (no need to refresh from server - we have fresh data)
+      updateDisplay({
+        gold: newGold,
+        inventory: state.status.inventory,
+        checkpoint: state.checkpoint
+      });
+      
+      console.log('✅ Gold updated after sale, UI refreshed');
     } else {
       throw new Error(result.error || 'Sell failed');
     }

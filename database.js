@@ -136,8 +136,8 @@ export async function query(text, params = []) {
   }
 }
 
-// Export sql for direct use in other files
-export { sql };
+// Export sql and cache for direct use in other files
+export { sql, cache };
 
 // Legacy compatibility exports (these throw errors to help migration)
 export const pool = {
