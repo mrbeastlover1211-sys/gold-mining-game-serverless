@@ -1999,6 +1999,25 @@ async function updateReferralStatus() {
   }
 }
 
+// 🔥 Netherite Challenge - Opens referral modal with info
+function showNetheriteChallengePopup() {
+  console.log('🔥 Opening Netherite Challenge info...');
+  
+  // Show alert explaining the challenge
+  alert('🔥 NETHERITE CHALLENGE 🔥\n\n' +
+        '⏰ Get 3 referrals who buy Netherite pickaxes within 1 hour!\n\n' +
+        '🎁 REWARD: Free Netherite Pickaxe!\n\n' +
+        'How it works:\n' +
+        '1. Share your referral link\n' +
+        '2. Get 3 people to buy Netherite pickaxes\n' +
+        '3. Complete within 1 hour\n' +
+        '4. Earn a FREE Netherite pickaxe!\n\n' +
+        'Click "Refer & Earn" to get started!');
+  
+  // Open the referral modal
+  showReferralModal();
+}
+
 // 💰 Free Gold Modal Functions
 function showFreeGoldModal() {
   console.log('💰 Showing Free Gold Modal...');
