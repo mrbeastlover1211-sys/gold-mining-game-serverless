@@ -108,7 +108,7 @@ export default async function handler(req, res) {
     }
 
     // Get user and validate gold balance
-    const user = await getUserOptimized(address, false);
+    let user = await getUserOptimized(address, false);  // Changed const to let
     if (!user) {
       return res.status(404).json({ error: 'User not found. Please connect your wallet first.' });
     }
