@@ -140,20 +140,14 @@ export default async function handler(req, res) {
             WHERE session_id = ${sessionId}
           `;
           
-          // Award bonus to BOTH users
-          const bonusAmount = 1000; // 1k gold bonus for referral
+          // Award bonus to NEW USER ONLY (referrer gets reward when they buy pickaxe)
+          const bonusAmount = 1000; // 1k gold bonus for new user
           
-          // Give bonus to new user (buyer)
+          // Give bonus to new user (buyer) only
           user.last_checkpoint_gold = (user.last_checkpoint_gold || 0) + bonusAmount;
           await saveUserOptimized(address, user);
-          
-          // Give bonus to referrer
-          const referrer = await getUserOptimized(referral.referrer_address, false);
-          if (referrer) {
-            referrer.last_checkpoint_gold = (referrer.last_checkpoint_gold || 0) + bonusAmount;
-            await saveUserOptimized(referral.referrer_address, referrer);
-            console.log(`🎁 Referral bonus awarded to both users: ${bonusAmount.toLocaleString()} gold each`);
-          }
+          console.log(`🎁 Referral bonus awarded to new user: ${bonusAmount.toLocaleString()} gold`);
+          console.log(`ℹ️ Referrer will receive pickaxe + 100 gold when new user buys a pickaxe`);
           
           referralBonus = {
             awarded: true,
