@@ -1514,6 +1514,14 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
     return;
   }
 
+  // 🔥 CRITICAL: Save checkpoint before purchase to get accurate gold count
+  console.log('💾 Saving checkpoint before gold purchase to get accurate balance...');
+  const currentGoldFromMining = calculateGoldFromCheckpoint(state.checkpoint);
+  await saveCheckpoint(currentGoldFromMining);
+  
+  // Wait a moment for save to complete
+  await new Promise(resolve => setTimeout(resolve, 500));
+
   // Calculate current gold from checkpoint (real-time)
   let currentGold = 0;
   if (state.checkpoint && state.checkpoint.total_mining_power > 0) {
@@ -1522,9 +1530,15 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
     currentGold = state.status.gold || 0;
   }
 
-  console.log(`💰 Current gold for purchase check: ${currentGold.toFixed(2)}`);
+  console.log(`💰 Current gold for purchase check:`, {
+    calculatedGold: currentGold.toFixed(2),
+    checkpoint: state.checkpoint,
+    statusGold: state.status.gold,
+    requiredGold: goldCost
+  });
 
   if (currentGold < goldCost) {
+    console.error(`❌ Not enough gold! Need ${goldCost}, have ${currentGold.toFixed(2)}`);
     alert(`Not enough gold! You need ${goldCost.toLocaleString()} gold but only have ${Math.floor(currentGold).toLocaleString()}`);
     return;
   }
