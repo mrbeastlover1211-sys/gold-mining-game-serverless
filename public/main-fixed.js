@@ -1632,8 +1632,8 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
       msgDiv.style.color = '#4CAF50';
       
       // Update state and UI immediately with the new gold value from API
-      if (result.newGold !== undefined) {
-        state.status.gold = result.newGold;
+      if (result.goldRemaining !== undefined) {
+        state.status.gold = result.goldRemaining;
         
         // Update checkpoint with new gold value for mining calculations
         if (result.checkpoint) {
@@ -1650,18 +1650,17 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
         }
         
         // Update inventory if returned
-        if (result.inventory) {
-          state.status.inventory = result.inventory;
+        if (result.newInventory) {
+          state.status.pickaxes = {
+            silver: result.newInventory.silver || 0,
+            gold: result.newInventory.gold || 0,
+            diamond: result.newInventory.diamond || 0,
+            netherite: result.newInventory.netherite || 0
+          };
         }
         
         // CRITICAL FIX: Update total mining power after purchase
-        let newTotalMiningPower = 0;
-        if (result.inventory) {
-          newTotalMiningPower = (result.inventory.silver || 0) * 1 +
-                                (result.inventory.gold || 0) * 10 +
-                                (result.inventory.diamond || 0) * 100 +
-                                (result.inventory.netherite || 0) * 1000;
-        }
+        let newTotalMiningPower = result.miningPower || 0;
         
         // Update checkpoint with new mining power
         if (state.checkpoint) {
