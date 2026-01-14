@@ -184,10 +184,12 @@ export default async function handler(req, res) {
     console.log(`⛏️ Adding ${qty}x ${pickaxeType} - Power: ${oldPower.toFixed(2)} → ${user.total_mining_power.toFixed(2)}`);
 
     // Save user
-    const saveSuccess = await saveUserOptimized(address, user);
-    if (!saveSuccess) {
+    const savedUser = await saveUserOptimized(address, user);
+    if (!savedUser) {
       throw new Error('Failed to save user data');
     }
+    // Update user object with saved data
+    user = savedUser;
 
     // 🔒 Log the purchase for rate limiting and audit trail
     try {
