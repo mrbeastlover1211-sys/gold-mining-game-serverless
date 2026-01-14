@@ -2078,10 +2078,14 @@ function copyFreeGoldLink() {
 
 function postFreeGoldOnX() {
   const link = $('#freeGoldLink').value || 'https://www.thegoldmining.com';
-  const text = `🎮 I'm mining gold and earning SOL on this epic blockchain game! Join me and get FREE rewards! 💰⛏️\n\n#GoldMining #Solana #Web3Gaming #PlayToEarn`;
-  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
+  const text = `🎮 I'm mining gold and earning SOL on this epic blockchain game! Join me and get FREE rewards! 💰⛏️
+
+${link}
+
+#GoldMining #Solana #Web3Gaming #PlayToEarn`;
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(twitterUrl, '_blank');
-  console.log('🐦 Opening X (Twitter) to post...');
+  console.log('𝕏 Opening X to post...');
 }
 
 // 🏞️ Land Purchase Functions (EXACT COPY FROM WORKING VERSION)
