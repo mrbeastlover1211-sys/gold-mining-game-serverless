@@ -483,6 +483,7 @@
         <nav class="header-nav">
           <button class="nav-link how-it-works-btn" onclick="showHowItWorksModal()">❓ How to Play</button>
           <button class="nav-link leaderboard-btn" onclick="window.location.href='leaderboard.html'">🏆 Leaderboard</button>
+          <button class="nav-link free-gold-btn" onclick="showFreeGoldModal()">💰 Free Gold</button>
         </nav>
       </div>
       <div class="header-buttons">
@@ -1254,6 +1255,78 @@
     </div>
   </div>
 
+  <!-- Free Gold Modal -->
+  <div id="freeGoldModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">💰 Free Gold</div>
+        <button class="modal-close-btn" onclick="closeFreeGoldModal()">✖</button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Hero Section -->
+        <div class="free-gold-hero">
+          <div class="free-gold-icon">💎</div>
+          <h3>Post on X and Get 5,000 FREE GOLD! 🎁</h3>
+          <p>Share our game on X (Twitter) and earn instant rewards!</p>
+        </div>
+
+        <!-- Main Content (shown when requirements met) -->
+        <div id="freeGoldContent" class="free-gold-content" style="display: none;">
+          
+          <!-- Step 1: Your Referral Link -->
+          <div class="free-gold-section">
+            <h3>🔗 Step 1: Copy Your Unique Link</h3>
+            <div class="link-copy-container">
+              <input type="text" id="freeGoldLink" readonly placeholder="Your link will appear here..." />
+              <button id="copyFreeGoldLinkBtn" class="copy-btn" onclick="copyFreeGoldLink()">📋 Copy</button>
+            </div>
+            <p class="link-info">✅ Include this link in your X post to track your reward!</p>
+          </div>
+
+          <!-- Step 2: Post on X -->
+          <div class="free-gold-section">
+            <h3>🐦 Step 2: Post on X (Twitter)</h3>
+            <p>Click the button below to post on X with pre-filled content:</p>
+            <button class="social-btn twitter-btn free-gold-twitter-btn" onclick="postFreeGoldOnX()">
+              <span class="social-icon">𝕏</span> Post on X & Earn 5,000 Gold
+            </button>
+          </div>
+
+          <!-- Step 3: Open Telegram Ticket -->
+          <div class="free-gold-section">
+            <h3>🎫 Step 3: Submit Your Post</h3>
+            <p>Once you've posted on X, open a Telegram ticket to claim your reward:</p>
+            <a href="https://t.me/Thegoldmining" target="_blank" class="contact-btn telegram-btn free-gold-telegram-btn">
+              📱 Open Telegram Ticket
+            </a>
+            <p class="free-gold-note">💡 Share your X post link in the ticket to receive your 5,000 gold!</p>
+          </div>
+
+        </div>
+
+        <!-- Requirements (shown when wallet/land not connected) -->
+        <div id="freeGoldRequirement" class="free-gold-requirement">
+          <div class="requirement-box">
+            <h3>🔒 Requirements to Get Free Gold</h3>
+            <div class="requirement-steps">
+              <div class="requirement-step">
+                <span class="req-icon">💳</span>
+                <span class="req-text">Connect Your Wallet</span>
+                <span class="req-status" id="walletStatusFreeGold">❌ Not Connected</span>
+              </div>
+              <div class="requirement-step">
+                <span class="req-icon">🏠</span>
+                <span class="req-text">Purchase Land (0.01 SOL)</span>
+                <span class="req-status" id="landStatusFreeGold">❌ No Land</span>
+              </div>
+            </div>
+            <p class="requirement-note">Complete these steps to unlock free gold rewards!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- 🎨 Random Background System -->
   <script src="random-background.js"></script>

@@ -1999,6 +1999,91 @@ async function updateReferralStatus() {
   }
 }
 
+// 💰 Free Gold Modal Functions
+function showFreeGoldModal() {
+  console.log('💰 Showing Free Gold Modal...');
+  const modal = $('#freeGoldModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    updateFreeGoldStatus();
+  }
+}
+
+function closeFreeGoldModal() {
+  console.log('💰 Closing Free Gold Modal...');
+  const modal = $('#freeGoldModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+async function updateFreeGoldStatus() {
+  const walletConnected = !!state.address;
+  let hasLand = false;
+  
+  // Use cache-only check like referral system
+  if (walletConnected) {
+    console.log('💰 FREE GOLD UPDATE: Using memory cache only (no API)...');
+    
+    const cachedData = LAND_STATUS_CACHE.memoryCache.get(state.address);
+    if (cachedData) {
+      hasLand = cachedData.hasLand;
+      console.log('📦 FREE GOLD: Cache shows hasLand =', hasLand);
+    } else {
+      console.log('📦 FREE GOLD: No cache found, assuming false');
+      hasLand = false;
+    }
+  }
+  
+  $('#walletStatusFreeGold').textContent = walletConnected ? '✅ Connected' : '❌ Not Connected';
+  $('#walletStatusFreeGold').style.color = walletConnected ? '#4CAF50' : '#f44336';
+  
+  $('#landStatusFreeGold').textContent = hasLand ? '✅ Owned' : '❌ No Land';
+  $('#landStatusFreeGold').style.color = hasLand ? '#4CAF50' : '#f44336';
+  
+  if (walletConnected && hasLand) {
+    $('#freeGoldRequirement').style.display = 'none';
+    $('#freeGoldContent').style.display = 'block';
+    $('#freeGoldLink').value = `https://www.thegoldmining.com/?ref=${state.address}`;
+  } else {
+    $('#freeGoldRequirement').style.display = 'block';
+    $('#freeGoldContent').style.display = 'none';
+  }
+}
+
+function copyFreeGoldLink() {
+  const linkInput = $('#freeGoldLink');
+  if (linkInput && linkInput.value) {
+    linkInput.select();
+    linkInput.setSelectionRange(0, 99999);
+    
+    navigator.clipboard.writeText(linkInput.value).then(() => {
+      const btn = $('#copyFreeGoldLinkBtn');
+      const originalText = btn.textContent;
+      btn.textContent = '✅ Copied!';
+      btn.style.background = '#4CAF50';
+      
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.background = '';
+      }, 2000);
+      
+      console.log('✅ Free Gold link copied to clipboard');
+    }).catch(err => {
+      console.error('❌ Failed to copy:', err);
+      alert('Failed to copy link. Please copy manually.');
+    });
+  }
+}
+
+function postFreeGoldOnX() {
+  const link = $('#freeGoldLink').value || 'https://www.thegoldmining.com';
+  const text = `🎮 I'm mining gold and earning SOL on this epic blockchain game! Join me and get FREE rewards! 💰⛏️\n\n#GoldMining #Solana #Web3Gaming #PlayToEarn`;
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
+  window.open(twitterUrl, '_blank');
+  console.log('🐦 Opening X (Twitter) to post...');
+}
+
 // 🏞️ Land Purchase Functions (EXACT COPY FROM WORKING VERSION)
 async function purchaseLand() {
   if (!state.address) {
@@ -2405,7 +2490,8 @@ function setupModalClickOutside() {
     { id: 'promotersModal', closeFunction: closePromotersModal },
     { id: 'battlezoneModal', closeFunction: closeBattlezoneModal },
     { id: 'v2ComingSoonModal', closeFunction: closeV2Modal },
-    { id: 'referralModal', closeFunction: closeReferralModal }
+    { id: 'referralModal', closeFunction: closeReferralModal },
+    { id: 'freeGoldModal', closeFunction: closeFreeGoldModal }
     // Note: landModal is intentionally excluded as it's a mandatory modal
   ];
   
