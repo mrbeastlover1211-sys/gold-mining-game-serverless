@@ -1476,7 +1476,7 @@ function buyPickaxeWithGold(pickaxeType, goldCost) {
     body: JSON.stringify({
       address: state.address,
       pickaxeType: pickaxeType,
-      goldCost: goldCost
+      quantity: 1  // Fixed: API expects "quantity", not "goldCost"
     })
   })
   .then(response => response.json())
