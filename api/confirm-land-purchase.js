@@ -141,7 +141,7 @@ export default async function handler(req, res) {
           `;
           
           // Award bonus to BOTH users
-          const bonusAmount = 100000; // 100k gold
+          const bonusAmount = 1000; // 1k gold bonus for referral
           
           // Give bonus to new user (buyer)
           user.last_checkpoint_gold = (user.last_checkpoint_gold || 0) + bonusAmount;
