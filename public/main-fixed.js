@@ -13,8 +13,7 @@ let state = {
   goldUpdateInterval: null,
   checkpoint: null,
   solBalance: 0,
-  consecutiveErrors: 0,
-  landFlags: { hasLand: false, lastChecked: 0 }
+  consecutiveErrors: 0
 };
 
 // 🚩 SMART LAND STATUS CACHE - 3-LAYER SYSTEM TO PREVENT INFINITE LOOPS
@@ -173,68 +172,6 @@ const LAND_STATUS_CACHE = {
 
 const $ = (sel) => document.querySelector(sel);
 
-// 🔍 Get Phantom provider with proper detection and waiting
-async function getPhantomProvider() {
-  // Check if Phantom is already available
-  if ('phantom' in window) {
-    const phantomProvider = window.phantom?.solana;
-    if (phantomProvider?.isPhantom) {
-      console.log('✅ Phantom wallet detected');
-      return phantomProvider;
-    }
-  }
-  
-  // Check for standalone Solana provider (old Phantom versions)
-  if ('solana' in window) {
-    const provider = window.solana;
-    if (provider?.isPhantom) {
-      console.log('✅ Phantom wallet detected (legacy)');
-      return provider;
-    }
-  }
-  
-  // Wait up to 3 seconds for Phantom to initialize
-  console.log('⏳ Waiting for Phantom wallet to initialize...');
-  
-  return new Promise((resolve) => {
-    let attempts = 0;
-    const maxAttempts = 30; // 3 seconds (30 x 100ms)
-    
-    const checkInterval = setInterval(() => {
-      attempts++;
-      
-      // Check phantom object
-      if ('phantom' in window) {
-        const phantomProvider = window.phantom?.solana;
-        if (phantomProvider?.isPhantom) {
-          clearInterval(checkInterval);
-          console.log('✅ Phantom wallet detected after waiting');
-          resolve(phantomProvider);
-          return;
-        }
-      }
-      
-      // Check legacy solana object
-      if ('solana' in window) {
-        const provider = window.solana;
-        if (provider?.isPhantom) {
-          clearInterval(checkInterval);
-          console.log('✅ Phantom wallet detected (legacy) after waiting');
-          resolve(provider);
-          return;
-        }
-      }
-      
-      // Timeout after max attempts
-      if (attempts >= maxAttempts) {
-        clearInterval(checkInterval);
-        console.log('❌ Phantom wallet not found after 3 seconds');
-        resolve(null);
-      }
-    }, 100); // Check every 100ms
-  });
-}
-
 // 📡 Load configuration and initialize system
 async function loadConfig() {
   try {
@@ -262,7 +199,7 @@ async function loadConfig() {
 function updateStaticInfo() {
   if (state.config) {
     $('#goldPrice').textContent = state.config.goldPriceSol + ' SOL';
-    $('#minSell').textContent = '5,000'; // Fixed display value
+    $('#minSell').textContent = state.config.minSellGold.toLocaleString();
   }
 }
 
@@ -285,10 +222,10 @@ function renderShop() {
   grid.innerHTML = '';
   
   const pickaxes = [
-    { key: 'silver', name: 'Silver Pickaxe', rate: 1, cost: state.config.pickaxes.silver.costSol, roi: '7 DAYS', roiClass: 'roi-slow' },
-    { key: 'gold', name: 'Gold Pickaxe', rate: 10, cost: state.config.pickaxes.gold.costSol, roi: '18 HOURS', roiClass: 'roi-medium' },
-    { key: 'diamond', name: 'Diamond Pickaxe', rate: 100, cost: state.config.pickaxes.diamond.costSol, roi: '2 HOURS', roiClass: 'roi-fast' },
-    { key: 'netherite', name: 'Netherite Pickaxe', rate: 1000, cost: state.config.pickaxes.netherite.costSol, roi: '50 MINUTES', roiClass: 'roi-instant' }
+    { key: 'silver', name: 'Silver Pickaxe', rate: 1, cost: state.config.pickaxes.silver.costSol },
+    { key: 'gold', name: 'Gold Pickaxe', rate: 10, cost: state.config.pickaxes.gold.costSol },
+    { key: 'diamond', name: 'Diamond Pickaxe', rate: 100, cost: state.config.pickaxes.diamond.costSol },
+    { key: 'netherite', name: 'Netherite Pickaxe', rate: 1000, cost: state.config.pickaxes.netherite.costSol }
   ];
   
   console.log('🔧 renderShop: Creating pickaxe items...');
@@ -325,11 +262,10 @@ function renderShop() {
         </div>
         <div class="pickaxe-info">
           <div class="pickaxe-name">${pickaxe.name}</div>
-          <div class="pickaxe-rate">⚡ ${pickaxe.rate} gold/min</div>
-          <div class="pickaxe-roi ${pickaxe.roiClass}">⏱️ ROI: ${pickaxe.roi}</div>
+          <div class="pickaxe-rate">${pickaxe.rate} gold/min</div>
         </div>
       </div>
-      <div class="pickaxe-price">💰 ${pickaxe.cost} SOL each</div>
+      <div class="pickaxe-price">${pickaxe.cost} SOL each</div>
       <div id="owned-${pickaxe.key}" class="pickaxe-owned" style="display: none;">Owned: 0</div>
       <div class="quantity-controls">
         <button class="qty-btn" onclick="changeQuantity('${pickaxe.key}', -1)">-</button>
@@ -357,10 +293,9 @@ function changeQuantity(pickaxeType, delta) {
 async function connectWallet() {
   console.log('🔗 Connecting wallet...');
   
-  // Wait for Phantom to be ready
-  const provider = await getPhantomProvider();
+  const provider = window.solana || window.phantom?.solana;
   if (!provider) {
-    alert('Phantom wallet not found. Please install Phantom from https://phantom.app');
+    alert('Phantom wallet not found. Please install Phantom.');
     return;
   }
   
@@ -396,9 +331,6 @@ async function connectWallet() {
     // 💰 UPDATE WALLET BALANCE
     await updateWalletBalance();
     updateConnectButtonDisplay();
-    
-    // 🎁 CHECK AND LINK REFERRAL SESSION
-    await checkAndLinkReferralSession(address);
     
     // 📊 LOAD USER DATA FROM DATABASE
     console.log('📊 Loading user data from database...');
@@ -456,15 +388,6 @@ async function connectWallet() {
     // 🎁 CHECK REFERRAL COMPLETION
     await autoCheckReferralCompletion();
     
-    // 🔥 SCHEDULE NETHERITE CHALLENGE POPUP (30 seconds after connect)
-    console.log('🔍 About to call scheduleNetheriteChallengePopup, function exists?', typeof scheduleNetheriteChallengePopup);
-    try {
-      scheduleNetheriteChallengePopup();
-      console.log('✅ scheduleNetheriteChallengePopup called successfully');
-    } catch (popupError) {
-      console.error('❌ Error calling scheduleNetheriteChallengePopup:', popupError);
-    }
-    
   } catch (e) {
     console.error('❌ Wallet connection failed:', e);
     alert('Failed to connect wallet: ' + e.message);
@@ -512,7 +435,6 @@ async function buyPickaxe(pickaxeType) {
     const r2 = await fetch('/api/purchase-confirm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include', // 🔧 CRITICAL: Include cookies for Netherite challenge
       body: JSON.stringify({ address: state.address, pickaxeType, quantity, signature: sig.signature }),
     });
     
@@ -546,37 +468,61 @@ async function buyPickaxe(pickaxeType) {
       checkpoint: state.checkpoint
     });
     
-    // Update with server response
-    if (j2.inventory) {
-      state.status.inventory = j2.inventory;
-      updateDisplay({
-        gold: state.status.gold,
-        inventory: j2.inventory,
-        checkpoint: j2.checkpoint
-      });
+    // 🎁 CRITICAL: Check if referral can be completed now
+    console.log('🎁 Pickaxe purchased - checking referral completion...');
+    await autoCheckReferralCompletion();
+    
+    // 🔥 CRITICAL FIX: Update state with server response properly
+    const serverInventory = j2.inventory || j2.newInventory;
+    if (serverInventory) {
+      state.status.inventory = serverInventory;
+      console.log('✅ Updated inventory after SOL purchase:', serverInventory);
     }
     
     // Update checkpoint for mining
-    if (j2.checkpoint) {
-      state.checkpoint = {
-        total_mining_power: j2.checkpoint.total_mining_power || j2.totalRate,
-        checkpoint_timestamp: j2.checkpoint.checkpoint_timestamp || Math.floor(Date.now() / 1000),
-        last_checkpoint_gold: j2.checkpoint.last_checkpoint_gold || j2.gold || state.status.gold
-      };
+    const now = Math.floor(Date.now() / 1000);
+    const newMiningPower = j2.miningPower || j2.checkpoint?.total_mining_power || 0;
+    
+    state.checkpoint = {
+      total_mining_power: newMiningPower,
+      checkpoint_timestamp: now,
+      last_checkpoint_gold: state.status.gold || 0
+    };
+    
+    console.log('✅ Updated checkpoint after SOL purchase:', state.checkpoint);
+    
+    // Update UI immediately with new values
+    updateDisplay({
+      gold: state.status.gold,
+      inventory: serverInventory || state.status.inventory,
+      checkpoint: state.checkpoint
+    });
+    
+    // Restart mining engine with new checkpoint
+    if (state.checkpoint.total_mining_power > 0) {
+      console.log('⛏️ Restarting mining engine after SOL purchase:', state.checkpoint.total_mining_power);
+      console.log('⛏️ New checkpoint data:', state.checkpoint);
       
-      // Start mining if we have mining power
-      if (state.checkpoint.total_mining_power > 0) {
+      // Force stop the old engine
+      if (state.optimizedMiningEngine && state.optimizedMiningEngine.isRunning) {
+        console.log('🛑 Stopping old mining engine...');
+        state.optimizedMiningEngine.stop();
+        
+        // Wait a moment for the engine to fully stop
+        setTimeout(() => {
+          console.log('▶️ Starting new mining engine with updated checkpoint...');
+          startCheckpointGoldLoop();
+        }, 100);
+      } else {
         startCheckpointGoldLoop();
       }
     }
     
+    // 💾 NEW: Save checkpoint after purchase (server already saved, this is client confirmation)
+    console.log('💾 Pickaxe purchase complete - checkpoint already saved by server');
+    
     // Update wallet balance
     await updateWalletBalance();
-    
-    // ✅ AUTO-TRIGGER REFERRAL COMPLETION (client-side backup)
-    autoCheckReferralCompletion().catch(err => {
-      console.log('⚠️ Client-side referral check failed:', err);
-    });
     
     // Clear success message after 3 seconds
     setTimeout(() => {
@@ -906,9 +852,15 @@ function startCheckpointGoldLoop() {
     };
   }
   
-  // Start the optimized engine
+  // Start the optimized engine with fresh checkpoint
   if (state.checkpoint && state.checkpoint.total_mining_power > 0) {
-    state.optimizedMiningEngine.start(state.checkpoint);
+    // Force update the checkpoint even if engine is running
+    if (state.optimizedMiningEngine.isRunning) {
+      console.log('⚠️ Mining engine already running, forcing checkpoint update...');
+      state.optimizedMiningEngine.checkpoint = state.checkpoint;
+    } else {
+      state.optimizedMiningEngine.start(state.checkpoint);
+    }
   }
 }
 
@@ -926,6 +878,54 @@ function calculateGoldFromCheckpoint(checkpoint) {
   const baseGold = parseFloat(checkpoint.last_checkpoint_gold) || 0;
   
   return baseGold + goldMined;
+}
+
+// 💾 Save checkpoint to server (called on actions and page close)
+async function saveCheckpoint(goldAmount = null) {
+  if (!state.address || !state.checkpoint) {
+    console.log('⚠️ Cannot save checkpoint - no wallet or checkpoint data');
+    return;
+  }
+  
+  try {
+    // Calculate current gold if not provided
+    const currentGold = goldAmount !== null ? goldAmount : calculateGoldFromCheckpoint(state.checkpoint);
+    const timestamp = Math.floor(Date.now() / 1000);
+    
+    console.log('💾 Saving checkpoint:', {
+      address: state.address.slice(0, 8) + '...',
+      gold: currentGold.toFixed(2),
+      timestamp
+    });
+    
+    const response = await fetch('/api/save-checkpoint', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: state.address,
+        gold: currentGold,
+        timestamp: timestamp,
+        finalSync: false
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('✅ Checkpoint saved successfully:', result.checkpoint);
+      return result.checkpoint;
+    } else {
+      throw new Error(result.error || 'Unknown error');
+    }
+    
+  } catch (error) {
+    console.error('❌ Failed to save checkpoint:', error);
+    return null;
+  }
 }
 
 // 🛑 OPTIMIZED: Stop mining function for new system
@@ -1350,43 +1350,6 @@ function checkIfUserNeedsLand() {
   return needsLand === 'true';
 }
 
-// 🎁 CHECK AND LINK REFERRAL SESSION - Links wallet to referral cookie/session
-async function checkAndLinkReferralSession(address) {
-  if (!address) {
-    console.log('⚠️ No address provided for referral session check');
-    return;
-  }
-  
-  try {
-    console.log('🔗 Checking for referral session...');
-    
-    // Call check-referral-session API to link wallet to cookie session
-    const response = await fetch(`/api/check-referral-session?address=${encodeURIComponent(address)}`);
-    const result = await response.json();
-    
-    if (result.success && result.referrer_found) {
-      console.log('✅ Referral session linked!', {
-        referrer: result.referrer_address?.slice(0, 8) + '...',
-        session: result.session_id?.slice(0, 20) + '...'
-      });
-      
-      // Store referrer info for UI display
-      localStorage.setItem('linked_referrer', result.referrer_address);
-      
-      // Show notification (use alert as fallback if showNotification doesn't exist)
-      if (typeof showNotification === 'function') {
-        showNotification('🎁 Referral link detected! Complete land + pickaxe purchase to reward your referrer.', 'success');
-      } else {
-        console.log('🎁 Referral link detected! Complete land + pickaxe purchase to reward your referrer.');
-      }
-    } else {
-      console.log('ℹ️ No referral session found or already used');
-    }
-  } catch (error) {
-    console.error('❌ Failed to check referral session:', error);
-  }
-}
-
 // 🔧 REFERRAL FIX: Auto-check referral completion function (COPIED FROM WORKING VERSION)
 async function autoCheckReferralCompletion() {
   if (!state.address) {
@@ -1399,38 +1362,36 @@ async function autoCheckReferralCompletion() {
     
     const response = await fetch('/api/complete-referral', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include', // 🔧 CRITICAL: Include cookies for session tracking
+      headers: { 
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include', // 🔧 CRITICAL: Include cookies in request
       body: JSON.stringify({ address: state.address })
     });
     
     const result = await response.json();
     
-    // Only show notification if NEW reward was given (not if already rewarded)
-    if (result.success && result.referral_completed && !result.already_rewarded) {
-      console.log('🎉 REFERRAL COMPLETED - NEW REWARD GIVEN!', result);
+    if (result.success && result.referral_completed) {
+      console.log('🎉 REFERRAL COMPLETED!', result);
       
-      // Show success notification only for new rewards
+      // Show success notification
       showReferralCompletionNotification(result);
       
-      // Update display without triggering land status checks
-      setTimeout(() => {
-        if (state.address) {
-          console.log('🎁 Referral completed - updating display without land checks');
-          // Just reload user data directly without refreshStatus to avoid infinite loops
-          loadInitialUserData().then(userData => {
-            if (userData) {
-              updateDisplay({
-                gold: userData.last_checkpoint_gold || 0,
-                inventory: userData.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 }
-              });
-            }
-          });
+      // Update gold directly from referral result (don't fetch from server)
+      if (result.newGold !== undefined) {
+        console.log('💰 Updating gold from referral completion:', result.newGold);
+        state.status.gold = result.newGold;
+        if (state.checkpoint) {
+          state.checkpoint.last_checkpoint_gold = result.newGold;
+          state.checkpoint.checkpoint_timestamp = Math.floor(Date.now() / 1000);
         }
-      }, 2000);
+        updateDisplay({
+          gold: result.newGold,
+          inventory: state.status.inventory,
+          checkpoint: state.checkpoint
+        });
+      }
       
-    } else if (result.success && result.already_rewarded) {
-      console.log('ℹ️ Referral already completed previously - no new reward given');
     } else if (result.success && !result.referral_completed) {
       console.log('ℹ️ No referral completion needed:', result.message);
     } else {
@@ -1440,58 +1401,6 @@ async function autoCheckReferralCompletion() {
   } catch (error) {
     console.error('❌ Auto referral completion check failed:', error);
   }
-}
-
-// 🎁 Show referral bonus notification (for new users who used referral link)
-function showReferralBonusNotification(goldAmount) {
-  const notification = document.createElement('div');
-  notification.id = 'referralBonusNotification';
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: linear-gradient(45deg, #fbbf24, #f59e0b);
-    color: #1a1a1a;
-    padding: 25px 35px;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(251, 191, 36, 0.5);
-    z-index: 10002;
-    font-family: Arial, sans-serif;
-    text-align: center;
-    animation: slideDown 0.5s ease-out, glow 2s ease-in-out infinite;
-    max-width: 450px;
-    border: 3px solid rgba(255, 255, 255, 0.5);
-  `;
-  
-  notification.innerHTML = `
-    <div style="font-size: 50px; margin-bottom: 10px;">🎁</div>
-    <div style="font-size: 22px; font-weight: bold; margin-bottom: 12px;">
-      Welcome Bonus!
-    </div>
-    <div style="font-size: 16px; margin-bottom: 10px;">
-      You were referred by another player!
-    </div>
-    <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin: 15px 0;">
-      <div style="font-size: 32px; font-weight: bold; color: #fff;">💰 ${goldAmount.toLocaleString()} GOLD</div>
-      <div style="font-size: 14px; margin-top: 5px; color: rgba(0,0,0,0.7);">Added to your balance!</div>
-    </div>
-    <div style="font-size: 13px; color: rgba(0,0,0,0.6);">
-      Use this gold to buy pickaxes and start mining! ⛏️
-    </div>
-  `;
-  
-  document.body.appendChild(notification);
-  
-  // Remove after 6 seconds
-  setTimeout(() => {
-    notification.style.animation = 'slideUp 0.5s ease-out';
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
-      }
-    }, 500);
-  }, 6000);
 }
 
 // 🎉 Show referral completion notification
@@ -1521,8 +1430,12 @@ function showReferralCompletionNotification(result) {
     <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">
       🎉 Referral Reward Earned!
     </div>
-    <div style="font-size: 14px; margin-bottom: 15px;">
-      Your referrer received:
+    <div style="background: rgba(76, 175, 80, 0.3); padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 2px solid rgba(76, 175, 80, 0.6);">
+      <div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">🎁 You received:</div>
+      <div style="font-size: 18px; font-weight: bold; color: #FFD700;">💰 ${rewards.new_user_gold_bonus || 1000} Gold Bonus!</div>
+    </div>
+    <div style="font-size: 14px; margin-bottom: 10px; opacity: 0.9;">
+      Your referrer also received:
     </div>
     <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
       <div>🔨 ${rewards.pickaxe_count || 1}x ${(rewards.pickaxe_type || 'silver').toUpperCase()} Pickaxe</div>
@@ -1578,142 +1491,134 @@ function updateGoldStoreModal() {
   }
 }
 
-function buyPickaxeWithGold(pickaxeType, goldCost) {
+async function buyPickaxeWithGold(pickaxeType, goldCost) {
   if (!state.address) {
     alert('Please connect your wallet first');
     return;
   }
 
-  // Calculate current gold including mined gold (same as UI display)
-  const currentGold = state.checkpoint ? calculateGoldFromCheckpoint(state.checkpoint) : (state.status.gold || 0);
-  
-  console.log(`💰 Current gold check: ${currentGold.toFixed(2)} (checkpoint-based), need: ${goldCost}`);
-  
+  // Calculate current gold from checkpoint (real-time)
+  let currentGold = 0;
+  if (state.checkpoint && state.checkpoint.total_mining_power > 0) {
+    currentGold = calculateGoldFromCheckpoint(state.checkpoint);
+  } else {
+    currentGold = state.status.gold || 0;
+  }
+
+  console.log(`💰 Current gold for purchase check: ${currentGold.toFixed(2)}`);
+
   if (currentGold < goldCost) {
-    const msgDiv = $('#modalStoreMsg');
-    msgDiv.textContent = `❌ Not enough gold! You need ${goldCost.toLocaleString()} gold but only have ${currentGold.toFixed(0).toLocaleString()}`;
-    msgDiv.style.color = '#ff4444';
-    msgDiv.style.display = 'block';
-    
-    // Hide message after 5 seconds
-    setTimeout(() => {
-      msgDiv.style.display = 'none';
-    }, 5000);
+    alert(`Not enough gold! You need ${goldCost.toLocaleString()} gold but only have ${Math.floor(currentGold).toLocaleString()}`);
     return;
   }
 
-  console.log(`🛒 Buying ${pickaxeType} pickaxe with ${goldCost} gold...`);
+  console.log(`🛒 Buying ${pickaxeType} pickaxe with ${goldCost.toLocaleString()} gold...`);
   
-  // This would connect to your gold purchase API
-  fetch('/api/buy-with-gold', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include', // 🔧 CRITICAL: Include cookies for Netherite challenge detection
-    body: JSON.stringify({
-      address: state.address,
-      pickaxeType: pickaxeType,
-      quantity: 1  // 🐛 FIX: API expects "quantity", not "goldCost"
-    })
-  })
-  .then(async response => {
-    // 🐛 FIX: Get detailed error message from server
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.message || `Server error (${response.status})`);
-    }
-    return response.json();
-  })
-  .then(result => {
-    const msgDiv = $('#modalStoreMsg');
-    msgDiv.style.display = 'block';
-    
+  $('#modalStoreMsg').textContent = `Processing purchase...`;
+  $('#modalStoreMsg').style.color = '#2196F3';
+
+  try {
+    // Call the API
+    const response = await fetch('/api/buy-with-gold', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        address: state.address,
+        pickaxeType: pickaxeType,
+        quantity: 1
+      })
+    });
+
+    const result = await response.json();
+
     if (result.success) {
-      msgDiv.textContent = `✅ Successfully purchased ${pickaxeType} pickaxe with gold!`;
-      msgDiv.style.color = '#4CAF50';
+      console.log('✅ Successfully purchased with gold!', result);
+      $('#modalStoreMsg').textContent = `✅ Successfully purchased ${pickaxeType} pickaxe with gold!`;
+      $('#modalStoreMsg').style.color = '#4CAF50';
       
-      // Update state and UI immediately with the new gold value from API
-      if (result.goldRemaining !== undefined) {
-        state.status.gold = result.goldRemaining;
+      // 🔥 CRITICAL FIX: Update state immediately with server response
+      const newInventory = result.newInventory || result.inventory || {
+        silver: 0,
+        gold: 0,
+        diamond: 0,
+        netherite: 0
+      };
+
+      const newGold = result.goldRemaining || 0;
+      const newMiningPower = result.miningPower || 0;
+
+      console.log('🔄 Updating state with server data:', {
+        newGold,
+        newInventory,
+        newMiningPower
+      });
+
+      // Update global state
+      state.status.gold = newGold;
+      state.status.inventory = newInventory;
+
+      // Update checkpoint with new values
+      const now = Math.floor(Date.now() / 1000);
+      state.checkpoint = {
+        total_mining_power: newMiningPower,
+        checkpoint_timestamp: now,
+        last_checkpoint_gold: newGold
+      };
+
+      console.log('✅ State updated, refreshing UI...');
+
+      // Update UI immediately
+      updateDisplay({
+        gold: newGold,
+        inventory: newInventory,
+        checkpoint: state.checkpoint
+      });
+
+      // Restart mining engine with new checkpoint
+      if (state.checkpoint.total_mining_power > 0) {
+        console.log('⛏️ Restarting mining engine with new power:', state.checkpoint.total_mining_power);
+        console.log('⛏️ New checkpoint data:', state.checkpoint);
         
-        // Update checkpoint with new gold value for mining calculations
-        if (result.checkpoint) {
-          state.checkpoint = {
-            total_mining_power: result.checkpoint.total_mining_power,
-            checkpoint_timestamp: result.checkpoint.checkpoint_timestamp,
-            last_checkpoint_gold: result.checkpoint.last_checkpoint_gold
-          };
+        // Force stop the old engine
+        if (state.optimizedMiningEngine && state.optimizedMiningEngine.isRunning) {
+          console.log('🛑 Stopping old mining engine...');
+          state.optimizedMiningEngine.stop();
           
-          // Restart mining engine with updated checkpoint
-          if (state.optimizedMiningEngine && state.checkpoint.total_mining_power > 0) {
-            state.optimizedMiningEngine.checkpoint = state.checkpoint;
-          }
+          // Wait a moment for the engine to fully stop
+          setTimeout(() => {
+            console.log('▶️ Starting new mining engine with updated checkpoint...');
+            startCheckpointGoldLoop();
+          }, 100);
+        } else {
+          startCheckpointGoldLoop();
         }
-        
-        // Update inventory if returned
-        if (result.newInventory) {
-          state.status.pickaxes = {
-            silver: result.newInventory.silver || 0,
-            gold: result.newInventory.gold || 0,
-            diamond: result.newInventory.diamond || 0,
-            netherite: result.newInventory.netherite || 0
-          };
-        }
-        
-        // CRITICAL FIX: Update total mining power after purchase
-        let newTotalMiningPower = result.miningPower || 0;
-        
-        // Update checkpoint with new mining power
-        if (state.checkpoint) {
-          state.checkpoint.total_mining_power = newTotalMiningPower;
-          
-          // Restart mining engine with updated power
-          if (state.optimizedMiningEngine && newTotalMiningPower > 0) {
-            state.optimizedMiningEngine.checkpoint = state.checkpoint;
-            console.log(`⛏️ Updated mining power to ${newTotalMiningPower}/min`);
-          }
-        }
-        
-        // Update UI with new values
-        updateDisplay({
-          gold: result.goldRemaining,
-          inventory: result.newInventory || state.status.pickaxes,
-          checkpoint: state.checkpoint
-        });
-        
-        console.log(`✅ Gold deducted: ${currentGold.toFixed(2)} → ${result.goldRemaining.toFixed(2)}`);
-        console.log(`✅ Mining power updated to: ${newTotalMiningPower}/min`);
       }
-      
-      // Also refresh from server to ensure consistency
-      refreshStatus(true);
+
+      // Update gold store modal prices
       updateGoldStoreModal();
       
-      // ✅ AUTO-TRIGGER REFERRAL COMPLETION (client-side backup)
-      autoCheckReferralCompletion().catch(err => {
-        console.log('⚠️ Client-side referral check failed:', err);
-      });
-      
-      // Hide success message after 3 seconds and close modal
+      // 🎁 Check if referral can be completed now
+      console.log('🎁 Pickaxe purchased with gold - checking referral completion...');
+      await autoCheckReferralCompletion();
+
+      // Clear message after 3 seconds
       setTimeout(() => {
-        msgDiv.style.display = 'none';
-        closeGoldStoreModal();
+        $('#modalStoreMsg').textContent = '';
       }, 3000);
+
     } else {
       throw new Error(result.error || 'Purchase failed');
     }
-  })
-  .catch(error => {
+  } catch (error) {
     console.error('❌ Gold purchase failed:', error);
-    const msgDiv = $('#modalStoreMsg');
-    msgDiv.textContent = `❌ Purchase failed: ${error.message}`;
-    msgDiv.style.color = '#f44336';
-    msgDiv.style.display = 'block';
+    $('#modalStoreMsg').textContent = `❌ Purchase failed: ${error.message}`;
+    $('#modalStoreMsg').style.color = '#f44336';
     
-    // Hide error message after 5 seconds
+    // Clear error after 5 seconds
     setTimeout(() => {
-      msgDiv.style.display = 'none';
+      $('#modalStoreMsg').textContent = '';
     }, 5000);
-  });
+  }
 }
 
 // 💰 Sell Gold Function
@@ -1732,24 +1637,26 @@ async function sellGold() {
   // Calculate real-time gold including mined gold
   let currentGold = 0;
   
-  // Use the mining engine's checkpoint to calculate current gold
-  if (state.optimizedMiningEngine && state.optimizedMiningEngine.checkpoint) {
-    currentGold = calculateGoldFromCheckpoint(state.optimizedMiningEngine.checkpoint);
-    console.log(`💰 Current gold from checkpoint calculation: ${currentGold}`);
+  // Try to get gold from optimized mining engine first (most accurate)
+  if (state.optimizedMiningEngine && state.optimizedMiningEngine.getCurrentGold) {
+    currentGold = state.optimizedMiningEngine.getCurrentGold();
+    console.log(`💰 Current gold from mining engine: ${currentGold}`);
   } 
-  // Fallback to checkpoint directly
+  // Fallback to checkpoint calculation
   else if (state.checkpoint) {
     currentGold = calculateGoldFromCheckpoint(state.checkpoint);
-    console.log(`💰 Current gold from state.checkpoint: ${currentGold}`);
+    console.log(`💰 Current gold from checkpoint: ${currentGold}`);
   }
   // Last resort: use status gold
   else {
     currentGold = state.status.gold || 0;
-    console.log(`💰 Current gold from status (fallback): ${currentGold}`);
+    console.log(`💰 Current gold from status: ${currentGold}`);
   }
   
   console.log(`💰 Final gold for selling check: ${currentGold}`);
   console.log(`💰 User wants to sell: ${goldToSell}`);
+  console.log(`💰 state.checkpoint exists: ${!!state.checkpoint}`);
+  console.log(`💰 state.optimizedMiningEngine exists: ${!!state.optimizedMiningEngine}`);
   
   if (goldToSell > currentGold) {
     alert(`Not enough gold! You have ${Math.floor(currentGold).toLocaleString()} gold available`);
@@ -1773,7 +1680,7 @@ async function sellGold() {
     
     const requestBody = {
       address: state.address,
-      amountGold: goldToSell  // Backend expects 'amountGold' not 'goldAmount'
+      amountGold: goldToSell
     };
     
     console.log(`💰 Request body being sent:`, JSON.stringify(requestBody));
@@ -1792,35 +1699,28 @@ async function sellGold() {
       $('#sellMsg').style.color = '#4CAF50';
       $('#goldToSell').value = '';
       
-      // CRITICAL FIX: Update gold immediately after selling
-      if (result.newGold !== undefined) {
-        state.status.gold = result.newGold;
-        
-        // Update checkpoint with new gold value
-        if (state.checkpoint) {
-          state.checkpoint.last_checkpoint_gold = result.newGold;
-          state.checkpoint.checkpoint_timestamp = Math.floor(Date.now() / 1000);
-          
-          // Update mining engine checkpoint
-          if (state.optimizedMiningEngine) {
-            state.optimizedMiningEngine.checkpoint = state.checkpoint;
-          }
-        }
-        
-        // Update UI display immediately
-        const totalGoldEl = $('#totalGold');
-        if (totalGoldEl) {
-          totalGoldEl.textContent = result.newGold.toLocaleString('en-US', { 
-            minimumFractionDigits: 2, 
-            maximumFractionDigits: 2 
-          });
-        }
-        
-        console.log(`✅ Gold updated after sell: ${result.newGold}`);
-      }
+      // 💾 NEW: Save checkpoint after selling gold
+      console.log('💾 Saving checkpoint after gold sale...');
+      const currentGold = calculateGoldFromCheckpoint(state.checkpoint);
+      const newGold = currentGold - goldToSell;
       
-      // Refresh status to show updated gold from server
-      await refreshStatus(true);
+      await saveCheckpoint(newGold);
+      
+      // Update local state
+      if (state.checkpoint) {
+        state.checkpoint.last_checkpoint_gold = newGold;
+        state.checkpoint.checkpoint_timestamp = Math.floor(Date.now() / 1000);
+      }
+      state.status.gold = newGold;
+      
+      // Update UI with new gold amount (no need to refresh from server - we have fresh data)
+      updateDisplay({
+        gold: newGold,
+        inventory: state.status.inventory,
+        checkpoint: state.checkpoint
+      });
+      
+      console.log('✅ Gold updated after sale, UI refreshed');
     } else {
       throw new Error(result.error || 'Sell failed');
     }
@@ -1884,46 +1784,22 @@ async function updatePromotersStatus() {
   console.log('🔒 EMERGENCY: Promoter update started with 10-second protection');
   
   try {
-  // 🔍 REAL-TIME WALLET CHECK - Works on refresh and wallet changes
-  const currentAddress = state.address || window.solana?.publicKey?.toString() || window.phantom?.solana?.publicKey?.toString();
-  const walletConnected = !!(currentAddress && currentAddress.length > 20);
+  const walletConnected = !!state.address;
   let hasLand = false;
-  
-  console.log('📈 PROMOTER UPDATE: Real-time wallet check -', {
-    stateAddress: state.address?.slice(0, 8) + '...',
-    phantomAddress: window.solana?.publicKey?.toString()?.slice(0, 8) + '...',
-    currentAddress: currentAddress?.slice(0, 8) + '...',
-    walletConnected: walletConnected
-  });
   
   // 🚩 CACHE-ONLY CHECK - NO API CALLS
   if (walletConnected) {
     console.log('📈 PROMOTER UPDATE: Using memory cache only (no API)...');
     
-    // Check cache with current address (not state.address)
-    const cachedData = LAND_STATUS_CACHE.memoryCache.get(currentAddress);
-    if (cachedData && cachedData.hasLand !== undefined) {
+    // Check ONLY memory cache - never trigger API calls
+    const cachedData = LAND_STATUS_CACHE.memoryCache.get(state.address);
+    if (cachedData) {
       hasLand = cachedData.hasLand;
       console.log('📦 PROMOTER: Cache shows hasLand =', hasLand);
     } else {
-      console.log('📦 PROMOTER: No valid cache found, checking localStorage...');
-      // Try localStorage as backup with current address
-      try {
-        const storageKey = `${LAND_STATUS_CACHE.CACHE_KEY_PREFIX}${currentAddress}`;
-        const stored = localStorage.getItem(storageKey);
-        if (stored) {
-          const data = JSON.parse(stored);
-          if (data && data.hasLand !== undefined) {
-            hasLand = data.hasLand;
-            console.log('📦 PROMOTER: localStorage shows hasLand =', hasLand);
-          }
-        }
-      } catch (e) {
-        console.log('📦 PROMOTER: localStorage check failed, assuming false');
-      }
+      console.log('📦 PROMOTER: No cache found, assuming false');
+      hasLand = false;
     }
-  } else {
-    console.log('⚠️ PROMOTER: Wallet not properly connected');
   }
   
   $('#walletStatusPromoters').textContent = walletConnected ? '✅ Connected' : '❌ Not Connected';
@@ -1935,25 +1811,7 @@ async function updatePromotersStatus() {
   if (walletConnected && hasLand) {
     $('#promotersRequirement').style.display = 'none';
     $('#promotersLinkSection').style.display = 'block';
-    // 🚀 Generate dynamic promoter link with latest deployment
-    try {
-      const response = await fetch('/api/generate-dynamic-referral', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ referrerAddress: state.address })
-      });
-      
-      const data = await response.json();
-      if (data.success) {
-        $('#promotersLink').value = data.referralLink;
-        console.log('🚀 Dynamic promoter link:', data.referralLink);
-      } else {
-        $('#promotersLink').value = `https://www.thegoldmining.com/?ref=${state.address}`;
-      }
-    } catch (error) {
-      console.log('⚠️ Using fallback promoter link');
-      $('#promotersLink').value = `https://www.thegoldmining.com/?ref=${state.address}`;
-    }
+    $('#promotersLink').value = `https://www.thegoldmining.com/?ref=${state.address}`;
   } else {
     $('#promotersRequirement').style.display = 'block';
     $('#promotersLinkSection').style.display = 'none';
@@ -1989,7 +1847,7 @@ function closeBattlezoneModal() {
 }
 
 function startBattlezoneCountdown() {
-  const targetDate = new Date('January 10, 2026 00:00:00 UTC').getTime();
+  const targetDate = new Date('December 10, 2025 00:00:00 UTC').getTime();
   
   const countdown = setInterval(() => {
     const now = new Date().getTime();
@@ -2058,46 +1916,22 @@ function closeReferralModal() {
 }
 
 async function updateReferralStatus() {
-  // 🔍 REAL-TIME WALLET CHECK - Works on refresh and wallet changes
-  const currentAddress = state.address || window.solana?.publicKey?.toString() || window.phantom?.solana?.publicKey?.toString();
-  const walletConnected = !!(currentAddress && currentAddress.length > 20);
+  const walletConnected = !!state.address;
   let hasLand = false;
-  
-  console.log('🎁 REFERRAL UPDATE: Real-time wallet check -', {
-    stateAddress: state.address?.slice(0, 8) + '...',
-    phantomAddress: window.solana?.publicKey?.toString()?.slice(0, 8) + '...',
-    currentAddress: currentAddress?.slice(0, 8) + '...',
-    walletConnected: walletConnected
-  });
   
   // 🚩 CACHE-ONLY CHECK - NO API CALLS
   if (walletConnected) {
     console.log('🎁 REFERRAL UPDATE: Using memory cache only (no API)...');
     
-    // Check cache with current address (not state.address)
-    const cachedData = LAND_STATUS_CACHE.memoryCache.get(currentAddress);
-    if (cachedData && cachedData.hasLand !== undefined) {
+    // Check ONLY memory cache - never trigger API calls
+    const cachedData = LAND_STATUS_CACHE.memoryCache.get(state.address);
+    if (cachedData) {
       hasLand = cachedData.hasLand;
       console.log('📦 REFERRAL: Cache shows hasLand =', hasLand);
     } else {
-      console.log('📦 REFERRAL: No valid cache found, checking localStorage...');
-      // Try localStorage as backup with current address
-      try {
-        const storageKey = `${LAND_STATUS_CACHE.CACHE_KEY_PREFIX}${currentAddress}`;
-        const stored = localStorage.getItem(storageKey);
-        if (stored) {
-          const data = JSON.parse(stored);
-          if (data && data.hasLand !== undefined) {
-            hasLand = data.hasLand;
-            console.log('📦 REFERRAL: localStorage shows hasLand =', hasLand);
-          }
-        }
-      } catch (e) {
-        console.log('📦 REFERRAL: localStorage check failed, assuming false');
-      }
+      console.log('📦 REFERRAL: No cache found, assuming false');
+      hasLand = false;
     }
-  } else {
-    console.log('⚠️ REFERRAL: Wallet not properly connected');
   }
   
   $('#walletStatusReferral').textContent = walletConnected ? '✅ Connected' : '❌ Not Connected';
@@ -2109,25 +1943,7 @@ async function updateReferralStatus() {
   if (walletConnected && hasLand) {
     $('#referralRequirement').style.display = 'none';
     $('#referralLinkSection').style.display = 'block';
-    // 🚀 Generate dynamic referral link with latest deployment
-    try {
-      const response = await fetch('/api/generate-dynamic-referral', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ referrerAddress: currentAddress })
-      });
-      
-      const data = await response.json();
-      if (data.success) {
-        $('#referralLink').value = data.referralLink;
-        console.log('🚀 Dynamic referral link:', data.referralLink);
-      } else {
-        $('#referralLink').value = `https://www.thegoldmining.com/?ref=${currentAddress}`;
-      }
-    } catch (error) {
-      console.log('⚠️ Using fallback referral link');
-      $('#referralLink').value = `https://www.thegoldmining.com/?ref=${currentAddress}`;
-    }
+    $('#referralLink').value = `https://www.thegoldmining.com/?ref=${state.address}`;
   } else {
     $('#referralRequirement').style.display = 'block';
     $('#referralLinkSection').style.display = 'none';
@@ -2191,22 +2007,6 @@ async function purchaseLand() {
     $('#landMsg').textContent = '✅ Land purchased successfully!';
     $('#landMsg').style.color = '#4CAF50';
     
-    // 🎁 CHECK IF REFERRAL BONUS WAS GIVEN
-    if (confirmData.referral_bonus_given && confirmData.referral_bonus_amount > 0) {
-      console.log('🎁 Referral bonus received:', confirmData.referral_bonus_amount, 'gold');
-      
-      // Show referral bonus popup
-      showReferralBonusNotification(confirmData.referral_bonus_amount);
-      
-      // Update gold display immediately
-      if (state.status) {
-        state.status.gold = (parseFloat(state.status.gold) || 0) + confirmData.referral_bonus_amount;
-      }
-      if (state.checkpoint) {
-        state.checkpoint.last_checkpoint_gold = (parseFloat(state.checkpoint.last_checkpoint_gold) || 0) + confirmData.referral_bonus_amount;
-      }
-    }
-    
     // 🚩 CRITICAL FIX: Update cache and database status
     LAND_STATUS_CACHE.setLandStatus(state.address, true);
     console.log('🚩 Cache updated: User now has land after purchase');
@@ -2225,6 +2025,10 @@ async function purchaseLand() {
     
     // Refresh status
     await refreshStatus(true);
+    
+    // 🎁 CRITICAL: Check if referral can be completed now
+    console.log('🎁 Land purchased - checking referral completion...');
+    await autoCheckReferralCompletion();
     
     console.log('🎉 Land purchase complete - user now has access!');
     
@@ -2424,6 +2228,35 @@ function showReferralTrackedNotification(referrerAddress) {
 }
 
 // 🚀 Initialize the game when page loads
+// 💾 Save checkpoint when page is closing
+window.addEventListener('beforeunload', function(e) {
+  if (state.address && state.checkpoint && state.checkpoint.total_mining_power > 0) {
+    console.log('💾 Page closing - saving final checkpoint...');
+    
+    // Calculate final gold amount
+    const finalGold = calculateGoldFromCheckpoint(state.checkpoint);
+    const timestamp = Math.floor(Date.now() / 1000);
+    
+    // Use sendBeacon for reliable delivery during page unload
+    const payload = {
+      address: state.address,
+      gold: finalGold,
+      timestamp: timestamp,
+      finalSync: true
+    };
+    
+    // sendBeacon with Blob to set Content-Type
+    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+    const beaconSent = navigator.sendBeacon('/api/save-checkpoint', blob);
+    
+    if (beaconSent) {
+      console.log('✅ Final checkpoint sent via sendBeacon:', finalGold.toFixed(2), 'gold');
+    } else {
+      console.log('⚠️ sendBeacon failed, checkpoint may not be saved');
+    }
+  }
+});
+
 window.addEventListener('DOMContentLoaded', async function() {
   console.log('🚀 Initializing Complete Optimized Gold Mining Game...');
   
@@ -2495,7 +2328,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   const shareDiscord = $('#shareDiscord');
   if (shareDiscord) {
     shareDiscord.addEventListener('click', () => {
-      const text = "🚀 Join this amazing gold mining game and earn SOL! Get 1000 gold signup bonus to start! " + ($('#referralLink').value || `https://www.thegoldmining.com/?ref=${state.address || 'signup'}`);
+      const text = "🚀 Join this amazing gold mining game and earn SOL! Get 1000 gold signup bonus to start! " + ($('#referralLink').value || 'https://www.thegoldmining.com');
       navigator.clipboard.writeText(text).then(() => {
         alert('Link copied! Paste it in Discord.');
       });
@@ -2553,937 +2386,3 @@ function setupModalClickOutside() {
     });
   }
 }
-// ===================================
-// 🔥 NETHERITE CHALLENGE POPUP
-// ===================================
-
-let netheritePopupShown = false;
-let netheritePopupTimeout = null;
-let countdownInterval = null;
-
-// Show Netherite Challenge popup 30 seconds after wallet connect
-function scheduleNetheriteChallengePopup() {
-  if (netheritePopupShown) {
-    console.log('ℹ️ Netherite popup already shown, skipping');
-    return;
-  }
-  
-  console.log('⏰ Scheduling Netherite Challenge popup in 30 seconds...');
-  
-  netheritePopupTimeout = setTimeout(async () => {
-    // Check if user has already accepted challenge
-    try {
-      const response = await fetch(`/api/check-netherite-challenge?address=${encodeURIComponent(state.address)}`);
-      const result = await response.json();
-      
-      if (result.challenge_accepted) {
-        console.log('ℹ️ User already accepted challenge, showing active timer instead');
-        netheritePopupShown = true;
-        return;
-      }
-      
-      showNetheriteChallengePopup();
-    } catch (error) {
-      console.error('❌ Error checking challenge status:', error);
-      showNetheriteChallengePopup();
-    }
-  }, 30000); // 30 seconds
-}
-
-// Create and show the Netherite Challenge popup
-function showNetheriteChallengePopup() {
-  if (netheritePopupShown) return;
-  
-  netheritePopupShown = true;
-  console.log('🔥 Showing Netherite Challenge popup!');
-  
-  const referralLink = `https://www.thegoldmining.com/?ref=${state.address}`;
-  
-  // Create modal overlay
-  const modal = document.createElement('div');
-  modal.id = 'netheriteChallengeModal';
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.95);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-    animation: fadeIn 0.3s ease-in;
-  `;
-  
-  // Create modal content
-  modal.innerHTML = `
-    <div style="
-      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-      border: 3px solid #ff6b00;
-      border-radius: 20px;
-      max-width: 600px;
-      width: 90%;
-      max-height: 90vh;
-      overflow-y: auto;
-      padding: 30px;
-      box-shadow: 0 0 50px rgba(255, 107, 0, 0.5);
-      animation: slideIn 0.5s ease-out;
-    ">
-      <!-- Header -->
-      <div style="text-align: center; margin-bottom: 25px;">
-        <div style="
-          font-size: 48px;
-          animation: pulse 2s infinite;
-        ">🎁</div>
-        <h2 style="
-          color: #ff6b00;
-          font-size: 32px;
-          margin: 15px 0;
-          text-shadow: 0 0 10px rgba(255, 107, 0, 0.5);
-        ">SECRET DROP FOR YOU!</h2>
-        <p style="color: #ffd700; font-size: 18px; font-weight: bold;">
-          🔥 Limited Time Offer! 🔥
-        </p>
-      </div>
-      
-      <!-- Timer Display -->
-      <div style="
-        background: linear-gradient(135deg, #ff6b00, #ff8c00);
-        border-radius: 15px;
-        padding: 20px;
-        text-align: center;
-        margin-bottom: 25px;
-        box-shadow: 0 5px 20px rgba(255, 107, 0, 0.3);
-      ">
-        <div style="color: white; font-size: 18px; margin-bottom: 10px;">
-          ⏰ Challenge Duration
-        </div>
-        <div style="
-          font-size: 48px;
-          font-weight: bold;
-          color: white;
-          text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-          font-family: 'Courier New', monospace;
-        ">01:00:00</div>
-        <div style="color: rgba(255,255,255,0.9); font-size: 14px; margin-top: 5px;">
-          One Hour to Win!
-        </div>
-      </div>
-      
-      <!-- Netherite Pickaxe Display -->
-      <div style="text-align: center; margin: 25px 0;">
-        <div style="
-          display: inline-block;
-          background: rgba(255, 107, 0, 0.1);
-          border: 2px solid #ff6b00;
-          border-radius: 15px;
-          padding: 20px;
-        ">
-          <div style="font-size: 80px; margin-bottom: 10px;">🔥</div>
-          <div style="color: #ffd700; font-size: 24px; font-weight: bold;">
-            FREE NETHERITE PICKAXE
-          </div>
-          <div style="color: #aaa; font-size: 14px; margin-top: 5px;">
-            Worth 1,000,000 Gold!
-          </div>
-        </div>
-      </div>
-      
-      <!-- How It Works -->
-      <div style="
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        padding: 20px;
-        margin: 25px 0;
-      ">
-        <h3 style="color: #ff6b00; font-size: 20px; margin-bottom: 15px;">
-          📋 How It Works:
-        </h3>
-        <ol style="color: #ddd; line-height: 1.8; padding-left: 20px;">
-          <li style="margin-bottom: 10px;">
-            <strong style="color: #ffd700;">Accept this challenge</strong> to start 1-hour timer
-          </li>
-          <li style="margin-bottom: 10px;">
-            <strong style="color: #ffd700;">Share your referral link</strong> on social media
-          </li>
-          <li style="margin-bottom: 10px;">
-            If <strong style="color: #ff6b00;">anyone buys Netherite pickaxe</strong> using your link within 1 hour:
-            <div style="
-              background: rgba(255, 215, 0, 0.1);
-              border-left: 3px solid #ffd700;
-              padding: 10px;
-              margin-top: 8px;
-              border-radius: 5px;
-            ">
-              🎉 <strong>YOU GET FREE NETHERITE PICKAXE!</strong>
-            </div>
-          </li>
-          <li style="margin-bottom: 10px;">
-            If time expires: You still get <strong style="color: #4CAF50;">regular referral rewards</strong>
-          </li>
-          <li>
-            Your referred friend gets <strong style="color: #4CAF50;">1000 FREE GOLD</strong>
-          </li>
-        </ol>
-      </div>
-      
-      <!-- Referral Link Section -->
-      <div style="
-        background: rgba(0, 0, 0, 0.3);
-        border-radius: 12px;
-        padding: 20px;
-        margin: 25px 0;
-      ">
-        <h3 style="color: #ff6b00; font-size: 18px; margin-bottom: 12px;">
-          🔗 Your Referral Link:
-        </h3>
-        <div style="
-          display: flex;
-          gap: 10px;
-          align-items: center;
-        ">
-          <input 
-            type="text" 
-            id="netheriteReferralLink"
-            value="${referralLink}"
-            readonly
-            style="
-              flex: 1;
-              padding: 12px;
-              border: 2px solid #444;
-              border-radius: 8px;
-              background: #1a1a1a;
-              color: #fff;
-              font-size: 14px;
-              font-family: monospace;
-            "
-          />
-          <button 
-            onclick="copyNetheriteLink()"
-            style="
-              padding: 12px 24px;
-              background: linear-gradient(135deg, #4CAF50, #45a049);
-              border: none;
-              border-radius: 8px;
-              color: white;
-              font-weight: bold;
-              cursor: pointer;
-              transition: transform 0.2s;
-              white-space: nowrap;
-            "
-            onmouseover="this.style.transform='scale(1.05)'"
-            onmouseout="this.style.transform='scale(1)'"
-          >
-            📋 Copy
-          </button>
-        </div>
-        <div style="
-          margin-top: 12px;
-          display: flex;
-          gap: 10px;
-          justify-content: center;
-        ">
-          <button 
-            onclick="shareOnTwitter()"
-            style="
-              padding: 10px 20px;
-              background: #1DA1F2;
-              border: none;
-              border-radius: 8px;
-              color: white;
-              font-weight: bold;
-              cursor: pointer;
-            "
-          >
-            <span style="font-size: 14px;">𝕏</span> X
-          </button>
-          <button 
-            onclick="shareOnDiscord()"
-            style="
-              padding: 10px 20px;
-              background: #5865F2;
-              border: none;
-              border-radius: 8px;
-              color: white;
-              font-weight: bold;
-              cursor: pointer;
-            "
-          >
-            💬 Discord
-          </button>
-        </div>
-      </div>
-      
-      <!-- Important Note -->
-      <div style="
-        background: rgba(255, 107, 0, 0.1);
-        border-left: 4px solid #ff6b00;
-        padding: 15px;
-        margin: 25px 0;
-        border-radius: 5px;
-      ">
-        <div style="color: #ff6b00; font-weight: bold; margin-bottom: 5px;">
-          ⚠️ Important:
-        </div>
-        <div style="color: #ddd; font-size: 14px; line-height: 1.6;">
-          • This is a <strong>ONE-TIME opportunity</strong> per account<br/>
-          • Timer starts immediately when you accept<br/>
-          • You can earn this bonus only once (even if 5 people buy Netherite)<br/>
-          • After timer expires, you get regular rewards instead
-        </div>
-      </div>
-      
-      <!-- Action Buttons -->
-      <div style="
-        display: flex;
-        gap: 15px;
-        margin-top: 30px;
-      ">
-        <button 
-          onclick="declineNetheriteChallenge()"
-          style="
-            flex: 1;
-            padding: 15px;
-            background: #555;
-            border: 2px solid #777;
-            border-radius: 10px;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-          "
-          onmouseover="this.style.background='#666'"
-          onmouseout="this.style.background='#555'"
-        >
-          ❌ No Thanks
-        </button>
-        <button 
-          onclick="acceptNetheriteChallenge()"
-          style="
-            flex: 2;
-            padding: 15px;
-            background: linear-gradient(135deg, #ff6b00, #ff8c00);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 5px 20px rgba(255, 107, 0, 0.4);
-          "
-          onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 7px 25px rgba(255, 107, 0, 0.6)'"
-          onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 5px 20px rgba(255, 107, 0, 0.4)'"
-        >
-          🔥 ACCEPT CHALLENGE! 🔥
-        </button>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-  
-  // Add CSS animations
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    @keyframes slideIn {
-      from { transform: translateY(-50px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-    }
-  `;
-  document.head.appendChild(style);
-}
-
-// Copy referral link to clipboard
-window.copyNetheriteLink = function() {
-  const input = document.getElementById('netheriteReferralLink');
-  input.select();
-  document.execCommand('copy');
-  
-  const btn = event.target;
-  const originalText = btn.innerHTML;
-  btn.innerHTML = '✅ Copied!';
-  setTimeout(() => {
-    btn.innerHTML = originalText;
-  }, 2000);
-};
-
-// Share on X (Twitter)
-window.shareOnTwitter = function() {
-  const link = `https://www.thegoldmining.com/?ref=${state.address}`;
-  const text = `🔥 Join me on Gold Mining Game and get 1000 FREE GOLD! I'm doing the Netherite Challenge - if you buy Netherite pickaxe in the next hour, I get one FREE! ⏰ ${link}`;
-  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-  window.open(url, '_blank', 'width=600,height=400');
-};
-
-// Share on Discord
-window.shareOnDiscord = function() {
-  const link = `https://www.thegoldmining.com/?ref=${state.address}`;
-  alert('Copy this message and share it on Discord:\n\n🔥 Join me on Gold Mining Game!\n✨ Use my link and get 1000 FREE GOLD!\n⏰ I\'m doing the Netherite Challenge - join now!\n\n' + link);
-};
-
-// Accept Netherite Challenge
-window.acceptNetheriteChallenge = async function() {
-  console.log('🔥 User accepted Netherite Challenge!');
-  
-  const modal = document.getElementById('netheriteChallengeModal');
-  const btn = event.target;
-  btn.disabled = true;
-  btn.innerHTML = '⏳ Starting Challenge...';
-  
-  try {
-    const response = await fetch('/api/start-netherite-challenge', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ referrer_address: state.address })
-    });
-    
-    const result = await response.json();
-    
-    if (result.success) {
-      console.log('✅ Netherite Challenge started!', result);
-      
-      // Show success message using alert
-      alert('🔥 Challenge Started! Share your link now!\n\n⏰ Timer: 1 hour\n🔗 Your referral link is ready to share!');
-      
-      // Close modal
-      if (modal) {
-        modal.style.animation = 'fadeOut 0.3s ease-out';
-        setTimeout(() => modal.remove(), 300);
-      }
-      
-      // Log challenge details
-      console.log('⏰ Challenge expires at:', result.challenge.expires_at);
-      
-    } else {
-      alert('❌ ' + result.error);
-      btn.disabled = false;
-      btn.innerHTML = '🔥 ACCEPT CHALLENGE! 🔥';
-    }
-    
-  } catch (error) {
-    console.error('❌ Error starting challenge:', error);
-    alert('❌ Failed to start challenge. Please try again.\n\nError: ' + error.message);
-    btn.disabled = false;
-    btn.innerHTML = '🔥 ACCEPT CHALLENGE! 🔥';
-  }
-};
-
-// Decline Netherite Challenge
-window.declineNetheriteChallenge = function() {
-  console.log('ℹ️ User declined Netherite Challenge');
-  
-  const modal = document.getElementById('netheriteChallengeModal');
-  if (modal) {
-    modal.style.animation = 'fadeOut 0.3s ease-out';
-    setTimeout(() => modal.remove(), 300);
-  }
-  
-  showNotification('You can always start the challenge later from your profile!', 'info');
-};
-
-// Add fadeOut animation
-const fadeOutStyle = document.createElement('style');
-fadeOutStyle.textContent = `
-  @keyframes fadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
-  }
-`;
-document.head.appendChild(fadeOutStyle);
-
-
-// ================================
-// 🎰 SPIN WHEEL FUNCTIONALITY
-// ================================
-
-// Wheel prizes configuration (must match backend)
-const WHEEL_PRIZES = [
-  { id: 'silver', name: 'Silver Pickaxe', shortName: 'Silver', color: '#C0C0C0', emoji: '🥈', rarity: 'common' },
-  { id: 'gold_pickaxe', name: 'Gold Pickaxe', shortName: 'Gold', color: '#FFD700', emoji: '🥇', rarity: 'rare' },
-  { id: 'diamond', name: 'Diamond Pickaxe', shortName: 'Diamond', color: '#00FFFF', emoji: '💎', rarity: 'epic' },
-  { id: 'netherite', name: 'Netherite Pickaxe', shortName: 'Netherite', color: '#FF00FF', emoji: '⛏️', rarity: 'legendary' },
-  { id: 'gold_100', name: '100 Gold', shortName: '100', color: '#4CAF50', emoji: '💰', rarity: 'gold' },
-  { id: 'gold_500', name: '500 Gold', shortName: '500', color: '#66BB6A', emoji: '💰', rarity: 'gold' },
-  { id: 'gold_1000', name: '1000 Gold', shortName: '1K', color: '#81C784', emoji: '💰', rarity: 'gold' },
-  { id: 'gold_10000', name: '10000 Gold', shortName: '10K', color: '#A5D6A7', emoji: '💰', rarity: 'gold' },
-  { id: 'better_luck', name: 'Better Luck', shortName: 'Try Again', color: '#666666', emoji: '😢', rarity: 'common' },
-  { id: 'retry', name: 'Free Retry', shortName: 'Retry', color: '#2196F3', emoji: '🔄', rarity: 'special' }
-];
-
-let wheelCanvas = null;
-let wheelCtx = null;
-let currentRotation = 0;
-let isSpinning = false;
-
-// Show spin wheel modal
-window.showSpinWheelModal = function() {
-  console.log('🎰 Opening spin wheel modal');
-  
-  const modal = document.getElementById('spinWheelModal');
-  if (!modal) {
-    console.error('❌ Spin wheel modal not found');
-    return;
-  }
-  
-  modal.style.display = 'flex';
-  
-  // Initialize wheel canvas
-  setTimeout(() => {
-    initializeWheel();
-    updateSpinGoldDisplay();
-  }, 100);
-};
-
-// Close spin wheel modal
-window.closeSpinWheelModal = function() {
-  const modal = document.getElementById('spinWheelModal');
-  if (modal) {
-    modal.style.display = 'none';
-  }
-  isSpinning = false;
-};
-
-// Initialize wheel canvas
-function initializeWheel() {
-  wheelCanvas = document.getElementById('wheelCanvas');
-  if (!wheelCanvas) {
-    console.error('❌ Wheel canvas not found');
-    return;
-  }
-  
-  wheelCtx = wheelCanvas.getContext('2d');
-  drawWheel(0);
-}
-
-// Draw the premium wheel with 3D effects
-function drawWheel(rotation) {
-  if (!wheelCtx || !wheelCanvas) return;
-  
-  const centerX = wheelCanvas.width / 2;
-  const centerY = wheelCanvas.height / 2;
-  const outerRadius = (wheelCanvas.width / 2) - 20;
-  const innerRadius = 50;
-  const numSegments = WHEEL_PRIZES.length;
-  const anglePerSegment = (2 * Math.PI) / numSegments;
-  
-  // Clear canvas
-  wheelCtx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
-  
-  // Draw outer glow ring
-  wheelCtx.save();
-  wheelCtx.shadowColor = 'rgba(255, 215, 0, 0.8)';
-  wheelCtx.shadowBlur = 40;
-  wheelCtx.beginPath();
-  wheelCtx.arc(centerX, centerY, outerRadius + 10, 0, 2 * Math.PI);
-  wheelCtx.strokeStyle = '#FFD700';
-  wheelCtx.lineWidth = 10;
-  wheelCtx.stroke();
-  wheelCtx.restore();
-  
-  // Draw segments with gradients
-  for (let i = 0; i < numSegments; i++) {
-    const startAngle = rotation + i * anglePerSegment - Math.PI / 2;
-    const endAngle = startAngle + anglePerSegment;
-    const prize = WHEEL_PRIZES[i];
-    
-    // Create radial gradient for 3D effect
-    const gradient = wheelCtx.createRadialGradient(
-      centerX, centerY, innerRadius,
-      centerX, centerY, outerRadius
-    );
-    
-    // Set colors based on rarity
-    if (prize.rarity === 'legendary') {
-      gradient.addColorStop(0, '#8B00FF');
-      gradient.addColorStop(1, '#FF00FF');
-    } else if (prize.rarity === 'epic') {
-      gradient.addColorStop(0, '#0080FF');
-      gradient.addColorStop(1, '#00FFFF');
-    } else if (prize.rarity === 'rare') {
-      gradient.addColorStop(0, '#FF8C00');
-      gradient.addColorStop(1, '#FFD700');
-    } else if (prize.rarity === 'gold') {
-      gradient.addColorStop(0, '#2E7D32');
-      gradient.addColorStop(1, '#66BB6A');
-    } else if (prize.rarity === 'special') {
-      gradient.addColorStop(0, '#1565C0');
-      gradient.addColorStop(1, '#42A5F5');
-    } else {
-      gradient.addColorStop(0, '#757575');
-      gradient.addColorStop(1, '#BDBDBD');
-    }
-    
-    // Draw segment
-    wheelCtx.beginPath();
-    wheelCtx.moveTo(centerX, centerY);
-    wheelCtx.arc(centerX, centerY, outerRadius, startAngle, endAngle);
-    wheelCtx.closePath();
-    wheelCtx.fillStyle = gradient;
-    wheelCtx.fill();
-    
-    // Segment border with shadow
-    wheelCtx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
-    wheelCtx.lineWidth = 4;
-    wheelCtx.stroke();
-    
-    // Add shine effect
-    wheelCtx.save();
-    wheelCtx.clip();
-    const shineGradient = wheelCtx.createRadialGradient(
-      centerX - outerRadius * 0.3,
-      centerY - outerRadius * 0.3,
-      0,
-      centerX,
-      centerY,
-      outerRadius
-    );
-    shineGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
-    shineGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)');
-    shineGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    wheelCtx.fillStyle = shineGradient;
-    wheelCtx.fill();
-    wheelCtx.restore();
-    
-    // Draw text and emoji
-    drawPrizeText(wheelCtx, centerX, centerY, startAngle, anglePerSegment, outerRadius, prize);
-  }
-  
-  // Draw decorative pins
-  drawPins(wheelCtx, centerX, centerY, outerRadius, rotation, numSegments, anglePerSegment);
-  
-  // Draw center hub with 3D effect
-  drawCenterHub(wheelCtx, centerX, centerY, innerRadius);
-}
-
-// Draw prize text on segment
-function drawPrizeText(ctx, centerX, centerY, startAngle, anglePerSegment, outerRadius, prize) {
-  ctx.save();
-  
-  const angle = startAngle + anglePerSegment / 2;
-  const textRadius = outerRadius * 0.7;
-  const x = centerX + Math.cos(angle) * textRadius;
-  const y = centerY + Math.sin(angle) * textRadius;
-  
-  ctx.translate(x, y);
-  ctx.rotate(angle + Math.PI / 2);
-  
-  // Text shadow for readability
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-  ctx.shadowBlur = 6;
-  ctx.shadowOffsetX = 2;
-  ctx.shadowOffsetY = 2;
-  
-  // Draw emoji
-  ctx.font = 'bold 36px Arial';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#FFF';
-  ctx.fillText(prize.emoji, 0, -20);
-  
-  // Draw prize name
-  ctx.font = 'bold 16px Arial';
-  ctx.fillStyle = '#FFF';
-  ctx.fillText(prize.shortName, 0, 15);
-  
-  ctx.restore();
-}
-
-// Draw decorative pins around wheel
-function drawPins(ctx, centerX, centerY, outerRadius, rotation, numSegments, anglePerSegment) {
-  const pinCount = numSegments;
-  const pinRadius = 8;
-  
-  for (let i = 0; i < pinCount; i++) {
-    const angle = rotation + (i * anglePerSegment) - Math.PI / 2;
-    const x = centerX + Math.cos(angle) * (outerRadius - 8);
-    const y = centerY + Math.sin(angle) * (outerRadius - 8);
-    
-    // Pin shadow
-    ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-    ctx.shadowBlur = 6;
-    
-    // Pin gradient
-    const pinGradient = ctx.createRadialGradient(x - 3, y - 3, 0, x, y, pinRadius);
-    pinGradient.addColorStop(0, '#FFD700');
-    pinGradient.addColorStop(1, '#B8860B');
-    
-    ctx.beginPath();
-    ctx.arc(x, y, pinRadius, 0, 2 * Math.PI);
-    ctx.fillStyle = pinGradient;
-    ctx.fill();
-    
-    ctx.strokeStyle = '#8B4513';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    ctx.restore();
-  }
-}
-
-// Draw center hub with 3D effect
-function drawCenterHub(ctx, centerX, centerY, innerRadius) {
-  // Outer shadow ring
-  ctx.save();
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-  ctx.shadowBlur = 20;
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, innerRadius + 15, 0, 2 * Math.PI);
-  ctx.fillStyle = '#2C2C2C';
-  ctx.fill();
-  ctx.restore();
-  
-  // Main hub with gradient
-  const hubGradient = ctx.createRadialGradient(
-    centerX - 15, centerY - 15, 0,
-    centerX, centerY, innerRadius
-  );
-  hubGradient.addColorStop(0, '#FFD700');
-  hubGradient.addColorStop(0.7, '#FFA500');
-  hubGradient.addColorStop(1, '#FF8C00');
-  
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI);
-  ctx.fillStyle = hubGradient;
-  ctx.fill();
-  
-  // Hub border
-  ctx.strokeStyle = '#8B4513';
-  ctx.lineWidth = 5;
-  ctx.stroke();
-  
-  // Inner shine
-  ctx.beginPath();
-  ctx.arc(centerX - 12, centerY - 12, innerRadius * 0.5, 0, 2 * Math.PI);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-  ctx.fill();
-  
-  // Center text
-  ctx.font = 'bold 20px Arial';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#000';
-  ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
-  ctx.shadowBlur = 3;
-  ctx.fillText('SPIN', centerX, centerY);
-}
-
-// Update gold display
-function updateSpinGoldDisplay() {
-  const goldDisplay = document.getElementById('spinGoldDisplay');
-  if (goldDisplay && window.currentGold !== undefined) {
-    goldDisplay.textContent = Math.floor(window.currentGold).toLocaleString();
-  }
-}
-
-// Spin the wheel
-window.spinWheel = async function() {
-  if (isSpinning) {
-    console.log('⚠️ Wheel is already spinning');
-    return;
-  }
-  
-  if (!window.userWallet) {
-    alert('❌ Please connect your wallet first!');
-    return;
-  }
-  
-  if (!window.hasLand) {
-    alert('❌ You must own land to use the spin wheel!');
-    return;
-  }
-  
-  const currentGold = window.currentGold || 0;
-  if (currentGold < 1000) {
-    alert(`❌ Insufficient gold! You have ${Math.floor(currentGold)} gold but need 1000 gold to spin.`);
-    return;
-  }
-  
-  const spinButton = document.getElementById('spinButton');
-  if (spinButton) {
-    spinButton.disabled = true;
-    spinButton.classList.add('spinning');
-    spinButton.textContent = '🎰 SPINNING...';
-  }
-  
-  isSpinning = true;
-  
-  try {
-    console.log('🎰 Sending spin request to server...');
-    
-    const response = await fetch('/api/spin-wheel', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ address: window.userWallet })
-    });
-    
-    const result = await response.json();
-    
-    if (!response.ok || !result.success) {
-      throw new Error(result.error || 'Spin failed');
-    }
-    
-    console.log('🎁 Spin result:', result);
-    
-    // Find the prize index
-    const prizeIndex = WHEEL_PRIZES.findIndex(p => p.id === result.prize.id);
-    if (prizeIndex === -1) {
-      throw new Error('Prize not found in wheel');
-    }
-    
-    // Calculate rotation to land on prize
-    const anglePerSegment = (2 * Math.PI) / WHEEL_PRIZES.length;
-    const targetAngle = prizeIndex * anglePerSegment;
-    const spins = 5; // Number of full rotations
-    const totalRotation = currentRotation + (spins * 2 * Math.PI) + (2 * Math.PI - targetAngle);
-    
-    // Animate the wheel
-    animateWheel(currentRotation, totalRotation, 4000, () => {
-      // Animation complete
-      currentRotation = totalRotation % (2 * Math.PI);
-      
-      // Update gold display
-      window.currentGold = result.goldAfter;
-      updateSpinGoldDisplay();
-      updateGoldDisplay();
-      
-      // Update inventory if pickaxe won
-      if (result.newInventory) {
-        window.inventory = result.newInventory;
-        updateInventoryDisplay();
-      }
-      
-      // Show result
-      showSpinResult(result);
-      
-      // Re-enable button
-      if (spinButton) {
-        spinButton.disabled = false;
-        spinButton.classList.remove('spinning');
-        spinButton.textContent = '🎰 Pay 1000 Gold & Spin';
-      }
-      
-      isSpinning = false;
-    });
-    
-  } catch (error) {
-    console.error('❌ Spin error:', error);
-    alert('❌ Spin failed: ' + error.message);
-    
-    if (spinButton) {
-      spinButton.disabled = false;
-      spinButton.classList.remove('spinning');
-      spinButton.textContent = '🎰 Pay 1000 Gold & Spin';
-    }
-    
-    isSpinning = false;
-  }
-};
-
-// Animate wheel rotation
-function animateWheel(startRotation, endRotation, duration, callback) {
-  const startTime = Date.now();
-  
-  function animate() {
-    const elapsed = Date.now() - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    
-    // Easing function (ease-out)
-    const easeOut = 1 - Math.pow(1 - progress, 3);
-    
-    const currentAngle = startRotation + (endRotation - startRotation) * easeOut;
-    drawWheel(currentAngle);
-    
-    if (progress < 1) {
-      requestAnimationFrame(animate);
-    } else {
-      callback();
-    }
-  }
-  
-  animate();
-}
-
-// Show spin result with premium styling
-function showSpinResult(result) {
-  const resultDiv = document.getElementById('spinResult');
-  if (!resultDiv) return;
-  
-  resultDiv.style.display = 'block';
-  resultDiv.className = 'spin-result-premium';
-  
-  let resultClass = 'win';
-  let resultText = result.message;
-  let prizeEmoji = '🎁';
-  
-  // Determine result class and emoji
-  if (result.prize.type === 'nothing') {
-    resultClass = 'lose';
-    prizeEmoji = '😢';
-  } else if (result.prize.type === 'pickaxe' && result.prize.value === 'netherite') {
-    resultClass = 'legendary-win';
-    prizeEmoji = '⛏️';
-  } else if (result.prize.type === 'pickaxe') {
-    prizeEmoji = '⛏️';
-  } else if (result.prize.type === 'gold') {
-    prizeEmoji = '💰';
-  } else if (result.prize.type === 'retry') {
-    prizeEmoji = '🔄';
-  }
-  
-  resultDiv.classList.add(resultClass);
-  resultDiv.innerHTML = `
-    <div style="font-size: 64px; margin-bottom: 15px; animation: prizeFloat 1s ease-in-out infinite;">
-      ${prizeEmoji}
-    </div>
-    <div style="font-size: 24px; font-weight: bold; color: #ffd700; margin-bottom: 10px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);">
-      ${resultText}
-    </div>
-    <div style="display: flex; justify-content: space-around; margin-top: 20px; padding-top: 20px; border-top: 2px solid rgba(255, 215, 0, 0.3);">
-      <div style="text-align: center;">
-        <div style="font-size: 12px; color: #aaa; text-transform: uppercase;">Before</div>
-        <div style="font-size: 20px; font-weight: bold; color: #fff;">${result.goldBefore.toLocaleString()}</div>
-      </div>
-      <div style="font-size: 24px; color: #ffd700;">→</div>
-      <div style="text-align: center;">
-        <div style="font-size: 12px; color: #aaa; text-transform: uppercase;">After</div>
-        <div style="font-size: 20px; font-weight: bold; color: #4CAF50;">${result.goldAfter.toLocaleString()}</div>
-      </div>
-    </div>
-    ${result.freeRetry ? '<div style="margin-top: 15px; padding: 10px; background: rgba(33, 150, 243, 0.2); border: 2px solid #2196F3; border-radius: 10px; font-weight: bold; color: #2196F3;">🔄 FREE SPIN! Click again!</div>' : ''}
-  `;
-  
-  // Add floating animation
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes prizeFloat {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-10px); }
-    }
-  `;
-  if (!document.getElementById('prizeFloatStyle')) {
-    style.id = 'prizeFloatStyle';
-    document.head.appendChild(style);
-  }
-  
-  // Show notification
-  showNotification(resultText, result.prize.type === 'nothing' ? 'error' : 'success');
-  
-  // Auto-hide result after 8 seconds
-  setTimeout(() => {
-    resultDiv.style.display = 'none';
-  }, 8000);
-}
-
-console.log('🎰 Spin wheel functions loaded');
