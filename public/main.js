@@ -1371,7 +1371,8 @@ async function autoCheckReferralCompletion() {
     
     const result = await response.json();
     
-    if (result.success && result.referral_completed) {
+    // Check if referral was completed AND not already rewarded
+    if (result.success && result.referral_completed && !result.already_rewarded) {
       console.log('🎉 REFERRAL COMPLETED!', result);
       
       // Show success notification
@@ -1392,6 +1393,8 @@ async function autoCheckReferralCompletion() {
         });
       }
       
+    } else if (result.success && result.referral_completed && result.already_rewarded) {
+      console.log('ℹ️ Referral already completed previously - no duplicate reward');
     } else if (result.success && !result.referral_completed) {
       console.log('ℹ️ No referral completion needed:', result.message);
     } else {
