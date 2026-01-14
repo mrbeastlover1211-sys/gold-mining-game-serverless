@@ -1545,8 +1545,12 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
 
   console.log(`🛒 Buying ${pickaxeType} pickaxe with ${goldCost.toLocaleString()} gold...`);
   
-  $('#modalStoreMsg').textContent = `Processing purchase...`;
-  $('#modalStoreMsg').style.color = '#2196F3';
+  // Show processing message
+  const msgEl = $('#modalStoreMsg');
+  msgEl.textContent = `Processing purchase...`;
+  msgEl.style.color = '#2196F3';
+  msgEl.style.display = 'block';
+  msgEl.style.borderColor = '#2196F3';
 
   try {
     // Call the API
@@ -1564,8 +1568,14 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
 
     if (result.success) {
       console.log('✅ Successfully purchased with gold!', result);
-      $('#modalStoreMsg').textContent = `✅ Successfully purchased ${pickaxeType} pickaxe with gold!`;
-      $('#modalStoreMsg').style.color = '#4CAF50';
+      
+      // Show success message prominently
+      msgEl.textContent = `✅ Successfully purchased ${pickaxeType.toUpperCase()} pickaxe!`;
+      msgEl.style.color = '#4CAF50';
+      msgEl.style.display = 'block';
+      msgEl.style.borderColor = '#4CAF50';
+      msgEl.style.fontSize = '16px';
+      msgEl.style.fontWeight = 'bold';
       
       // 🔥 CRITICAL FIX: Update state immediately with server response
       const newInventory = result.newInventory || result.inventory || {
@@ -1632,23 +1642,30 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
       console.log('🎁 Pickaxe purchased with gold - checking referral completion...');
       await autoCheckReferralCompletion();
 
-      // Clear message after 3 seconds
+      // Clear message after 5 seconds
       setTimeout(() => {
-        $('#modalStoreMsg').textContent = '';
-      }, 3000);
+        msgEl.textContent = '';
+        msgEl.style.display = 'none';
+      }, 5000);
 
     } else {
       throw new Error(result.error || 'Purchase failed');
     }
   } catch (error) {
     console.error('❌ Gold purchase failed:', error);
-    $('#modalStoreMsg').textContent = `❌ Purchase failed: ${error.message}`;
-    $('#modalStoreMsg').style.color = '#f44336';
     
-    // Clear error after 5 seconds
+    // Show error message prominently
+    msgEl.textContent = `❌ Purchase failed: ${error.message}`;
+    msgEl.style.color = '#f44336';
+    msgEl.style.display = 'block';
+    msgEl.style.borderColor = '#f44336';
+    msgEl.style.fontSize = '15px';
+    
+    // Clear error after 7 seconds
     setTimeout(() => {
-      $('#modalStoreMsg').textContent = '';
-    }, 5000);
+      msgEl.textContent = '';
+      msgEl.style.display = 'none';
+    }, 7000);
   }
 }
 
