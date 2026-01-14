@@ -5,8 +5,8 @@ import { getUserOptimized, saveUserOptimized } from '../database.js';
 import { sql } from '../database.js';
 
 const PICKAXES = {
-  silver: { name: 'Silver', costGold: 1000, ratePerSec: 1/60 },
-  gold: { name: 'Gold', costGold: 25000, ratePerSec: 10/60 },
+  silver: { name: 'Silver', costGold: 5000, ratePerSec: 1/60 },
+  gold: { name: 'Gold', costGold: 20000, ratePerSec: 10/60 },
   diamond: { name: 'Diamond', costGold: 500000, ratePerSec: 100/60 },
   netherite: { name: 'Netherite', costGold: 10000000, ratePerSec: 1000/60 },
 };
