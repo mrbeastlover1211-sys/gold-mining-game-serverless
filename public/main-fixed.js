@@ -1896,7 +1896,7 @@ function closeBattlezoneModal() {
 }
 
 function startBattlezoneCountdown() {
-  const targetDate = new Date('December 10, 2025 00:00:00 UTC').getTime();
+  const targetDate = new Date('January 31, 2026 00:00:00 UTC').getTime();
   
   const countdown = setInterval(() => {
     const now = new Date().getTime();
