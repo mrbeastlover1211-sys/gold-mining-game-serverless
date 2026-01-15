@@ -5385,9 +5385,9 @@ h6 { font-size: 12px; }
   display: block;
 }
 
-/* 🔥 Netherite Challenge Modal - restore legacy design
-   The repo has multiple .modal-* definitions; later ones override earlier ones.
+/* 🔥 Netherite Challenge Modal - match old deployment (commit 0fbc56b)
    We scope overrides to #netheriteModal so other modals are unaffected.
+   These values are copied from the modal styles used in that old build.
 */
 #netheriteModal.modal-overlay {
   background: rgba(0, 0, 0, 0.8);
@@ -5395,47 +5395,50 @@ h6 { font-size: 12px; }
 }
 
 #netheriteModal .modal-content {
-  background: var(--bg-card);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(22, 33, 62, 0.95));
   border: 2px solid var(--primary);
   border-radius: 15px;
-  box-shadow: 0 20px 60px rgba(0, 212, 170, 0.3);
-  animation: slideIn 0.3s ease;
+  padding: 0;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  animation: modalSlideIn 0.3s ease;
 }
 
 #netheriteModal .modal-header {
-  background: linear-gradient(45deg, var(--primary), var(--secondary));
-  padding: 15px 20px;
-  border-radius: 13px 13px 0 0;
-  border-bottom: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.2), rgba(0, 123, 255, 0.2));
 }
 
 #netheriteModal .modal-title {
-  color: var(--bg-dark);
-  font-size: 22px;
-  font-weight: 800;
-  margin: 0;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-  letter-spacing: 0.5px;
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--text-primary);
+  text-align: center;
+  flex: 1;
 }
 
 #netheriteModal .modal-close-btn {
-  background: none;
+  background: transparent;
   border: none;
-  color: var(--bg-dark);
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 20px;
+  color: var(--text-primary);
   cursor: pointer;
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
+  padding: 5px;
+  border-radius: 3px;
+  transition: background 0.2s ease;
 }
 
 #netheriteModal .modal-close-btn:hover {
-  background: rgba(0, 0, 0, 0.2);
-  transform: rotate(90deg);
+  background: rgba(255, 255, 255, 0.1);
 }
