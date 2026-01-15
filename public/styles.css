@@ -5385,3 +5385,57 @@ h6 { font-size: 12px; }
   display: block;
 }
 
+/* 🔥 Netherite Challenge Modal - restore legacy design
+   The repo has multiple .modal-* definitions; later ones override earlier ones.
+   We scope overrides to #netheriteModal so other modals are unaffected.
+*/
+#netheriteModal.modal-overlay {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+#netheriteModal .modal-content {
+  background: var(--bg-card);
+  border: 2px solid var(--primary);
+  border-radius: 15px;
+  box-shadow: 0 20px 60px rgba(0, 212, 170, 0.3);
+  animation: slideIn 0.3s ease;
+}
+
+#netheriteModal .modal-header {
+  background: linear-gradient(45deg, var(--primary), var(--secondary));
+  padding: 15px 20px;
+  border-radius: 13px 13px 0 0;
+  border-bottom: none;
+}
+
+#netheriteModal .modal-title {
+  color: var(--bg-dark);
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+  letter-spacing: 0.5px;
+}
+
+#netheriteModal .modal-close-btn {
+  background: none;
+  border: none;
+  color: var(--bg-dark);
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+#netheriteModal .modal-close-btn:hover {
+  background: rgba(0, 0, 0, 0.2);
+  transform: rotate(90deg);
+}
