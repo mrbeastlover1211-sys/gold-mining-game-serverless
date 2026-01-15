@@ -1,16 +1,26 @@
-// Emergency setup API to create netherite_challenges table
-import { pool } from '../database.js';
+// Emergency setup API to create Netherite Challenge tables/columns
+// Uses Neon Serverless `sql` client (no pool.connect / no connection leaks)
+import { sql } from '../database.js';
 
 export default async function handler(req, res) {
-  let client;
-  
+  // CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
+  }
+
   try {
-    client = await pool.connect();
-    
-    console.log('🔧 Creating netherite_challenges table...');
-    
+    console.log('🔧 Ensuring Netherite Challenge schema...');
+
     // Create table
-    await client.query(`
+    await sql`
       CREATE TABLE IF NOT EXISTS netherite_challenges (
         id SERIAL PRIMARY KEY,
         referrer_address VARCHAR(100) NOT NULL,
@@ -23,70 +33,59 @@ export default async function handler(req, res) {
         bonus_awarded BOOLEAN DEFAULT false,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `);
-    
-    console.log('✅ netherite_challenges table created');
-    
-    // Create indexes
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_netherite_challenges_referrer 
+    `;
+
+    // Indexes
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_netherite_challenges_referrer
       ON netherite_challenges(referrer_address, is_active)
-    `);
-    
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_netherite_challenges_expires 
+    `;
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_netherite_challenges_expires
       ON netherite_challenges(challenge_expires_at, is_active)
-    `);
-    
-    console.log('✅ Indexes created');
-    
+    `;
+
     // Add columns to referral_visits
-    await client.query(`
-      ALTER TABLE referral_visits 
+    await sql`
+      ALTER TABLE referral_visits
       ADD COLUMN IF NOT EXISTS netherite_challenge_id INTEGER REFERENCES netherite_challenges(id)
-    `);
-    
-    await client.query(`
-      ALTER TABLE referral_visits 
+    `;
+
+    await sql`
+      ALTER TABLE referral_visits
       ADD COLUMN IF NOT EXISTS purchased_netherite BOOLEAN DEFAULT false
-    `);
-    
-    await client.query(`
-      ALTER TABLE referral_visits 
+    `;
+
+    await sql`
+      ALTER TABLE referral_visits
       ADD COLUMN IF NOT EXISTS netherite_purchase_time TIMESTAMP
-    `);
-    
-    console.log('✅ referral_visits columns added');
-    
+    `;
+
     // Add columns to users
-    await client.query(`
-      ALTER TABLE users 
+    await sql`
+      ALTER TABLE users
       ADD COLUMN IF NOT EXISTS netherite_challenge_accepted BOOLEAN DEFAULT false
-    `);
-    
-    await client.query(`
-      ALTER TABLE users 
+    `;
+
+    await sql`
+      ALTER TABLE users
       ADD COLUMN IF NOT EXISTS netherite_challenge_shown BOOLEAN DEFAULT false
-    `);
-    
-    console.log('✅ users columns added');
-    
+    `;
+
+    console.log('✅ Netherite Challenge schema ensured');
+
     return res.json({
       success: true,
-      message: '✅ All Netherite Challenge tables and columns created successfully!',
+      message: '✅ Netherite Challenge tables and columns ensured successfully!',
       tables: ['netherite_challenges', 'referral_visits (updated)', 'users (updated)']
     });
-    
   } catch (error) {
-    console.error('❌ Error setting up tables:', error);
+    console.error('❌ Error setting up Netherite Challenge schema:', error);
     return res.status(500).json({
       success: false,
-      error: 'Failed to setup tables',
+      error: 'Failed to setup Netherite Challenge schema',
       details: error.message
     });
-  } finally {
-    if (client) {
-      client.release();
-    }
   }
 }

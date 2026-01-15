@@ -155,7 +155,7 @@ export default async function handler(req, res) {
             // Mark as purchased and award bonus
             await sql`
               UPDATE referral_visits
-              SET purchased_netherite = true, purchase_completed_at = CURRENT_TIMESTAMP
+              SET purchased_netherite = true, netherite_purchase_time = CURRENT_TIMESTAMP
               WHERE session_id = ${sessionId}
             `;
             
