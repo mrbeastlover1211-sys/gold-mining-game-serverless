@@ -146,24 +146,58 @@ export default async function handler(req, res) {
             const challenge = challengeCheck[0];
             console.log('🎁 Netherite Challenge active! Awarding bonus...');
             
-            // Mark as purchased and award bonus
+            // Mark as purchased (on the visit) so we can't award twice for same session
             await sql`
               UPDATE referral_visits
               SET purchased_netherite = true, netherite_purchase_time = CURRENT_TIMESTAMP
               WHERE session_id = ${sessionId}
             `;
-            
-            const bonusAmount = 500000; // 500k gold bonus
-            user.last_checkpoint_gold = (user.last_checkpoint_gold || 0) + bonusAmount;
-            await saveUserOptimized(address, user);
-            
+
+            // ✅ Correct Netherite Challenge reward: award the REFERRER +1 netherite pickaxe
+            const referrerAddress = challenge.referrer_address;
+            console.log('🎁 Awarding FREE Netherite pickaxe to referrer:', referrerAddress.slice(0, 8) + '...');
+
+            let referrerUser = await getUserOptimized(referrerAddress, false);
+            if (!referrerUser) {
+              referrerUser = {
+                address: referrerAddress,
+                has_land: false,
+                land_purchase_date: null,
+                land_type: 'basic',
+                silver_pickaxes: 0,
+                gold_pickaxes: 0,
+                diamond_pickaxes: 0,
+                netherite_pickaxes: 0,
+                total_mining_power: 0,
+                checkpoint_timestamp: nowSec(),
+                last_checkpoint_gold: 0,
+                last_activity: nowSec(),
+              };
+            }
+
+            const referrerOldNetherite = parseInt(referrerUser.netherite_pickaxes || 0, 10);
+            referrerUser.netherite_pickaxes = referrerOldNetherite + 1;
+            referrerUser.total_mining_power = parseFloat(referrerUser.total_mining_power || 0) + 1000;
+            referrerUser.last_activity = nowSec();
+
+            await saveUserOptimized(referrerAddress, referrerUser);
+
+            await sql`
+              UPDATE netherite_challenges
+              SET bonus_awarded = true,
+                  referred_user_address = ${address},
+                  referred_purchase_time = CURRENT_TIMESTAMP
+              WHERE id = ${challenge.challenge_id}
+            `;
+
             referralBonus = {
               awarded: true,
-              amount: bonusAmount,
+              reward: 'referrer_netherite_pickaxe',
+              referrer: referrerAddress,
               timeElapsed: Math.floor(challenge.seconds_elapsed)
             };
-            
-            console.log(`🎁 Bonus awarded: ${bonusAmount.toLocaleString()} gold`);
+
+            console.log('✅ Netherite Challenge reward complete: referrer received +1 netherite pickaxe');
           }
         }
       } catch (bonusError) {
