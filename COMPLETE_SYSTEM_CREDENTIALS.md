@@ -2102,3 +2102,27 @@ All existing security measures remain in place:
 *Session Duration: Full day intensive development*  
 *Next Steps: Monitor production for any edge cases*
 
+---
+
+# 📌 ROLLBACK NOTICE (Production Stabilization)
+
+**Date:** January 15, 2026  
+
+## What happened
+The production branch (`main`) was **rolled back** to a known stable commit due to referral + Netherite Challenge instability introduced by later experimental changes.
+
+## Action taken
+- Repository was hard-reset to commit: **`4e575be`**
+- Untracked workspace files were cleaned
+- `main` was updated on GitHub using a **force push** so Vercel redeploys the stable version
+
+## Current production code baseline
+✅ **Production is now pinned to:** `4e575be`
+
+## Why
+Referral tracking / reward flows and Netherite Challenge behavior became inconsistent after multiple rapid iterations and partial fixes. Rolling back restores the last known stable state while we regroup.
+
+## Notes / Recommendation
+For future work, use a separate branch (e.g. `dev`) and only merge to `main` after testing, to avoid breaking production.
+
+
