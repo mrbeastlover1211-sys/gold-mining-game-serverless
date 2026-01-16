@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     }
 
     // 🔒 CRITICAL: Verify the transaction on-chain
-    const landCostSOL = 0.001; // Must match api/purchase-land.js
+    const landCostSOL = 0.01; // Must match api/purchase-land.js
     const expectedAmount = Math.round(landCostSOL * LAMPORTS_PER_SOL);
     
     console.log('🔍 Verifying transaction on blockchain...');

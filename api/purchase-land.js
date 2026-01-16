@@ -59,7 +59,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'invalid TREASURY_PUBLIC_KEY in server config' });
     }
 
-    const landCostSOL = 0.001; // 0.001 SOL for land (TESTING PRICE)
+    const landCostSOL = 0.01; // 0.01 SOL for land
     const costLamports = Math.round(landCostSOL * LAMPORTS_PER_SOL);
 
     const SOLANA_CLUSTER_URL = process.env.SOLANA_CLUSTER_URL || 'https://api.devnet.solana.com';
