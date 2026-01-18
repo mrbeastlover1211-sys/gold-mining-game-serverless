@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gold Mining - Play & Earn</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+</head>
+<body>
+  <div class="bg-layer">
+    <div class="bg sky"></div>
+    <div class="bg mountains"></div>
+    <div class="bg hills"></div>
+  </div>
+
+  <div class="app">
+    <header class="header">
+      <div class="brand">
+        <div class="cube"></div>
+        <h1>Gold Mining</h1>
+      </div>
+      <nav class="nav">
+        <a href="#shop">🛒 Shop</a>
+        <a href="#mine">⛏️ Mine</a>
+        <a href="#how">❓ How it works</a>
+      </nav>
+      <button id="connectBtn" class="btn btn-primary">🔗 Connect Wallet</button>
+    </header>
+
+    <section class="hero">
+      <div class="hero-content">
+        <h2>⛏️ Mine Gold. Earn SOL. 💰</h2>
+        <p>🎮 Buy a pickaxe and start your idle mining adventure in this Minecraft-inspired world! Progress continues even while you're offline. 🌍</p>
+        <a href="#shop" class="btn btn-cta">🛒 Start Mining Adventure</a>
+      </div>
+      <div class="hero-art">
+        <div class="stack">
+          <div class="tile grass"></div>
+          <div class="tile dirt"></div>
+          <div class="tile stone"></div>
+          <div class="tile ore glow"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="hud">
+      <div class="hud-item"><span class="label">👤 Address</span><span id="address" class="value">-</span></div>
+      <div class="hud-item"><span class="label">⛏️ Pickaxe</span><span id="pickaxe" class="value">None</span></div>
+      <div class="hud-item"><span class="label">🥇 Gold</span><span id="gold" class="value">0</span></div>
+      <div class="hud-item"><span class="label">💰 Price (SOL)</span><span id="goldPrice" class="value">-</span></div>
+      <div class="hud-item"><span class="label">📊 Min Sell</span><span id="minSell" class="value">-</span></div>
+    </section>
+
+    <main class="main">
+      <section class="content">
+        <div class="panel" id="shop">
+          <div class="panel-header">
+            <h2>🛒 Pickaxe Crafting Table</h2>
+            <p class="panel-sub">⚒️ Craft your mining tools! Higher tiers mine faster and earn more gold!</p>
+          </div>
+          <div id="shopGrid" class="shop"></div>
+          <div id="shopMsg" class="msg"></div>
+        </div>
+
+        <div class="panel world" id="mine">
+          <div class="panel-header">
+            <h2>⛏️ Mining Operation</h2>
+            <p class="panel-sub">🏭 Watch your miner at work in the depths! Mining continues even when you're offline.</p>
+          </div>
+          <div class="world-canvas">
+            <div class="miner-scene">
+              <div class="miner">
+                <div class="miner-body"></div>
+                <div class="miner-pickaxe"></div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="block grass"></div>
+              <div class="block grass"></div>
+              <div class="block grass"></div>
+              <div class="block grass"></div>
+              <div class="block grass"></div>
+              <div class="block grass"></div>
+              <div class="block grass"></div>
+              <div class="block grass"></div>
+            </div>
+            <div class="row">
+              <div class="block dirt"></div>
+              <div class="block dirt"></div>
+              <div class="block dirt"></div>
+              <div class="block dirt"></div>
+              <div class="block dirt"></div>
+              <div class="block dirt"></div>
+              <div class="block dirt"></div>
+              <div class="block dirt"></div>
+            </div>
+            <div class="row">
+              <div class="block stone"></div>
+              <div class="block stone"></div>
+              <div class="block stone"></div>
+              <div class="block ore glow"></div>
+              <div class="block stone"></div>
+              <div class="block stone"></div>
+              <div class="block stone"></div>
+              <div class="block stone"></div>
+            </div>
+          </div>
+          <div class="sell-controls">
+            <input type="number" id="sellAmount" placeholder="💰 Enter gold amount to trade" />
+            <button id="sellBtn" class="btn btn-secondary">🏪 Trade with Villager</button>
+          </div>
+          <div id="sellMsg" class="msg"></div>
+        </div>
+
+        <div class="panel" id="how">
+          <div class="panel-header">
+            <h2>📖 Mining Guide</h2>
+          </div>
+          <ol class="steps">
+            <li>🔗 Connect your Phantom wallet (Solana Devnet) to start your adventure.</li>
+            <li>⚒️ Craft a pickaxe at the crafting table. Higher tiers mine faster and earn more gold!</li>
+            <li>🏭 Your miner works automatically in the background, even when you're offline.</li>
+            <li>🏪 Trade your mined gold with the villager for SOL once you have enough!</li>
+          </ol>
+        </div>
+      </section>
+    </main>
+
+    <!-- Minecraft Character Wallet Section -->
+    <div class="wallet-character">
+      <div class="character-sprite"></div>
+      <div class="wallet-info">Wallet Status</div>
+      <div id="walletAddress" class="wallet-status">Not Connected</div>
+      <div id="walletBalance" class="wallet-status">0 SOL</div>
+    </div>
+
+    <footer class="footer">
+      <span>🎮 Powered by Solana devnet • Use Phantom or compatible wallet 🔗</span>
+    </footer>
+  </div>
+
+  <script src="/main.js"></script>
+</body>
+</html>

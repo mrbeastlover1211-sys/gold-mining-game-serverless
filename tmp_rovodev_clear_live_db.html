@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Live Database</title>
+</head>
+<body>
+    <h1>Clear Live Database</h1>
+    <button id="clearBtn">Clear All Users from Live Database</button>
+    <pre id="result"></pre>
+    
+    <script>
+        document.getElementById('clearBtn').onclick = async function() {
+            const resultEl = document.getElementById('result');
+            resultEl.textContent = 'Clearing database...';
+            
+            try {
+                const response = await fetch('/api/clear-database', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ adminToken: 'change-me' })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultEl.textContent = `SUCCESS!\n\n${JSON.stringify(data, null, 2)}`;
+                    resultEl.style.color = 'green';
+                } else {
+                    resultEl.textContent = `ERROR!\n\n${JSON.stringify(data, null, 2)}`;
+                    resultEl.style.color = 'red';
+                }
+            } catch (error) {
+                resultEl.textContent = `FAILED: ${error.message}`;
+                resultEl.style.color = 'red';
+            }
+        };
+    </script>
+</body>
+</html>

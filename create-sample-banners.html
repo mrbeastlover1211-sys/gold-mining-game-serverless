@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Banner Generator</title>
+</head>
+<body>
+    <canvas id="bannerCanvas" width="1080" height="1080"></canvas>
+    <button onclick="createSquareBanner()">Create Square Banner</button>
+    <button onclick="createWideBanner()">Create Wide Banner</button>
+    <button onclick="createStoryBanner()">Create Story Banner</button>
+    <button onclick="createYouTubeBanner()">Create YouTube Banner</button>
+
+    <script>
+        function createSquareBanner() {
+            const canvas = document.getElementById('bannerCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = 1080;
+            canvas.height = 1080;
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, 1080, 1080);
+            gradient.addColorStop(0, '#1a1a2e');
+            gradient.addColorStop(1, '#16213e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1080, 1080);
+            
+            // Title
+            ctx.fillStyle = '#ffd700';
+            ctx.font = 'bold 80px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('GOLD MINING GAME', 540, 300);
+            
+            // Subtitle
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 50px Arial';
+            ctx.fillText('Earn Real SOL by Mining!', 540, 400);
+            
+            // Call to action
+            ctx.fillStyle = '#4ade80';
+            ctx.font = 'bold 40px Arial';
+            ctx.fillText('🎄 Christmas Edition 🎄', 540, 500);
+            
+            // Mining emojis
+            ctx.font = '80px Arial';
+            ctx.fillText('⛏️💰⛏️', 540, 650);
+            
+            // Download link
+            const link = document.createElement('a');
+            link.download = 'gold-mining-square-banner.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        function createWideBanner() {
+            const canvas = document.getElementById('bannerCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = 1200;
+            canvas.height = 628;
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, 1200, 628);
+            gradient.addColorStop(0, '#1a1a2e');
+            gradient.addColorStop(1, '#16213e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1200, 628);
+            
+            // Title
+            ctx.fillStyle = '#ffd700';
+            ctx.font = 'bold 60px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('GOLD MINING GAME - EARN REAL SOL', 600, 200);
+            
+            // Subtitle
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 35px Arial';
+            ctx.fillText('🎄 Christmas Edition - Mine Digital Gold & Get Paid! 🎄', 600, 280);
+            
+            // Call to action
+            ctx.fillStyle = '#4ade80';
+            ctx.font = 'bold 30px Arial';
+            ctx.fillText('Join thousands earning SOL through mining!', 600, 350);
+            
+            // Mining emojis
+            ctx.font = '60px Arial';
+            ctx.fillText('⛏️💰🎮💎⚡', 600, 450);
+            
+            // Download
+            const link = document.createElement('a');
+            link.download = 'gold-mining-wide-banner.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // Similar functions for story and YouTube banners...
+    </script>
+</body>
+</html>

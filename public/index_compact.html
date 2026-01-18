@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⛏️ Minecraft Gold Mining Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+</head>
+<body>
+  <div class="game-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">⛏️</div>
+        <h1>GOLD MINING</h1>
+      </div>
+      <nav class="nav">
+        <a href="#shop" class="nav-btn">🛒 Shop</a>
+        <a href="#mine" class="nav-btn">⛏️ Mine</a>
+        <a href="#trade" class="nav-btn">🏪 Trade</a>
+      </nav>
+      <button id="connectBtn" class="connect-btn">🔗 Connect Wallet</button>
+    </header>
+
+    <!-- Status HUD -->
+    <section class="hud">
+      <div class="hud-item">
+        <div class="hud-label">👤 Wallet</div>
+        <div id="address" class="hud-value">Not Connected</div>
+      </div>
+      <div class="hud-item">
+        <div class="hud-label">⛏️ Pickaxes</div>
+        <div id="pickaxe" class="hud-value">None</div>
+      </div>
+      <div class="hud-item">
+        <div class="hud-label">🥇 Gold</div>
+        <div id="gold" class="hud-value">0</div>
+      </div>
+      <div class="hud-item">
+        <div class="hud-label">💰 Price</div>
+        <div id="goldPrice" class="hud-value">-</div>
+      </div>
+      <div class="hud-item">
+        <div class="hud-label">📊 Min Trade</div>
+        <div id="minSell" class="hud-value">-</div>
+      </div>
+    </section>
+
+    <!-- Pickaxe Shop -->
+    <section class="shop-panel" id="shop">
+      <div class="panel-title">🛠️ Pickaxe Crafting</div>
+      <div id="shopGrid" class="shop-grid"></div>
+      <div id="shopMsg" class="msg"></div>
+    </section>
+
+    <!-- Mining World -->
+    <section class="mine-panel" id="mine">
+      <div class="panel-title">⛏️ Mining Operation</div>
+      <div class="mining-world">
+        <div class="miner">
+          🧑‍⚒️
+          <div class="pickaxe-display"></div>
+        </div>
+      </div>
+      <div style="font-size: 8px; color: #ccc; text-align: center; margin-top: 8px;">
+        🏭 Auto-mining active • Continues offline
+      </div>
+    </section>
+
+    <!-- Gold Trading -->
+    <section class="trade-panel" id="trade">
+      <div class="panel-title">🏪 Gold Trading</div>
+      <div class="trade-controls">
+        <input type="number" id="sellAmount" placeholder="Gold amount" class="trade-input" />
+        <button id="sellBtn" class="trade-btn">🏪 Trade</button>
+      </div>
+      <div id="sellMsg" class="msg"></div>
+    </section>
+
+    <!-- Character & Wallet -->
+    <section class="character-panel">
+      <div class="panel-title">👤 Player</div>
+      <div class="character-avatar">🧑‍⚒️</div>
+      <div class="wallet-info">
+        <div class="wallet-label">Address</div>
+        <div id="walletAddress" class="wallet-value">Not Connected</div>
+        <div class="wallet-label">Balance</div>
+        <div id="walletBalance" class="wallet-value">0 SOL</div>
+      </div>
+      <div style="font-size: 7px; color: #666; margin-top: 8px; line-height: 1.4;">
+        💡 Connect wallet to start<br>
+        ⚒️ Craft pickaxes to mine<br>
+        🏪 Trade gold for SOL
+      </div>
+    </section>
+  </div>
+
+  <script src="/main.js"></script>
+</body>
+</html>
