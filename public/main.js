@@ -199,7 +199,7 @@ async function loadConfig() {
 function updateStaticInfo() {
   if (state.config) {
     $('#goldPrice').textContent = state.config.goldPriceSol + ' SOL';
-    $('#minSell').textContent = '5,000'; // Static display value
+    $('#minSell').textContent = state.config.minSellGold.toLocaleString(); // Now shows 5,000 from backend
   }
 }
 

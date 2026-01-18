@@ -14,7 +14,7 @@ export default function handler(req, res) {
   res.json({
     pickaxes: PICKAXES,
     goldPriceSol: parseFloat(process.env.GOLD_PRICE_SOL || '0.000001'),
-    minSellGold: parseInt(process.env.MIN_SELL_GOLD || '10000', 10),
+    minSellGold: 5000, // Fixed static value
     clusterUrl: process.env.SOLANA_CLUSTER_URL || 'https://api.devnet.solana.com',
     treasury: process.env.TREASURY_PUBLIC_KEY || '',
   });
