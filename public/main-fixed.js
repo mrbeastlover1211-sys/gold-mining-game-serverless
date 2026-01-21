@@ -2350,7 +2350,7 @@ window.shareNetheriteOnX = function() {
   const link = `https://www.thegoldmining.com/?ref=${state.address}`;
   const text = `🔥 Join me on Gold Mining Game!\n✨ Use my link and get 1000 FREE GOLD!\n⏰ I'm doing the Netherite Challenge - join now!\n\n${link}\n\n#GoldMining #Solana #Web3Gaming`;
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-  window.open(url, '_blank', 'width=600,height=400');
+  window.open(url, '_blank');
 };
 
 // Share on Discord
