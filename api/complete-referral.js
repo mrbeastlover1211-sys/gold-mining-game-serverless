@@ -109,6 +109,32 @@ export default async function handler(req, res) {
       sessionId: referralVisit.session_id.slice(0, 20) + '...'
     });
     
+    // 🚨 SECURITY: Prevent self-referral exploit
+    // User cannot refer themselves (same wallet address)
+    if (referrerAddress.toLowerCase() === address.toLowerCase()) {
+      console.log('🚫 ========================================');
+      console.log('🚫 BLOCKED: Self-referral attempt detected!');
+      console.log('🚫 ========================================');
+      console.log(`   User ${address.slice(0, 8)}... tried to refer themselves`);
+      console.log(`   Referrer wallet: ${referrerAddress}`);
+      console.log(`   Buyer wallet: ${address}`);
+      
+      // Mark the referral visit as invalid/expired
+      await sql`
+        UPDATE referral_visits 
+        SET converted = false, 
+            converted_address = NULL,
+            expires_at = CURRENT_TIMESTAMP
+        WHERE session_id = ${referralVisit.session_id}
+      `;
+      
+      return res.status(400).json({
+        success: false,
+        error: 'Self-referral not allowed',
+        message: 'You cannot refer yourself. Please use a different referral link from another user.'
+      });
+    }
+    
     // 🔥 CHECK: Netherite Challenge path
     // We ONLY skip the regular referral reward if the Netherite Challenge reward was truly granted.
     // Previously, the system skipped whenever purchased_netherite=true, which could result in NO REWARD.
