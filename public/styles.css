@@ -5,6 +5,43 @@
   padding: 0; 
 }
 
+/* ============================================
+   GLOBAL CUSTOM SCROLLBAR - Cross-Platform Fix
+   ============================================ */
+
+/* Webkit browsers (Chrome, Safari, Edge, Opera) */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(20, 20, 20, 0.8);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--primary), #00b894);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #00e6b8, var(--primary));
+}
+
+*::-webkit-scrollbar-corner {
+  background: rgba(20, 20, 20, 0.8);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) rgba(20, 20, 20, 0.8);
+}
+
+/* ============================================ */
+
 :root {
   --bg-dark: rgba(10, 10, 10, 0.15);
   --bg-card: rgba(26, 26, 26, 0.1);
