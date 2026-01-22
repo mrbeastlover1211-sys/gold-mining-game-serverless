@@ -133,6 +133,37 @@
       // Layer 3: API call control
       apiCallInProgress: false,
       
+      // Referral link cache (prevents duplicate generate-dynamic-referral calls)
+      referralLinkCache: new Map(),
+      REFERRAL_LINK_EXPIRY: 5 * 60 * 1000, // 5 minutes
+      
+      // Get cached referral link or generate new one
+      async getReferralLink(address) {
+        const cached = this.referralLinkCache.get(address);
+        if (cached && Date.now() - cached.timestamp < this.REFERRAL_LINK_EXPIRY) {
+          console.log('📎 Using cached referral link for', address.slice(0,8) + '...');
+          return cached.link;
+        }
+        
+        try {
+          const res = await fetch('/api/generate-dynamic-referral', { 
+            method: 'POST', 
+            headers: { 'Content-Type':'application/json' }, 
+            body: JSON.stringify({ referrerAddress: address }) 
+          });
+          const data = await res.json();
+          const link = data?.success && data?.referralLink ? data.referralLink : `https://www.thegoldmining.com/?ref=${address}`;
+          
+          // Cache the result
+          this.referralLinkCache.set(address, { link, timestamp: Date.now() });
+          console.log('📎 Generated and cached referral link for', address.slice(0,8) + '...');
+          return link;
+        } catch (e) {
+          console.log('📎 Referral link generation failed, using fallback');
+          return `https://www.thegoldmining.com/?ref=${address}`;
+        }
+      },
+      
       // Generate cache key for localStorage
       getCacheKey(address) {
         return this.CACHE_KEY_PREFIX + address;
@@ -327,16 +358,10 @@
             if (hasLand) {
               if (req) req.style.display = 'none';
               if (link) link.style.display = 'block';
-              // Fill link with dynamic or fallback
-              try {
-                const res = await fetch('/api/generate-dynamic-referral', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ referrerAddress: currentAddress }) });
-                const data = await res.json();
-                const input = document.getElementById('promotersLink');
-                if (input) input.value = data?.success && data?.referralLink ? data.referralLink : `${"https://www.thegoldmining.com"}/?ref=${currentAddress}`;
-              } catch (e) {
-                const input = document.getElementById('promotersLink');
-                if (input) input.value = `${"https://www.thegoldmining.com"}/?ref=${currentAddress}`;
-              }
+              // Fill link with cached referral link (prevents duplicate API calls)
+              const referralLink = await window.EMBEDDED_LAND_CACHE.getReferralLink(currentAddress);
+              const input = document.getElementById('promotersLink');
+              if (input) input.value = referralLink;
             } else {
               if (req) req.style.display = 'block';
               if (link) link.style.display = 'none';
@@ -389,16 +414,10 @@
             if (hasLand) {
               if (req) req.style.display = 'none';
               if (link) link.style.display = 'block';
-              // Fill link with dynamic or fallback
-              try {
-                const res = await fetch('/api/generate-dynamic-referral', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ referrerAddress: currentAddress }) });
-                const data = await res.json();
-                const input = document.getElementById('referralLink');
-                if (input) input.value = data?.success && data?.referralLink ? data.referralLink : `${"https://www.thegoldmining.com"}/?ref=${currentAddress}`;
-              } catch (e) {
-                const input = document.getElementById('referralLink');
-                if (input) input.value = `${"https://www.thegoldmining.com"}/?ref=${currentAddress}`;
-              }
+              // Fill link with cached referral link (prevents duplicate API calls)
+              const referralLink = await window.EMBEDDED_LAND_CACHE.getReferralLink(currentAddress);
+              const input = document.getElementById('referralLink');
+              if (input) input.value = referralLink;
               
               // Update referral stats (with 60-second cache)
               const cacheKey = `referral_stats_${currentAddress}`;
@@ -1332,7 +1351,7 @@
   <script src="random-background.js"></script>
   
   <script src="mining-engine-complete-optimized.js?v=1765367200"></script>
-  <script src="main-fixed.js?v=1737495400"></script>
+  <script src="main-fixed.js?v=1737495500"></script>
   
   <!-- 🎯 FIXED SESSION TRACKING REFERRAL SYSTEM -->
   <script>
@@ -1348,19 +1367,9 @@
         localStorage.setItem('referrer_address', ref);
         localStorage.setItem('referral_timestamp', Date.now().toString());
         
-        // Load tracking pixel to log the visit
-        const trackingPixel = new Image();
-        trackingPixel.src = `/api/track-referral?ref=${encodeURIComponent(ref)}&t=${Date.now()}`;
-        
-        // Enhanced tracking with session persistence
-        trackingPixel.onload = function() {
-          console.log('✅ Referral visit tracked successfully');
-          localStorage.setItem('referral_tracked', 'true');
-        };
-        
-        trackingPixel.onerror = function() {
-          console.log('⚠️ Referral tracking failed, stored locally');
-        };
+        // REMOVED: Duplicate track-referral call - now handled in main-fixed.js
+        // This prevents double API calls for referral tracking
+        console.log('📌 Referral stored locally, will be tracked by main-fixed.js');
         
         // Clean URL after tracking but preserve session data
         if (window.history && window.history.replaceState) {
