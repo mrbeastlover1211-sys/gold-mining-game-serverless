@@ -2408,4 +2408,217 @@ Referral tracking / reward flows and Netherite Challenge behavior became inconsi
 ## Notes / Recommendation
 For future work, use a separate branch (e.g. `dev`) and only merge to `main` after testing, to avoid breaking production.
 
+---
+
+# 📅 JANUARY 21, 2026 - SESSION UPDATE
+
+## ✅ SESSION SUMMARY
+
+**Date:** January 21, 2026  
+**Focus:** Security fixes, UI improvements, API optimization
+
+---
+
+## 🔒 SECURITY FIXES COMPLETED
+
+### 1. Self-Referral Exploit Fixed
+**Problem:** Users could refer themselves, opening their own referral link and buying a pickaxe to earn rewards.
+
+**Solution:** Added wallet address comparison check in `api/complete-referral.js`
+- Compares `referrerAddress` with buyer `address` (case-insensitive)
+- Blocks self-referral attempts with 403 error
+- Logs blocked attempts with IP for monitoring
+- Invalidates the referral visit if self-referral detected
+
+**Commit:** `d4dc208`
+
+### 2. Dangerous APIs Disabled
+**Problem:** 3 critical APIs could delete all data without authentication:
+- `delete-referral-data.js` - Could delete ALL referral visits
+- `clear-all-sessions.js` - Could clear ALL sessions & referrals
+- `clean-rebuild-db.js` - Could DROP tables + had hardcoded credentials!
+
+**Solution:** All 3 APIs now return 403 Forbidden with IP logging
+
+**Commit:** `1867176`
+
+---
+
+## 🎨 UI/UX IMPROVEMENTS
+
+### 1. Cross-Platform Scrollbar Styling
+**Problem:** Scrollbars looked different on Windows vs Mac (Windows showed ugly default scrollbars)
+
+**Solution:** Added global custom scrollbar CSS in `public/styles.css`
+- Dark themed track with teal gradient thumb
+- Works on Chrome, Safari, Edge, Firefox
+- 8px width, rounded corners, hover effects
+
+**Commit:** `778de79`
+
+### 2. Telegram Bot Link Updated
+**Change:** Updated Telegram ticket links from `Thegoldmining` to `goldmining_godbot`
+- Updated in Promoters popup
+- Updated in Free Gold section
+
+**Commit:** `072b8d3`
+
+### 3. Telegram Button Centered
+**Fix:** "Create Telegram Ticket" button in Promoters popup is now properly centered
+
+**Commit:** `1ae5149`
+
+### 4. Social Share Hashtags Added
+**Change:** All social media share texts now include hashtags on new line:
+```
+🚀 Join this amazing gold mining game and earn SOL! Get 1000 gold signup bonus to start! [URL]
+
+#GoldMining #Solana #Web3Gaming #PlayToEarn
+```
+
+**Platforms Updated:**
+- Promoters popup: Twitter/X, Instagram, TikTok
+- Refer & Earn popup: X, Discord, Telegram
+
+**Commit:** `a0e977f` (main-fixed.js)
+
+### 5. Netherite Challenge X Share Fix
+**Fix:** X share button now opens in new tab instead of small popup window
+
+**Commit:** `be29ca0`
+
+---
+
+## ⚡ API OPTIMIZATION
+
+### 1. Duplicate API Calls Removed
+**Problem:** Multiple duplicate API calls were being made, wasting resources:
+- `track-referral` called from both `index.html` AND `main-fixed.js`
+- `generate-dynamic-referral` called separately for Promoters and Referral popups
+
+**Solution:**
+- Removed duplicate `track-referral` from `index.html` (kept in `main-fixed.js`)
+- Added referral link caching (5 min TTL) - Promoters and Referral popups now share cached link
+
+**Expected Impact:** ~50% fewer API calls for referral operations
+
+**Commit:** `8617201`
+
+---
+
+## 📊 OPTIMIZATION OPPORTUNITIES IDENTIFIED (NOT YET IMPLEMENTED)
+
+### High Impact:
+| Issue | Impact |
+|-------|--------|
+| 208MB background videos | Massive bandwidth usage |
+| 193 console.log statements | Slows browser, exposes debug info |
+| No server-side caching on `/api/config` | Unnecessary DB calls |
+| Double `/api/status` calls on wallet connect | 2x status API calls |
+
+### Medium Impact:
+| Issue | Impact |
+|-------|--------|
+| 11 unused JS backup files | Clutters repo (~500KB) |
+| Unminified JS/CSS (100KB each) | Could be 30-50% smaller |
+| Duplicate image folder | Wasted storage |
+
+### Recommended Next Steps:
+1. Add server-side caching to `/api/config` (5-10 min cache)
+2. Remove console.log statements in production
+3. Consolidate duplicate status calls
+4. Compress/externalize video backgrounds
+
+---
+
+## 📋 CURRENT FILE STRUCTURE
+
+### Active Files Used in Production:
+- `public/index.html` - Main game HTML
+- `public/main-fixed.js` - **ACTIVE JS FILE** (NOT main.js!)
+- `public/styles.css` - Main stylesheet
+- `api/` folder - All serverless API endpoints
+
+### Important Note:
+**`index.html` loads `main-fixed.js`, NOT `main.js`!**
+Always update `main-fixed.js` for production changes.
+
+---
+
+## 🔐 ADMIN PANEL STATUS
+
+**Issue Noted:** Admin panel has IP whitelist security. If you get "Access Denied: Your IP address is not authorized", you need to:
+
+1. Add your IP to `ADMIN_ALLOWED_IPS` environment variable in Vercel
+2. Format: comma-separated IPs (e.g., `123.45.67.89,98.76.54.32`)
+3. Find your IP at: https://whatismyipaddress.com/
+
+---
+
+## 💰 SCALING COST ANALYSIS
+
+### Current Architecture Capacity:
+
+| Plan Setup | Monthly Cost | Concurrent Users |
+|------------|-------------|------------------|
+| Vercel Pro + Neon Launch | $39/mo | 1,000-2,000 |
+| Vercel Pro + Neon Scale | $89/mo | 3,000-5,000 |
+| Vercel Pro + Neon Business | $720/mo | 10,000+ |
+
+### For 100K Concurrent Users:
+| Component | Monthly Cost |
+|-----------|--------------|
+| Vercel Enterprise | $2,000-5,000 |
+| Neon Business | $700-2,000 |
+| Redis (Upstash) | $300-500 |
+| CDN (Cloudflare) | $200-500 |
+| **TOTAL** | **$4,000-10,000/mo** |
+
+**Key Requirement:** Redis caching is MANDATORY for 100K users
+
+---
+
+## ✅ COMMITS THIS SESSION
+
+| Commit | Description |
+|--------|-------------|
+| `778de79` | Global custom scrollbar CSS |
+| `d4dc208` | Self-referral exploit fix |
+| `072b8d3` | Telegram bot link update |
+| `1ae5149` | Center Telegram button |
+| `83ab7f3` | Hashtags in main.js (wrong file) |
+| `a0e977f` | Hashtags in main-fixed.js (correct file) |
+| `be29ca0` | Netherite X share new tab |
+| `1867176` | Disable 3 dangerous APIs |
+| `8617201` | Remove duplicate API calls |
+
+---
+
+## 🎯 SYSTEM STATUS
+
+**Production URL:** https://www.thegoldmining.com  
+**Status:** ✅ STABLE & SECURE  
+**Last Update:** January 21, 2026  
+
+### What's Working:
+- ✅ Mining system (checkpoint-based, client-side calculation)
+- ✅ Pickaxe purchases (SOL and Gold)
+- ✅ Land purchases
+- ✅ Gold selling
+- ✅ Referral system (with self-referral protection)
+- ✅ Netherite Challenge
+- ✅ Admin panel (IP whitelist secured)
+- ✅ Cross-platform scrollbar styling
+- ✅ Social media sharing with hashtags
+
+### Known Issues:
+- ⚠️ Admin panel requires IP whitelisting (add your IP to ADMIN_ALLOWED_IPS)
+- ⚠️ 208MB of video backgrounds (consider CDN/compression)
+- ⚠️ 193 console.log statements (should remove for production)
+
+---
+
+*Last Updated: January 21, 2026*  
+*Session Focus: Security, UI, API Optimization*
+
 
