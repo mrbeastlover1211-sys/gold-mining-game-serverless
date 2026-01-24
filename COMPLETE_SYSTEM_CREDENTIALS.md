@@ -2621,4 +2621,349 @@ Always update `main-fixed.js` for production changes.
 *Last Updated: January 21, 2026*  
 *Session Focus: Security, UI, API Optimization*
 
+---
+
+# 📅 JANUARY 21, 2026 - SCALING & OPTIMIZATION PLANNING SESSION
+
+## 🎯 SESSION OVERVIEW
+
+**Date:** January 21, 2026 (Continued)  
+**Focus:** Infrastructure planning, CDN setup, Redis caching strategy, scaling analysis
+
+---
+
+## 🚀 SCALING OPTIMIZATION ROADMAP
+
+### 📊 Impact Summary - All Optimizations
+
+| # | Optimization | Effort | Impact | Users Gained | Status |
+|---|--------------|--------|--------|--------------|--------|
+| 1 | **Media to Cloudflare R2** | 1-2 hours | 98% less Vercel bandwidth | 5-10x | 🔴 Pending |
+| 2 | **Redis Caching (Upstash)** | 3-4 hours | 80% fewer DB queries | 5-10x | 🔴 Pending |
+| 3 | **Optimize DB Queries** | 2-3 hours | 50% fewer queries | 2x | 🔴 Pending |
+| 4 | **Rate Limiting** | 2-3 hours | Prevents abuse | Stability | 🔴 Pending |
+| 5 | **Remove console.log** | 30 mins | 5-10% faster browser | Minor | 🟡 Pending |
+| 6 | **Minify JS/CSS** | 1 hour | 50% smaller files | 1.5x | 🟡 Pending |
+| 7 | **Cache Headers** | 30 mins | Less bandwidth | 1.5x | 🟡 Pending |
+| 8 | **Connection Pooling** | - | Already optimized | - | ✅ Done |
+| 9 | **Edge Functions** | 2-3 hours | Faster responses | 1.5x | 🟢 Optional |
+
+**Total Implementation Time:** 12-17 hours  
+**Total Additional Cost:** $0 (all free tiers!)
+
+---
+
+## ☁️ CLOUDFLARE R2 SETUP GUIDE
+
+### What is R2?
+Cloudflare R2 is S3-compatible object storage with **ZERO egress fees** (unlimited free downloads).
+
+### Why Move Media to R2?
+
+**Current Problem:**
+- 9 video backgrounds = ~208 MB
+- Every user downloads ~25 MB video from Vercel
+- 1,000 users/day = 25 GB bandwidth/day on Vercel
+- Uses 78% of Vercel's 1TB monthly limit
+
+**After R2 Migration:**
+- Videos served from R2 (unlimited bandwidth FREE)
+- Vercel only serves HTML/JS/CSS (~500 KB/user)
+- 1,000 users/day = 500 MB bandwidth/day on Vercel
+- **97% reduction in Vercel bandwidth!**
+
+### R2 Free Tier Limits:
+
+| Limit | Free Amount | Your Usage | Status |
+|-------|-------------|------------|--------|
+| Storage | 10 GB/month | 218 MB | ✅ 2.2% used |
+| Class A (uploads) | 1 million/month | ~35 files | ✅ 0.004% used |
+| Class B (downloads) | 10 million/month | Varies | ✅ Plenty |
+| Egress (bandwidth) | **UNLIMITED** | Any amount | ✅ Always FREE |
+
+### Files to Upload to R2:
+
+**Folder: `backgrounds/` (~213 MB)**
+```
+Videos (9 files):
+- minecraft-dog.3840x2160.mp4
+- blue-lake-minecraft.1920x1080.mp4
+- cherry-leaves.1920x1080.mp4
+- fancy-center-minecraft.3840x2160.mp4
+- minecraft-house.3840x2160.mp4
+- minecraft-rainy-landscape.1920x1080.mp4
+- minecraft-sunset2.3840x2160.mp4
+- portal-in-minecraft.3840x2160.mp4
+- raindrops-minecraft.1920x1080.mp4
+
+Background images (8 files):
+- beautiful-minecraft-wooden-mansion.jpg
+- minecraft-1106252_1920.jpg
+- wp15148770-minecraft-sunrise-wallpapers.webp
+- wp15148789-minecraft-sunrise-wallpapers.webp
+- wp15148791-minecraft-sunrise-wallpapers.webp
+- wp15148793-minecraft-sunrise-wallpapers.webp
+- wp15225188-cave-minecraft-wallpapers.webp
+- wp15225216-cave-minecraft-wallpapers.webp
+```
+
+**Folder: `pickaxes/` (~2 MB)**
+```
+- pickaxe-diamond.png, .svg
+- pickaxe-gold.png, .svg
+- pickaxe-silver.png, .svg
+- pickaxe-netherite.gif, .svg
+- pickaxe-netherite-left.gif
+```
+
+**Folder: `banners/` (~3 MB)**
+```
+- banner-square.png, .svg
+- banner-vertical.png
+- banner-wide.png
+- banner-youtube.png
+```
+
+**Folder: `tiles/` (~50 KB)**
+```
+- dirt.svg
+- grass.svg
+- ore.svg
+- stone.svg
+```
+
+**Total: 35 files, ~218 MB**
+
+### R2 Setup Steps:
+
+1. **Create Cloudflare Account** (2 min)
+   - Go to cloudflare.com
+   - Sign up (no credit card needed)
+
+2. **Create R2 Bucket** (1 min)
+   - Dashboard → R2 Object Storage
+   - Create bucket: `goldmining-assets`
+   - Location: Automatic
+
+3. **Enable Public Access** (1 min)
+   - Bucket Settings → Public Access
+   - Enable R2.dev subdomain
+   - Get URL: `https://pub-xxxxx.r2.dev`
+
+4. **Upload Files** (10-15 min)
+   - Upload all 35 files maintaining folder structure
+   - backgrounds/, pickaxes/, banners/, tiles/
+
+5. **Update Code** (After upload)
+   - Give the R2 public URL
+   - Code will be updated to use R2 URLs
+
+### Smart Background Caching Strategy:
+
+**Problem:** Random backgrounds reduce caching effectiveness
+
+**Solution: Hybrid Preload Approach**
+```
+1st Visit:
+├── Show 1 random background immediately
+├── Preload 2-3 more backgrounds in background
+└── Total R2 downloads: 3-4
+
+2nd-3rd Visit:
+├── Use locally cached videos
+├── Preload remaining videos
+└── Downloads: 1-2
+
+4th Visit onwards:
+├── All 5 videos cached in browser (IndexedDB/Cache API)
+├── Pick random from local storage
+└── Downloads: 0 forever!
+```
+
+**Impact:** 70-95% fewer R2 downloads for returning users
+
+---
+
+## 🔴 REDIS CACHING STRATEGY (Upstash)
+
+### Why Redis?
+
+**Current Flow (without Redis):**
+```
+User → API → Neon Database (every request)
+```
+
+**With Redis:**
+```
+User → API → Redis Cache (90% of requests - fast!)
+              ↓ (cache miss only - 10%)
+           Neon Database
+```
+
+**Redis REPLACES Neon queries, doesn't add to them!**
+
+### What to Cache:
+
+| Data | Cache Duration | DB Calls Saved |
+|------|----------------|----------------|
+| `/api/config` | 10 minutes | 99% |
+| `/api/status` | 30 seconds | 80% |
+| `/api/land-status` | 1 minute | 90% |
+| Leaderboard | 2 minutes | 95% |
+
+### Why Upstash (not Redis Cloud)?
+
+| Factor | Redis Cloud | Upstash | Winner |
+|--------|-------------|---------|--------|
+| Serverless Compatible | ❌ Needs pooling | ✅ HTTP-based | Upstash |
+| Free Tier Storage | 30 MB | 256 MB | Upstash |
+| Free Tier Commands | ~1K/day | 500K/month (~16.6K/day) | Upstash |
+| Vercel Integration | Manual | 1-click | Upstash |
+| Your Use Case | Needs workarounds | Perfect fit | **Upstash** |
+
+### Upstash Free Tier:
+
+| Limit | Amount | Per Day |
+|-------|--------|---------|
+| Monthly Commands | 500,000 | ~16,666/day |
+| Storage | 256 MB | 256 MB |
+
+**Supports ~500-550 daily active users FREE!**
+
+### Cost After Free Tier:
+
+| Daily Users | Commands/Month | Cost |
+|-------------|----------------|------|
+| 500 | ~500K | $0 (free) |
+| 1,000 | ~1M | ~$1/month |
+| 5,000 | ~5M | ~$10/month |
+| 10,000 | ~10M | ~$20/month |
+
+---
+
+## 💰 COST ANALYSIS: 50K Concurrent Users Scenario
+
+### Scenario: 50,000 users buy land (0.01 SOL) in 1 day
+
+**API Calls Per User:**
+| Action | Vercel | Redis | Neon |
+|--------|--------|-------|------|
+| Page load | 1 | 1 | 0 |
+| Connect wallet | 1 | 2 | 1 |
+| Check land status | 1 | 1 | 0 |
+| Purchase land | 1 | 0 | 1 |
+| Confirm purchase | 1 | 0 | 3 |
+| Save checkpoint | 1 | 0 | 2 |
+| **Total** | **6** | **4** | **7** |
+
+**50,000 Users Total:**
+| Service | Calls | Cost |
+|---------|-------|------|
+| Vercel | 300,000 | $0 (within Pro limit) |
+| Upstash Redis | 200,000 | $0 (within free 500K) |
+| Neon | 350,000 | $0 (within plan) |
+| R2 Bandwidth | 1.25 TB | $0 (unlimited free) |
+
+**Daily Infrastructure Cost: ~$3.34**
+
+**Revenue from 50K users buying land:**
+- 50,000 × 0.01 SOL × $100/SOL = **$50,000**
+
+**Profit Margin: 99.99%** 🎉
+
+---
+
+## 📈 CAPACITY AFTER ALL OPTIMIZATIONS
+
+### Corrected Vercel Pro Limits:
+
+| Metric | Limit | Notes |
+|--------|-------|-------|
+| Concurrent Function Executions | 1,000 | Can burst higher |
+| Requests/Second | No hard limit | Based on execution time |
+
+**Key: Concurrent Executions ≠ Concurrent Users**
+
+If average API response = 100ms:
+- 1,000 executions × (1000ms/100ms) = 10,000 req/sec possible
+
+### Realistic Capacity:
+
+| Setup | Monthly Cost | Concurrent Users |
+|-------|--------------|------------------|
+| Vercel Pro + Neon Launch | ~$40 | 2,000-5,000 |
+| Vercel Pro + Neon Scale | ~$90 | 5,000-10,000 |
+| Vercel Pro + Neon Business | ~$720 | 10,000-20,000 |
+| **Vercel Enterprise + Neon Business** | ~$3,000+ | **50,000-100,000** |
+
+**Note:** For 50K+ concurrent users, need Vercel Enterprise (not Pro)
+
+---
+
+## 🔧 IMPLEMENTATION PRIORITY
+
+### Week 1: Foundation
+| Day | Task | Hours |
+|-----|------|-------|
+| 1 | R2 setup + file upload | 2-3 hrs |
+| 1 | Remove console.logs | 30 min |
+| 2 | Redis caching (Upstash) | 4-5 hrs |
+
+### Week 2: Optimization
+| Day | Task | Hours |
+|-----|------|-------|
+| 3 | Rate limiting | 2-3 hrs |
+| 3 | Optimize DB queries | 2-3 hrs |
+| 4 | Minify JS/CSS + Cache headers | 1.5 hrs |
+| 4 | Testing | 2-3 hrs |
+
+**Total: ~16-18 hours over 4-5 days**
+
+---
+
+## 📝 IMPORTANT NOTES
+
+### Current API Call Patterns:
+- **NO automatic interval calls** (already optimized!)
+- Uses `requestAnimationFrame` for UI (not `setInterval`)
+- Gold calculated client-side
+- API only called on: page load, purchases, page close
+
+### File Loading Note:
+- `index.html` loads `main-fixed.js` (NOT `main.js`)
+- Always update `main-fixed.js` for production changes
+
+### Browser Storage for Backgrounds:
+- IndexedDB: 50MB - 2GB+ capacity
+- Cache API: 50MB - 500MB+ capacity
+- Can store 5 backgrounds (~100-150 MB) locally
+- Returning users load instantly from local storage
+
+---
+
+## 🎯 NEXT STEPS (When Ready)
+
+1. **Cloudflare R2 Setup**
+   - Create account at cloudflare.com
+   - Create bucket and enable public access
+   - Upload 35 media files
+   - Share public URL for code update
+
+2. **Upstash Redis Setup**
+   - Create account at upstash.com
+   - Create Redis database
+   - Get credentials
+   - Implement caching layer
+
+3. **Quick Wins**
+   - Remove 193 console.log statements
+   - Add cache headers to vercel.json
+   - Minify JS/CSS files
+
+---
+
+*Last Updated: January 21, 2026*  
+*Session Focus: Scaling Infrastructure Planning*  
+*Status: Planning Complete - Ready for Implementation*
+
 
