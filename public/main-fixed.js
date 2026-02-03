@@ -1518,10 +1518,14 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
   // 🔥 CRITICAL: Save checkpoint before purchase to get accurate gold count
   window.logger && window.logger.log('💾 Saving checkpoint before gold purchase to get accurate balance...');
   const currentGoldFromMining = calculateGoldFromCheckpoint(state.checkpoint);
-  await saveCheckpoint(currentGoldFromMining);
-  
-  // Wait a moment for save to complete
-  await new Promise(resolve => setTimeout(resolve, 500));
+  try {
+    await saveCheckpoint(currentGoldFromMining);
+    // Wait a moment for save to complete
+    await new Promise(resolve => setTimeout(resolve, 500));
+  } catch (checkpointError) {
+    // Don't block purchase if checkpoint save fails (e.g., rate limit)
+    window.logger && window.logger.log('⚠️ Pre-purchase checkpoint save failed, continuing with purchase...');
+  }
 
   // Calculate current gold from checkpoint (real-time)
   let currentGold = 0;
