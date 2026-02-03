@@ -79,27 +79,15 @@ export default async function handler(req, res) {
     if (parseFloat(gold) > maxPossibleGold && timeSinceCheckpoint > 0) {
       console.log('❌ REJECTED: Gold amount exceeds maximum possible');
       
-      // Log suspicious activity
+      // Log suspicious activity (non-blocking - table may not exist)
       try {
-        await sql`
-          INSERT INTO suspicious_activity (
-            user_address, 
-            activity_type, 
-            claimed_value, 
-            max_allowed_value, 
-            details,
-            detected_at
-          ) VALUES (
-            ${address},
-            'excessive_gold_claim',
-            ${parseFloat(gold)},
-            ${maxPossibleGold},
-            ${JSON.stringify({ timeSinceCheckpoint, miningPower })},
-            NOW()
-          )
-        `;
+        console.warn('⚠️ Suspicious activity detected:', {
+          address: address.slice(0, 8) + '...',
+          claimed: parseFloat(gold),
+          maxAllowed: maxPossibleGold
+        });
       } catch (logError) {
-        console.error('⚠️ Failed to log suspicious activity:', logError.message);
+        // Silently ignore logging errors
       }
 
       return res.status(400).json({ 
