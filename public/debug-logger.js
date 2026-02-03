@@ -1,22 +1,8 @@
-// 🔧 Debug Logger - Controlled by Environment Variable
-// Set DEBUG_MODE=true in Vercel to enable logs, false to disable
+// 🔧 Debug Logger - Always enabled for debugging
+// All logs will show in console
 
-// This will be set by the API config endpoint
-let DEBUG_ENABLED = false;
-
-// Initialize debug mode from API
-async function initDebugMode() {
-  try {
-    const response = await fetch('/api/config');
-    const config = await response.json();
-    DEBUG_ENABLED = config.debugMode === true;
-    if (DEBUG_ENABLED) {
-      console.log('🔧 Debug mode: ENABLED');
-    }
-  } catch (e) {
-    // Silently fail - debug stays disabled
-  }
-}
+// Debug is always enabled for now
+let DEBUG_ENABLED = true;
 
 // Custom logger that respects debug mode
 const logger = {
@@ -47,9 +33,6 @@ const logger = {
     console.log(...args);
   }
 };
-
-// Initialize on load
-initDebugMode();
 
 // Export for use in other files
 window.logger = logger;
