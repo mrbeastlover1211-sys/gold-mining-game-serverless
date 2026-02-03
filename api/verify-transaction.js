@@ -163,15 +163,28 @@ export async function verifyTransaction(signature, expectedSender, expectedRecip
       difference: Math.abs(actualAmount - expectedAmount)
     });
 
-    // Allow for small fee variance (transaction fees can vary)
-    const feeVariance = 10000; // 0.00001 SOL variance allowed
-    if (Math.abs(actualAmount - expectedAmount) > feeVariance) {
-      console.log('❌ Amount mismatch!');
+    // Allow for priority fees variance (Phantom adds priority fees up to ~100,000 lamports)
+    // User must pay AT LEAST the expected amount (can pay more due to priority fees)
+    const minAmount = expectedAmount - 10000; // Small buffer for rounding
+    const maxAmount = expectedAmount + 200000; // Allow up to 0.0002 SOL extra for priority fees
+    
+    if (actualAmount < minAmount) {
+      console.log('❌ Underpayment!');
       return {
         valid: false,
-        error: `Incorrect payment amount. Expected ${expectedAmount} lamports, got ${actualAmount} lamports`
+        error: `Insufficient payment. Expected at least ${expectedAmount} lamports, got ${actualAmount} lamports`
       };
     }
+    
+    if (actualAmount > maxAmount) {
+      console.log('❌ Overpayment too large - possible wrong transaction');
+      return {
+        valid: false,
+        error: `Payment too large. Expected ~${expectedAmount} lamports, got ${actualAmount} lamports. Please check the correct amount.`
+      };
+    }
+    
+    console.log('✅ Amount valid (includes priority fees)');
 
     // 7. Record verified transaction to prevent replay attacks
     await sql`

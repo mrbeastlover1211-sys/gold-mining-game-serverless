@@ -43,7 +43,7 @@ export default async function handler(req, res) {
     const timeSinceCheckpoint = now - checkpointTimestamp;
 
     // 🔒 FIX #2: RATE LIMITING - Prevent checkpoint spam
-    const MIN_CHECKPOINT_INTERVAL = 10; // seconds
+    const MIN_CHECKPOINT_INTERVAL = 3; // seconds (reduced from 10)
     if (timeSinceCheckpoint < MIN_CHECKPOINT_INTERVAL && timeSinceCheckpoint > 0) {
       console.log(`⚠️ Rate limit: Only ${timeSinceCheckpoint}s since last checkpoint`);
       return res.status(429).json({ 
