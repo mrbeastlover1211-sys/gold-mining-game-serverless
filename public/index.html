@@ -1371,7 +1371,7 @@
         
         // REMOVED: Duplicate track-referral call - now handled in main-fixed.js
         // This prevents double API calls for referral tracking
-        console.log('📌 Referral stored locally, will be tracked by main-fixed.js');
+        window.logger && window.logger.log('📌 Referral stored locally, will be tracked by main-fixed.js');
         
         // Clean URL after tracking but preserve session data
         if (window.history && window.history.replaceState) {

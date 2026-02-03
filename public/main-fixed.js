@@ -42,7 +42,7 @@ const LAND_STATUS_CACHE = {
   // MAIN FUNCTION: Check land status with cascading fallbacks
   async checkLandStatus(address) {
     if (!address) {
-      console.log('🚩 SMART CACHE: No address provided');
+      window.logger && window.logger.log('🚩 SMART CACHE: No address provided');
       return null;
     }
     
@@ -54,14 +54,14 @@ const LAND_STATUS_CACHE = {
       const memoryData = this.memoryCache.get(address);
       
       if (now - memoryData.timestamp < this.MEMORY_EXPIRY) {
-        console.log(`🚩 LAYER 1 (Memory): ${shortAddr} land status = ${memoryData.hasLand} (cached)`);
+        window.logger && window.logger.log(`🚩 LAYER 1 (Memory): ${shortAddr} land status = ${memoryData.hasLand} (cached)`);
         return memoryData.hasLand;
       } else {
-        console.log(`🚩 LAYER 1 (Memory): Cache expired for ${shortAddr}`);
+        window.logger && window.logger.log(`🚩 LAYER 1 (Memory): Cache expired for ${shortAddr}`);
         this.memoryCache.delete(address);
       }
     } else {
-      console.log(`🚩 LAYER 1 (Memory): No cache for ${shortAddr}`);
+      window.logger && window.logger.log(`🚩 LAYER 1 (Memory): No cache for ${shortAddr}`);
     }
     
     // 🎯 LAYER 2: Check localStorage cache (persistent)
@@ -73,25 +73,25 @@ const LAND_STATUS_CACHE = {
         const parsed = JSON.parse(storedData);
         
         if (now - parsed.timestamp < this.STORAGE_EXPIRY) {
-          console.log(`🚩 LAYER 2 (Storage): ${shortAddr} land status = ${parsed.hasLand} (cached)`);
+          window.logger && window.logger.log(`🚩 LAYER 2 (Storage): ${shortAddr} land status = ${parsed.hasLand} (cached)`);
           
           // Restore to memory cache
           this.memoryCache.set(address, parsed);
           return parsed.hasLand;
         } else {
-          console.log(`🚩 LAYER 2 (Storage): Cache expired for ${shortAddr}`);
+          window.logger && window.logger.log(`🚩 LAYER 2 (Storage): Cache expired for ${shortAddr}`);
           localStorage.removeItem(cacheKey);
         }
       } else {
-        console.log(`🚩 LAYER 2 (Storage): No cache for ${shortAddr}`);
+        window.logger && window.logger.log(`🚩 LAYER 2 (Storage): No cache for ${shortAddr}`);
       }
     } catch (error) {
-      console.log(`🚩 LAYER 2 (Storage): Error reading cache for ${shortAddr}:`, error);
+      window.logger && window.logger.log(`🚩 LAYER 2 (Storage): Error reading cache for ${shortAddr}:`, error);
     }
     
     // 🎯 LAYER 3: API call (only if both caches failed)
     if (this.apiCallInProgress) {
-      console.log(`🚩 LAYER 3 (API): Call already in progress for ${shortAddr}, waiting...`);
+      window.logger && window.logger.log(`🚩 LAYER 3 (API): Call already in progress for ${shortAddr}, waiting...`);
       return null;
     }
     
@@ -103,12 +103,12 @@ const LAND_STATUS_CACHE = {
     }
     
     if (this.apiCallCount >= this.maxApiCallsPerMinute) {
-      console.log(`🚨 CIRCUIT BREAKER: Too many API calls (${this.apiCallCount}/${this.maxApiCallsPerMinute}), blocking for 1 minute`);
+      window.logger && window.logger.log(`🚨 CIRCUIT BREAKER: Too many API calls (${this.apiCallCount}/${this.maxApiCallsPerMinute}), blocking for 1 minute`);
       return null;
     }
     
     this.apiCallCount++;
-    console.log(`🚩 LAYER 3 (API): Making API call ${this.apiCallCount}/${this.maxApiCallsPerMinute} for ${shortAddr}...`);
+    window.logger && window.logger.log(`🚩 LAYER 3 (API): Making API call ${this.apiCallCount}/${this.maxApiCallsPerMinute} for ${shortAddr}...`);
     this.apiCallInProgress = true;
     
     try {
@@ -118,7 +118,7 @@ const LAND_STATUS_CACHE = {
       }
       
       const result = await response.json();
-      console.log(`🚩 LAYER 3 (API): Fresh data for ${shortAddr}:`, result);
+      window.logger && window.logger.log(`🚩 LAYER 3 (API): Fresh data for ${shortAddr}:`, result);
       
       // Update all cache layers with fresh data
       this.updateAllLayers(address, result.hasLand);
@@ -140,21 +140,21 @@ const LAND_STATUS_CACHE = {
     
     // Update memory cache
     this.memoryCache.set(address, data);
-    console.log(`🚩 MEMORY UPDATED: ${address.slice(0, 8)}... = ${hasLand}`);
+    window.logger && window.logger.log(`🚩 MEMORY UPDATED: ${address.slice(0, 8)}... = ${hasLand}`);
     
     // Update localStorage cache
     try {
       const cacheKey = this.getCacheKey(address);
       localStorage.setItem(cacheKey, JSON.stringify(data));
-      console.log(`🚩 STORAGE UPDATED: ${address.slice(0, 8)}... = ${hasLand}`);
+      window.logger && window.logger.log(`🚩 STORAGE UPDATED: ${address.slice(0, 8)}... = ${hasLand}`);
     } catch (error) {
-      console.log(`🚩 STORAGE UPDATE FAILED: ${error.message}`);
+      window.logger && window.logger.log(`🚩 STORAGE UPDATE FAILED: ${error.message}`);
     }
   },
   
   // Force update when land is purchased
   setLandStatus(address, hasLand) {
-    console.log(`🚩 FORCE UPDATE: ${address.slice(0, 8)}... = ${hasLand} (manual)`);
+    window.logger && window.logger.log(`🚩 FORCE UPDATE: ${address.slice(0, 8)}... = ${hasLand} (manual)`);
     this.updateAllLayers(address, hasLand);
   },
   
@@ -163,9 +163,9 @@ const LAND_STATUS_CACHE = {
     this.memoryCache.delete(address);
     try {
       localStorage.removeItem(this.getCacheKey(address));
-      console.log(`🚩 CACHE CLEARED: ${address.slice(0, 8)}...`);
+      window.logger && window.logger.log(`🚩 CACHE CLEARED: ${address.slice(0, 8)}...`);
     } catch (error) {
-      console.log(`🚩 CACHE CLEAR FAILED: ${error.message}`);
+      window.logger && window.logger.log(`🚩 CACHE CLEAR FAILED: ${error.message}`);
     }
   }
 };
@@ -175,10 +175,10 @@ const $ = (sel) => document.querySelector(sel);
 // 📡 Load configuration and initialize system
 async function loadConfig() {
   try {
-    console.log('📡 Loading config...');
+    window.logger && window.logger.log('📡 Loading config...');
     const res = await fetch('/api/config');
     state.config = await res.json();
-    console.log('✅ Config loaded:', state.config);
+    window.logger && window.logger.log('✅ Config loaded:', state.config);
     
     // Initialize Solana connection
     const clusterUrl = state.config.clusterUrl || 'https://api.devnet.solana.com';
@@ -205,10 +205,10 @@ function updateStaticInfo() {
 
 // 🛒 Render pickaxe shop (CRITICAL - was missing from optimized)
 function renderShop() {
-  console.log('🛒 renderShop() called');
+  window.logger && window.logger.log('🛒 renderShop() called');
   
   if (!state.config || !state.config.pickaxes) {
-    console.log('❌ renderShop: No config or pickaxes data available');
+    window.logger && window.logger.log('❌ renderShop: No config or pickaxes data available');
     return;
   }
   
@@ -218,7 +218,7 @@ function renderShop() {
     return;
   }
   
-  console.log('✅ renderShop: Found pickaxeGrid element, clearing content...');
+  window.logger && window.logger.log('✅ renderShop: Found pickaxeGrid element, clearing content...');
   grid.innerHTML = '';
   
   const pickaxes = [
@@ -228,7 +228,7 @@ function renderShop() {
     { key: 'netherite', name: 'Netherite Pickaxe', rate: 1000, cost: state.config.pickaxes.netherite.costSol, roi: '50 MINUTES', roiClass: 'roi-instant' }
   ];
   
-  console.log('🔧 renderShop: Creating pickaxe items...');
+  window.logger && window.logger.log('🔧 renderShop: Creating pickaxe items...');
   
   pickaxes.forEach((pickaxe, index) => {
     const item = document.createElement('div');
@@ -253,7 +253,7 @@ function renderShop() {
         iconSrc = 'assets/pickaxes/pickaxe-silver.png';
     }
     
-    console.log(`🔨 Creating ${pickaxe.key} pickaxe item (${index + 1}/4)`);
+    window.logger && window.logger.log(`🔨 Creating ${pickaxe.key} pickaxe item (${index + 1}/4)`);
     
     item.innerHTML = `
       <div class="pickaxe-header">
@@ -276,10 +276,10 @@ function renderShop() {
       <button class="buy-btn" onclick="buyPickaxe('${pickaxe.key}')">Buy</button>
     `;
     grid.appendChild(item);
-    console.log(`✅ Added ${pickaxe.key} pickaxe to shop`);
+    window.logger && window.logger.log(`✅ Added ${pickaxe.key} pickaxe to shop`);
   });
   
-  console.log('🎉 renderShop: All pickaxe items created successfully');
+  window.logger && window.logger.log('🎉 renderShop: All pickaxe items created successfully');
 }
 
 // ➕➖ Change quantity controls for pickaxe shop
@@ -292,7 +292,7 @@ function changeQuantity(pickaxeType, delta) {
 
 // 🔗 CLEAN WALLET CONNECTION - Simple Logic Flow
 async function connectWallet() {
-  console.log('🔗 Connecting wallet...');
+  window.logger && window.logger.log('🔗 Connecting wallet...');
   
   const provider = window.solana || window.phantom?.solana;
   if (!provider) {
@@ -313,7 +313,7 @@ async function connectWallet() {
     // 🔄 WALLET SWITCH DETECTION - Clear old state if switching wallets
     const previousAddress = state.address;
     if (previousAddress && previousAddress !== address) {
-      console.log(`🔄 Wallet switched from ${previousAddress.slice(0, 8)}... to ${address.slice(0, 8)}...`);
+      window.logger && window.logger.log(`🔄 Wallet switched from ${previousAddress.slice(0, 8)}... to ${address.slice(0, 8)}...`);
       
       // Clear old wallet's cache and state
       LAND_STATUS_CACHE.clearCache(previousAddress);
@@ -327,14 +327,14 @@ async function connectWallet() {
     state.address = address;
     localStorage.setItem('gm_address', address);
     
-    console.log('✅ Wallet connected:', address.slice(0, 8) + '...');
+    window.logger && window.logger.log('✅ Wallet connected:', address.slice(0, 8) + '...');
     
     // 💰 UPDATE WALLET BALANCE
     await updateWalletBalance();
     updateConnectButtonDisplay();
     
     // 📊 LOAD USER DATA FROM DATABASE
-    console.log('📊 Loading user data from database...');
+    window.logger && window.logger.log('📊 Loading user data from database...');
     const userData = await loadInitialUserData();
     
     if (userData) {
@@ -355,19 +355,19 @@ async function connectWallet() {
         last_checkpoint_gold: userData.last_checkpoint_gold || 0
       };
       
-      console.log('✅ User data loaded and displayed');
+      window.logger && window.logger.log('✅ User data loaded and displayed');
     } else {
-      console.log('ℹ️ New user - starting with empty state');
+      window.logger && window.logger.log('ℹ️ New user - starting with empty state');
       updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
     }
     
     // 🏞️ STEP 1: CHECK LAND STATUS FROM API (ONLY ON WALLET CONNECT)
-    console.log('🔍 Step 1: Checking land status from API...');
+    window.logger && window.logger.log('🔍 Step 1: Checking land status from API...');
     const hasLand = await LAND_STATUS_CACHE.checkLandStatus(address);
     
     if (hasLand === true) {
       // ✅ USER HAS LAND
-      console.log('✅ User has land - updating UI');
+      window.logger && window.logger.log('✅ User has land - updating UI');
       LAND_STATUS_CACHE.setLandStatus(address, true);
       hideMandatoryLandModal();
       
@@ -379,7 +379,7 @@ async function connectWallet() {
       
     } else {
       // ❌ USER NEEDS LAND
-      console.log('❌ User needs land - showing purchase popup');
+      window.logger && window.logger.log('❌ User needs land - showing purchase popup');
       LAND_STATUS_CACHE.setLandStatus(address, false);
       showMandatoryLandModal();
       
@@ -404,7 +404,7 @@ async function buyPickaxe(pickaxeType) {
   }
 
   try {
-    console.log('🛒 Buying pickaxe:', pickaxeType);
+    window.logger && window.logger.log('🛒 Buying pickaxe:', pickaxeType);
     
     const quantityInput = $(`#qty-${pickaxeType}`);
     const quantity = parseInt(quantityInput?.value) || 1;
@@ -432,7 +432,7 @@ async function buyPickaxe(pickaxeType) {
     $('#shopMsg').textContent = `⏳ Transaction sent! Waiting for blockchain confirmation...`;
     $('#shopMsg').style.color = '#2196F3';
     
-    console.log('⏳ Waiting for blockchain to confirm transaction:', sig.signature);
+    window.logger && window.logger.log('⏳ Waiting for blockchain to confirm transaction:', sig.signature);
 
     // Confirm with server (this may take up to 15 seconds with retries)
     const r2 = await fetch('/api/purchase-confirm', {
@@ -484,14 +484,14 @@ async function buyPickaxe(pickaxeType) {
     });
     
     // 🎁 CRITICAL: Check if referral can be completed now
-    console.log('🎁 Pickaxe purchased - checking referral completion...');
+    window.logger && window.logger.log('🎁 Pickaxe purchased - checking referral completion...');
     await autoCheckReferralCompletion();
     
     // 🔥 CRITICAL FIX: Update state with server response properly
     const serverInventory = j2.inventory || j2.newInventory;
     if (serverInventory) {
       state.status.inventory = serverInventory;
-      console.log('✅ Updated inventory after SOL purchase:', serverInventory);
+      window.logger && window.logger.log('✅ Updated inventory after SOL purchase:', serverInventory);
     }
     
     // Update checkpoint for mining
@@ -504,7 +504,7 @@ async function buyPickaxe(pickaxeType) {
       last_checkpoint_gold: state.status.gold || 0
     };
     
-    console.log('✅ Updated checkpoint after SOL purchase:', state.checkpoint);
+    window.logger && window.logger.log('✅ Updated checkpoint after SOL purchase:', state.checkpoint);
     
     // Update UI immediately with new values
     updateDisplay({
@@ -515,17 +515,17 @@ async function buyPickaxe(pickaxeType) {
     
     // Restart mining engine with new checkpoint
     if (state.checkpoint.total_mining_power > 0) {
-      console.log('⛏️ Restarting mining engine after SOL purchase:', state.checkpoint.total_mining_power);
-      console.log('⛏️ New checkpoint data:', state.checkpoint);
+      window.logger && window.logger.log('⛏️ Restarting mining engine after SOL purchase:', state.checkpoint.total_mining_power);
+      window.logger && window.logger.log('⛏️ New checkpoint data:', state.checkpoint);
       
       // Force stop the old engine
       if (state.optimizedMiningEngine && state.optimizedMiningEngine.isRunning) {
-        console.log('🛑 Stopping old mining engine...');
+        window.logger && window.logger.log('🛑 Stopping old mining engine...');
         state.optimizedMiningEngine.stop();
         
         // Wait a moment for the engine to fully stop
         setTimeout(() => {
-          console.log('▶️ Starting new mining engine with updated checkpoint...');
+          window.logger && window.logger.log('▶️ Starting new mining engine with updated checkpoint...');
           startCheckpointGoldLoop();
         }, 100);
       } else {
@@ -534,7 +534,7 @@ async function buyPickaxe(pickaxeType) {
     }
     
     // 💾 NEW: Save checkpoint after purchase (server already saved, this is client confirmation)
-    console.log('💾 Pickaxe purchase complete - checkpoint already saved by server');
+    window.logger && window.logger.log('💾 Pickaxe purchase complete - checkpoint already saved by server');
     
     // Update wallet balance
     await updateWalletBalance();
@@ -620,12 +620,12 @@ function updateConnectButtonDisplay() {
 // 📊 Load initial user data from database
 async function loadInitialUserData() {
   if (!state.address) {
-    console.log('⚠️ Cannot load user data - no wallet connected');
+    window.logger && window.logger.log('⚠️ Cannot load user data - no wallet connected');
     return null;
   }
 
   try {
-    console.log('📡 Loading user data from database (one-time load)...');
+    window.logger && window.logger.log('📡 Loading user data from database (one-time load)...');
     
     const response = await fetch(`/api/status?address=${encodeURIComponent(state.address)}`);
     
@@ -636,7 +636,7 @@ async function loadInitialUserData() {
     const userData = await response.json();
     if (userData.error) throw new Error(userData.error);
     
-    console.log('✅ User data loaded from database:', userData);
+    window.logger && window.logger.log('✅ User data loaded from database:', userData);
     
     const checkpointData = {
       last_checkpoint_gold: userData.gold || 0,
@@ -645,7 +645,7 @@ async function loadInitialUserData() {
       checkpoint_timestamp: userData.checkpoint?.checkpoint_timestamp || Math.floor(Date.now() / 1000)
     };
     
-    console.log('📊 Checkpoint data for engine:', checkpointData);
+    window.logger && window.logger.log('📊 Checkpoint data for engine:', checkpointData);
     return checkpointData;
     
   } catch (error) {
@@ -656,7 +656,7 @@ async function loadInitialUserData() {
 
 // 🔄 Update display with user data
 function updateDisplay(data) {
-  console.log('🔄 updateDisplay called with data:', data);
+  window.logger && window.logger.log('🔄 updateDisplay called with data:', data);
   
   const serverGold = data.gold || 0;
   const serverInventory = data.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 };
@@ -669,7 +669,7 @@ function updateDisplay(data) {
       minimumFractionDigits: 2, 
       maximumFractionDigits: 2 
     });
-    console.log('✅ Gold display updated to:', totalGoldEl.textContent);
+    window.logger && window.logger.log('✅ Gold display updated to:', totalGoldEl.textContent);
   }
   
   // Update total pickaxes
@@ -677,7 +677,7 @@ function updateDisplay(data) {
   const totalPickaxesEl = $('#totalPickaxes');
   if (totalPickaxesEl) {
     totalPickaxesEl.textContent = totalPickaxes.toLocaleString();
-    console.log('✅ Updated totalPickaxes display to:', totalPickaxes);
+    window.logger && window.logger.log('✅ Updated totalPickaxes display to:', totalPickaxes);
   }
   
   // Update mining rate
@@ -746,12 +746,12 @@ function updateDisplay(data) {
 // 🔄 Refresh status from server
 async function refreshStatus(afterPurchase = false) {
   if (!state.address) {
-    console.log('⏭️ Skipping status refresh - no wallet connected');
+    window.logger && window.logger.log('⏭️ Skipping status refresh - no wallet connected');
     return;
   }
   
   try {
-    console.log('📊 Refreshing status for:', state.address.slice(0, 8) + '...');
+    window.logger && window.logger.log('📊 Refreshing status for:', state.address.slice(0, 8) + '...');
     
     const headers = afterPurchase ? { 'x-last-purchase': Date.now().toString() } : {};
     
@@ -778,16 +778,16 @@ async function refreshStatus(afterPurchase = false) {
       last_checkpoint_gold: json.gold || 0
     };
     
-    console.log('📈 Raw server data:', json);
+    window.logger && window.logger.log('📈 Raw server data:', json);
     updateDisplay(json);
     
     // Start mining if checkpoint exists
     if (state.checkpoint && state.checkpoint.total_mining_power > 0) {
-      console.log('⛏️ Found existing mining power, starting mining...');
+      window.logger && window.logger.log('⛏️ Found existing mining power, starting mining...');
       startCheckpointGoldLoop();
     }
     
-    console.log('✅ Status updated successfully');
+    window.logger && window.logger.log('✅ Status updated successfully');
     
   } catch (e) {
     console.error('❌ Status refresh failed:', e.message);
@@ -802,7 +802,7 @@ function startCheckpointGoldLoop() {
     state.goldUpdateInterval = null;
   }
   
-  console.log('🚀 Starting OPTIMIZED checkpoint gold loop (NO TIMERS!)');
+  window.logger && window.logger.log('🚀 Starting OPTIMIZED checkpoint gold loop (NO TIMERS!)');
   
   // Create optimized mining engine
   if (!state.optimizedMiningEngine) {
@@ -871,7 +871,7 @@ function startCheckpointGoldLoop() {
   if (state.checkpoint && state.checkpoint.total_mining_power > 0) {
     // Force update the checkpoint even if engine is running
     if (state.optimizedMiningEngine.isRunning) {
-      console.log('⚠️ Mining engine already running, forcing checkpoint update...');
+      window.logger && window.logger.log('⚠️ Mining engine already running, forcing checkpoint update...');
       state.optimizedMiningEngine.checkpoint = state.checkpoint;
     } else {
       state.optimizedMiningEngine.start(state.checkpoint);
@@ -898,7 +898,7 @@ function calculateGoldFromCheckpoint(checkpoint) {
 // 💾 Save checkpoint to server (called on actions and page close)
 async function saveCheckpoint(goldAmount = null) {
   if (!state.address || !state.checkpoint) {
-    console.log('⚠️ Cannot save checkpoint - no wallet or checkpoint data');
+    window.logger && window.logger.log('⚠️ Cannot save checkpoint - no wallet or checkpoint data');
     return;
   }
   
@@ -907,7 +907,7 @@ async function saveCheckpoint(goldAmount = null) {
     const currentGold = goldAmount !== null ? goldAmount : calculateGoldFromCheckpoint(state.checkpoint);
     const timestamp = Math.floor(Date.now() / 1000);
     
-    console.log('💾 Saving checkpoint:', {
+    window.logger && window.logger.log('💾 Saving checkpoint:', {
       address: state.address.slice(0, 8) + '...',
       gold: currentGold.toFixed(2),
       timestamp
@@ -931,7 +931,7 @@ async function saveCheckpoint(goldAmount = null) {
     const result = await response.json();
     
     if (result.success) {
-      console.log('✅ Checkpoint saved successfully:', result.checkpoint);
+      window.logger && window.logger.log('✅ Checkpoint saved successfully:', result.checkpoint);
       return result.checkpoint;
     } else {
       throw new Error(result.error || 'Unknown error');
@@ -954,7 +954,7 @@ function stopMining() {
   // Stop new optimized system
   if (state.optimizedMiningEngine) {
     state.optimizedMiningEngine.stop();
-    console.log('🛑 Optimized mining engine stopped');
+    window.logger && window.logger.log('🛑 Optimized mining engine stopped');
   }
 }
 
@@ -970,15 +970,15 @@ async function autoReconnectWallet() {
   try {
     const savedAddress = localStorage.getItem('gm_address');
     if (!savedAddress) {
-      console.log('🔄 No saved wallet address found');
+      window.logger && window.logger.log('🔄 No saved wallet address found');
       return;
     }
     
-    console.log('🔄 Found saved wallet address, attempting auto-reconnect...', savedAddress.slice(0, 8) + '...');
+    window.logger && window.logger.log('🔄 Found saved wallet address, attempting auto-reconnect...', savedAddress.slice(0, 8) + '...');
     
     const provider = window.solana || window.phantom?.solana;
     if (!provider) {
-      console.log('⚠️ Phantom wallet not available for auto-reconnect');
+      window.logger && window.logger.log('⚠️ Phantom wallet not available for auto-reconnect');
       return;
     }
     
@@ -987,12 +987,12 @@ async function autoReconnectWallet() {
       const currentAddress = provider.publicKey.toString();
       
       if (currentAddress === savedAddress) {
-        console.log('✅ Phantom wallet already connected, restoring session...');
+        window.logger && window.logger.log('✅ Phantom wallet already connected, restoring session...');
         
         state.wallet = provider;
         state.address = savedAddress;
         
-        console.log('✅ Wallet auto-reconnected:', savedAddress.slice(0, 8) + '...');
+        window.logger && window.logger.log('✅ Wallet auto-reconnected:', savedAddress.slice(0, 8) + '...');
         
         // Update wallet balance
         await updateWalletBalance();
@@ -1002,7 +1002,7 @@ async function autoReconnectWallet() {
         const userData = await loadInitialUserData();
         
         if (userData) {
-          console.log('✅ User data restored after refresh:', userData);
+          window.logger && window.logger.log('✅ User data restored after refresh:', userData);
           
           // Update display with loaded data
           updateDisplay({
@@ -1024,29 +1024,29 @@ async function autoReconnectWallet() {
           
           // Start mining if has mining power
           if (state.checkpoint.total_mining_power > 0) {
-            console.log('⛏️ Resuming mining after page refresh...');
+            window.logger && window.logger.log('⛏️ Resuming mining after page refresh...');
             startCheckpointGoldLoop();
           }
           
-          console.log('🎉 Wallet auto-reconnect and data restore complete!');
+          window.logger && window.logger.log('🎉 Wallet auto-reconnect and data restore complete!');
         } else {
-          console.log('ℹ️ New user after auto-reconnect');
+          window.logger && window.logger.log('ℹ️ New user after auto-reconnect');
           updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
         }
         
         // 🏞️ CHECK LAND STATUS AFTER AUTO-RECONNECT (CACHE ONLY)
-        console.log('🔍 Checking land status after auto-reconnect (cache only)...');
+        window.logger && window.logger.log('🔍 Checking land status after auto-reconnect (cache only)...');
         const cachedData = LAND_STATUS_CACHE.memoryCache.get(savedAddress);
         let hasLand = cachedData ? cachedData.hasLand : null;
         
         // If no cache, make ONE API call
         if (hasLand === null) {
-          console.log('📡 No cache found, making single API call...');
+          window.logger && window.logger.log('📡 No cache found, making single API call...');
           hasLand = await LAND_STATUS_CACHE.checkLandStatus(savedAddress);
         }
         
         if (hasLand === true) {
-          console.log('✅ Auto-reconnect: User has land');
+          window.logger && window.logger.log('✅ Auto-reconnect: User has land');
           hideMandatoryLandModal();
           // Show share links
           setTimeout(() => {
@@ -1054,7 +1054,7 @@ async function autoReconnectWallet() {
             updatePromotersStatus();
           }, 500);
         } else {
-          console.log('❌ Auto-reconnect: User needs land');
+          window.logger && window.logger.log('❌ Auto-reconnect: User needs land');
           showMandatoryLandModal();
         }
         
@@ -1062,12 +1062,12 @@ async function autoReconnectWallet() {
         setupWalletSwitchDetection(provider);
         
       } else {
-        console.log('⚠️ Connected wallet address differs from saved address - wallet switched');
+        window.logger && window.logger.log('⚠️ Connected wallet address differs from saved address - wallet switched');
         await handleWalletSwitch(currentAddress, provider);
       }
     } else {
       // Try to reconnect automatically
-      console.log('🔄 Wallet not connected, attempting silent reconnect...');
+      window.logger && window.logger.log('🔄 Wallet not connected, attempting silent reconnect...');
       
       try {
         // Try silent connect (will only work if previously connected)
@@ -1075,7 +1075,7 @@ async function autoReconnectWallet() {
         const account = resp?.publicKey || provider.publicKey;
         
         if (account && account.toString() === savedAddress) {
-          console.log('✅ Silent reconnection successful');
+          window.logger && window.logger.log('✅ Silent reconnection successful');
           
           state.wallet = provider;
           state.address = savedAddress;
@@ -1102,18 +1102,18 @@ async function autoReconnectWallet() {
           }
           
           // 🏞️ CHECK LAND STATUS AFTER SILENT RECONNECT (CACHE ONLY)
-          console.log('🔍 Checking land status after silent reconnect (cache only)...');
+          window.logger && window.logger.log('🔍 Checking land status after silent reconnect (cache only)...');
           const cachedData = LAND_STATUS_CACHE.memoryCache.get(savedAddress);
           let hasLand = cachedData ? cachedData.hasLand : null;
           
           // If no cache, make ONE API call
           if (hasLand === null) {
-            console.log('📡 No cache found, making single API call...');
+            window.logger && window.logger.log('📡 No cache found, making single API call...');
             hasLand = await LAND_STATUS_CACHE.checkLandStatus(savedAddress);
           }
           
           if (hasLand === true) {
-            console.log('✅ Silent reconnect: User has land');
+            window.logger && window.logger.log('✅ Silent reconnect: User has land');
             hideMandatoryLandModal();
             // Show share links
             setTimeout(() => {
@@ -1121,18 +1121,18 @@ async function autoReconnectWallet() {
               updatePromotersStatus();
             }, 500);
           } else {
-            console.log('❌ Silent reconnect: User needs land');
+            window.logger && window.logger.log('❌ Silent reconnect: User needs land');
             showMandatoryLandModal();
           }
           
           setupWalletSwitchDetection(provider);
           
         } else {
-          console.log('⚠️ Silent reconnection failed or different wallet');
+          window.logger && window.logger.log('⚠️ Silent reconnection failed or different wallet');
         }
         
       } catch (silentConnectError) {
-        console.log('ℹ️ Silent reconnection not available - user needs to connect manually');
+        window.logger && window.logger.log('ℹ️ Silent reconnection not available - user needs to connect manually');
         // This is normal - just means user needs to click connect
       }
     }
@@ -1150,10 +1150,10 @@ function setupWalletSwitchDetection(provider) {
   
   provider.on('accountChanged', (publicKey) => {
     if (publicKey) {
-      console.log('🔄 Wallet switched to:', publicKey.toString().slice(0, 8) + '...');
+      window.logger && window.logger.log('🔄 Wallet switched to:', publicKey.toString().slice(0, 8) + '...');
       handleWalletSwitch(publicKey.toString(), provider);
     } else {
-      console.log('🔄 Wallet disconnected');
+      window.logger && window.logger.log('🔄 Wallet disconnected');
       handleWalletDisconnect();
     }
   });
@@ -1163,7 +1163,7 @@ function setupWalletSwitchDetection(provider) {
 async function handleWalletSwitch(newAddress, provider) {
   const previousAddress = state.address;
   
-  console.log(`🔄 Wallet switch: ${previousAddress?.slice(0, 8)}... → ${newAddress.slice(0, 8)}...`);
+  window.logger && window.logger.log(`🔄 Wallet switch: ${previousAddress?.slice(0, 8)}... → ${newAddress.slice(0, 8)}...`);
   
   // 🧹 CLEAN UP OLD WALLET STATE
   stopMining();
@@ -1204,18 +1204,18 @@ async function handleWalletSwitch(newAddress, provider) {
   }
   
   // 🏞️ CHECK LAND STATUS FOR NEW WALLET (CACHE ONLY)
-  console.log('🔍 Checking land status for new wallet (cache only)...');
+  window.logger && window.logger.log('🔍 Checking land status for new wallet (cache only)...');
   const cachedData = LAND_STATUS_CACHE.memoryCache.get(newAddress);
   let hasLand = cachedData ? cachedData.hasLand : null;
   
   // If no cache, make ONE API call
   if (hasLand === null) {
-    console.log('📡 No cache found for new wallet, making single API call...');
+    window.logger && window.logger.log('📡 No cache found for new wallet, making single API call...');
     hasLand = await LAND_STATUS_CACHE.checkLandStatus(newAddress);
   }
   
   if (hasLand === true) {
-    console.log('✅ New wallet has land');
+    window.logger && window.logger.log('✅ New wallet has land');
     LAND_STATUS_CACHE.setLandStatus(newAddress, true);
     hideMandatoryLandModal();
     // Show share links
@@ -1224,17 +1224,17 @@ async function handleWalletSwitch(newAddress, provider) {
       updatePromotersStatus();
     }, 500);
   } else {
-    console.log('❌ New wallet needs land');
+    window.logger && window.logger.log('❌ New wallet needs land');
     LAND_STATUS_CACHE.setLandStatus(newAddress, false);
     showMandatoryLandModal();
   }
   
-  console.log('✅ Wallet switch completed');
+  window.logger && window.logger.log('✅ Wallet switch completed');
 }
 
 // 🔄 Handle wallet disconnect
 function handleWalletDisconnect() {
-  console.log('🔄 Handling wallet disconnect...');
+  window.logger && window.logger.log('🔄 Handling wallet disconnect...');
   
   // Stop mining and polling
   stopMining();
@@ -1252,7 +1252,7 @@ function handleWalletDisconnect() {
   updateConnectButtonDisplay();
   updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
   
-  console.log('✅ Wallet disconnect handled');
+  window.logger && window.logger.log('✅ Wallet disconnect handled');
 }
 
 // ✅ REMOVED OLD COMPLEX LAND STATUS CHECK FUNCTION
@@ -1269,14 +1269,14 @@ function getLandOwnershipFlag(address) {
   
   if (cached) {
     const data = JSON.parse(cached);
-    console.log('📦 Land flag from cache:', data);
+    window.logger && window.logger.log('📦 Land flag from cache:', data);
     return {
       hasLand: data.hasLand,
       lastChecked: data.timestamp
     };
   }
   
-  console.log('📦 No land flag cache found for address');
+  window.logger && window.logger.log('📦 No land flag cache found for address');
   return {
     hasLand: null,
     lastChecked: 0
@@ -1299,7 +1299,7 @@ function setLandOwnershipFlag(address, hasLand) {
   state.landFlags.hasLand = hasLand;
   state.landFlags.lastChecked = now;
   
-  console.log('🚩 Land ownership flag set:', { address: address.slice(0, 8) + '...', hasLand, timestamp: now });
+  window.logger && window.logger.log('🚩 Land ownership flag set:', { address: address.slice(0, 8) + '...', hasLand, timestamp: now });
   
   // Optional: Sync to database for cross-device consistency
   syncLandFlagToDatabase(address, hasLand);
@@ -1309,7 +1309,7 @@ function setLandOwnershipFlag(address, hasLand) {
 async function syncLandFlagToDatabase(address, hasLand) {
   // DISABLED: API endpoint doesn't exist yet
   // Cache-only approach is sufficient for preventing infinite loops
-  console.log('📝 Land flag would sync to database:', { address: address.slice(0,8) + '...', hasLand });
+  window.logger && window.logger.log('📝 Land flag would sync to database:', { address: address.slice(0,8) + '...', hasLand });
   
   // TODO: Create /api/sync-land-flag endpoint later if needed
   // For now, localStorage cache is sufficient to prevent infinite loops
@@ -1321,7 +1321,7 @@ async function syncLandFlagToDatabase(address, hasLand) {
 
 // 🚨 Show mandatory land purchase modal
 function showMandatoryLandModal() {
-  console.log('🚨 Showing mandatory land purchase modal...');
+  window.logger && window.logger.log('🚨 Showing mandatory land purchase modal...');
   
   const landModal = $('#landModal');
   if (landModal) {
@@ -1333,13 +1333,13 @@ function showMandatoryLandModal() {
     // Disable page interactions (optional - prevent clicking other elements)
     document.body.style.overflow = 'hidden';
     
-    console.log('🚨 Mandatory land modal displayed - user must purchase land');
+    window.logger && window.logger.log('🚨 Mandatory land modal displayed - user must purchase land');
   }
 }
 
 // ✅ Hide mandatory land purchase modal
 function hideMandatoryLandModal() {
-  console.log('✅ Hiding mandatory land purchase modal...');
+  window.logger && window.logger.log('✅ Hiding mandatory land purchase modal...');
   
   const landModal = $('#landModal');
   if (landModal) {
@@ -1353,7 +1353,7 @@ function hideMandatoryLandModal() {
     // Re-enable page interactions
     document.body.style.overflow = 'auto';
     
-    console.log('✅ Mandatory land modal hidden - user has access');
+    window.logger && window.logger.log('✅ Mandatory land modal hidden - user has access');
   }
 }
 
@@ -1368,12 +1368,12 @@ function checkIfUserNeedsLand() {
 // 🔧 REFERRAL FIX: Auto-check referral completion function (COPIED FROM WORKING VERSION)
 async function autoCheckReferralCompletion() {
   if (!state.address) {
-    console.log('⚠️ No wallet connected for referral completion check');
+    window.logger && window.logger.log('⚠️ No wallet connected for referral completion check');
     return;
   }
   
   try {
-    console.log('🤝 Auto-checking referral completion for:', state.address.slice(0, 8) + '...');
+    window.logger && window.logger.log('🤝 Auto-checking referral completion for:', state.address.slice(0, 8) + '...');
     
     const response = await fetch('/api/complete-referral', {
       method: 'POST',
@@ -1388,14 +1388,14 @@ async function autoCheckReferralCompletion() {
     
     // Check if referral was completed AND not already rewarded
     if (result.success && result.referral_completed && !result.already_rewarded) {
-      console.log('🎉 REFERRAL COMPLETED!', result);
+      window.logger && window.logger.log('🎉 REFERRAL COMPLETED!', result);
       
       // Show success notification
       showReferralCompletionNotification(result);
       
       // Update gold directly from referral result (don't fetch from server)
       if (result.newGold !== undefined) {
-        console.log('💰 Updating gold from referral completion:', result.newGold);
+        window.logger && window.logger.log('💰 Updating gold from referral completion:', result.newGold);
         state.status.gold = result.newGold;
         if (state.checkpoint) {
           state.checkpoint.last_checkpoint_gold = result.newGold;
@@ -1409,11 +1409,11 @@ async function autoCheckReferralCompletion() {
       }
       
     } else if (result.success && result.referral_completed && result.already_rewarded) {
-      console.log('ℹ️ Referral already completed previously - no duplicate reward');
+      window.logger && window.logger.log('ℹ️ Referral already completed previously - no duplicate reward');
     } else if (result.success && !result.referral_completed) {
-      console.log('ℹ️ No referral completion needed:', result.message);
+      window.logger && window.logger.log('ℹ️ No referral completion needed:', result.message);
     } else {
-      console.log('⚠️ Referral completion check failed:', result.error || 'Unknown error');
+      window.logger && window.logger.log('⚠️ Referral completion check failed:', result.error || 'Unknown error');
     }
     
   } catch (error) {
@@ -1486,7 +1486,7 @@ function showReferralCompletionNotification(result) {
 
 // 🏪 Gold Store Modal Functions
 function openGoldStoreModal() {
-  console.log('🏪 Opening Gold Store Modal...');
+  window.logger && window.logger.log('🏪 Opening Gold Store Modal...');
   const modal = $('#goldStoreModal');
   if (modal) {
     modal.style.display = 'flex';
@@ -1495,7 +1495,7 @@ function openGoldStoreModal() {
 }
 
 function closeGoldStoreModal() {
-  console.log('🏪 Closing Gold Store Modal...');
+  window.logger && window.logger.log('🏪 Closing Gold Store Modal...');
   const modal = $('#goldStoreModal');
   if (modal) {
     modal.style.display = 'none';
@@ -1516,7 +1516,7 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
   }
 
   // 🔥 CRITICAL: Save checkpoint before purchase to get accurate gold count
-  console.log('💾 Saving checkpoint before gold purchase to get accurate balance...');
+  window.logger && window.logger.log('💾 Saving checkpoint before gold purchase to get accurate balance...');
   const currentGoldFromMining = calculateGoldFromCheckpoint(state.checkpoint);
   await saveCheckpoint(currentGoldFromMining);
   
@@ -1531,7 +1531,7 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
     currentGold = state.status.gold || 0;
   }
 
-  console.log(`💰 Current gold for purchase check:`, {
+  window.logger && window.logger.log(`💰 Current gold for purchase check:`, {
     calculatedGold: currentGold.toFixed(2),
     checkpoint: state.checkpoint,
     statusGold: state.status.gold,
@@ -1544,7 +1544,7 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
     return;
   }
 
-  console.log(`🛒 Buying ${pickaxeType} pickaxe with ${goldCost.toLocaleString()} gold...`);
+  window.logger && window.logger.log(`🛒 Buying ${pickaxeType} pickaxe with ${goldCost.toLocaleString()} gold...`);
   
   // Show processing message
   const msgEl = $('#modalStoreMsg');
@@ -1568,7 +1568,7 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
     const result = await response.json();
 
     if (result.success) {
-      console.log('✅ Successfully purchased with gold!', result);
+      window.logger && window.logger.log('✅ Successfully purchased with gold!', result);
       
       // Show success message prominently
       msgEl.textContent = `✅ Successfully purchased ${pickaxeType.toUpperCase()} pickaxe!`;
@@ -1589,7 +1589,7 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
       const newGold = result.goldRemaining || 0;
       const newMiningPower = result.miningPower || 0;
 
-      console.log('🔄 Updating state with server data:', {
+      window.logger && window.logger.log('🔄 Updating state with server data:', {
         newGold,
         newInventory,
         newMiningPower
@@ -1607,7 +1607,7 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
         last_checkpoint_gold: newGold
       };
 
-      console.log('✅ State updated, refreshing UI...');
+      window.logger && window.logger.log('✅ State updated, refreshing UI...');
 
       // Update UI immediately
       updateDisplay({
@@ -1618,17 +1618,17 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
 
       // Restart mining engine with new checkpoint
       if (state.checkpoint.total_mining_power > 0) {
-        console.log('⛏️ Restarting mining engine with new power:', state.checkpoint.total_mining_power);
-        console.log('⛏️ New checkpoint data:', state.checkpoint);
+        window.logger && window.logger.log('⛏️ Restarting mining engine with new power:', state.checkpoint.total_mining_power);
+        window.logger && window.logger.log('⛏️ New checkpoint data:', state.checkpoint);
         
         // Force stop the old engine
         if (state.optimizedMiningEngine && state.optimizedMiningEngine.isRunning) {
-          console.log('🛑 Stopping old mining engine...');
+          window.logger && window.logger.log('🛑 Stopping old mining engine...');
           state.optimizedMiningEngine.stop();
           
           // Wait a moment for the engine to fully stop
           setTimeout(() => {
-            console.log('▶️ Starting new mining engine with updated checkpoint...');
+            window.logger && window.logger.log('▶️ Starting new mining engine with updated checkpoint...');
             startCheckpointGoldLoop();
           }, 100);
         } else {
@@ -1640,7 +1640,7 @@ async function buyPickaxeWithGold(pickaxeType, goldCost) {
       updateGoldStoreModal();
       
       // 🎁 Check if referral can be completed now
-      console.log('🎁 Pickaxe purchased with gold - checking referral completion...');
+      window.logger && window.logger.log('🎁 Pickaxe purchased with gold - checking referral completion...');
       await autoCheckReferralCompletion();
 
       // Clear message after 5 seconds
@@ -1689,23 +1689,23 @@ async function sellGold() {
   // Try to get gold from optimized mining engine first (most accurate)
   if (state.optimizedMiningEngine && state.optimizedMiningEngine.getCurrentGold) {
     currentGold = state.optimizedMiningEngine.getCurrentGold();
-    console.log(`💰 Current gold from mining engine: ${currentGold}`);
+    window.logger && window.logger.log(`💰 Current gold from mining engine: ${currentGold}`);
   } 
   // Fallback to checkpoint calculation
   else if (state.checkpoint) {
     currentGold = calculateGoldFromCheckpoint(state.checkpoint);
-    console.log(`💰 Current gold from checkpoint: ${currentGold}`);
+    window.logger && window.logger.log(`💰 Current gold from checkpoint: ${currentGold}`);
   }
   // Last resort: use status gold
   else {
     currentGold = state.status.gold || 0;
-    console.log(`💰 Current gold from status: ${currentGold}`);
+    window.logger && window.logger.log(`💰 Current gold from status: ${currentGold}`);
   }
   
-  console.log(`💰 Final gold for selling check: ${currentGold}`);
-  console.log(`💰 User wants to sell: ${goldToSell}`);
-  console.log(`💰 state.checkpoint exists: ${!!state.checkpoint}`);
-  console.log(`💰 state.optimizedMiningEngine exists: ${!!state.optimizedMiningEngine}`);
+  window.logger && window.logger.log(`💰 Final gold for selling check: ${currentGold}`);
+  window.logger && window.logger.log(`💰 User wants to sell: ${goldToSell}`);
+  window.logger && window.logger.log(`💰 state.checkpoint exists: ${!!state.checkpoint}`);
+  window.logger && window.logger.log(`💰 state.optimizedMiningEngine exists: ${!!state.optimizedMiningEngine}`);
   
   if (goldToSell > currentGold) {
     alert(`Not enough gold! You have ${Math.floor(currentGold).toLocaleString()} gold available`);
@@ -1723,16 +1723,16 @@ async function sellGold() {
   }
 
   try {
-    console.log(`💰 Selling ${goldToSell} gold...`);
-    console.log(`💰 state.address:`, state.address);
-    console.log(`💰 goldToSell:`, goldToSell);
+    window.logger && window.logger.log(`💰 Selling ${goldToSell} gold...`);
+    window.logger && window.logger.log(`💰 state.address:`, state.address);
+    window.logger && window.logger.log(`💰 goldToSell:`, goldToSell);
     
     const requestBody = {
       address: state.address,
       amountGold: goldToSell
     };
     
-    console.log(`💰 Request body being sent:`, JSON.stringify(requestBody));
+    window.logger && window.logger.log(`💰 Request body being sent:`, JSON.stringify(requestBody));
     
     const response = await fetch('/api/sell-working-final', {
       method: 'POST',
@@ -1749,7 +1749,7 @@ async function sellGold() {
       $('#goldToSell').value = '';
       
       // 💾 NEW: Save checkpoint after selling gold
-      console.log('💾 Saving checkpoint after gold sale...');
+      window.logger && window.logger.log('💾 Saving checkpoint after gold sale...');
       const currentGold = calculateGoldFromCheckpoint(state.checkpoint);
       const newGold = currentGold - goldToSell;
       
@@ -1769,7 +1769,7 @@ async function sellGold() {
         checkpoint: state.checkpoint
       });
       
-      console.log('✅ Gold updated after sale, UI refreshed');
+      window.logger && window.logger.log('✅ Gold updated after sale, UI refreshed');
     } else {
       throw new Error(result.error || 'Sell failed');
     }
@@ -1782,7 +1782,7 @@ async function sellGold() {
 
 // ❓ How It Works Modal Functions
 function showHowItWorksModal() {
-  console.log('❓ Showing How It Works Modal...');
+  window.logger && window.logger.log('❓ Showing How It Works Modal...');
   const modal = $('#howItWorksModal');
   if (modal) {
     modal.style.display = 'flex';
@@ -1790,7 +1790,7 @@ function showHowItWorksModal() {
 }
 
 function hideHowItWorksModal() {
-  console.log('❓ Hiding How It Works Modal...');
+  window.logger && window.logger.log('❓ Hiding How It Works Modal...');
   const modal = $('#howItWorksModal');
   if (modal) {
     modal.style.display = 'none';
@@ -1799,7 +1799,7 @@ function hideHowItWorksModal() {
 
 // 📈 Promoters Modal Functions
 function showPromotersModal() {
-  console.log('📈 Showing Promoters Modal...');
+  window.logger && window.logger.log('📈 Showing Promoters Modal...');
   const modal = $('#promotersModal');
   if (modal) {
     modal.style.display = 'flex';
@@ -1808,7 +1808,7 @@ function showPromotersModal() {
 }
 
 function closePromotersModal() {
-  console.log('📈 Closing Promoters Modal...');
+  window.logger && window.logger.log('📈 Closing Promoters Modal...');
   const modal = $('#promotersModal');
   if (modal) {
     modal.style.display = 'none';
@@ -1824,13 +1824,13 @@ async function updatePromotersStatus() {
   
   // PREVENT INFINITE LOOPS - Only allow one update per 10 seconds
   if (isUpdatingPromoters || (now - lastPromoterUpdate) < 10000) {
-    console.log('🛑 EMERGENCY: Blocked promoter update to prevent infinite loops and API costs');
+    window.logger && window.logger.log('🛑 EMERGENCY: Blocked promoter update to prevent infinite loops and API costs');
     return;
   }
   
   isUpdatingPromoters = true;
   lastPromoterUpdate = now;
-  console.log('🔒 EMERGENCY: Promoter update started with 10-second protection');
+  window.logger && window.logger.log('🔒 EMERGENCY: Promoter update started with 10-second protection');
   
   try {
   const walletConnected = !!state.address;
@@ -1838,15 +1838,15 @@ async function updatePromotersStatus() {
   
   // 🚩 CACHE-ONLY CHECK - NO API CALLS
   if (walletConnected) {
-    console.log('📈 PROMOTER UPDATE: Using memory cache only (no API)...');
+    window.logger && window.logger.log('📈 PROMOTER UPDATE: Using memory cache only (no API)...');
     
     // Check ONLY memory cache - never trigger API calls
     const cachedData = LAND_STATUS_CACHE.memoryCache.get(state.address);
     if (cachedData) {
       hasLand = cachedData.hasLand;
-      console.log('📦 PROMOTER: Cache shows hasLand =', hasLand);
+      window.logger && window.logger.log('📦 PROMOTER: Cache shows hasLand =', hasLand);
     } else {
-      console.log('📦 PROMOTER: No cache found, assuming false');
+      window.logger && window.logger.log('📦 PROMOTER: No cache found, assuming false');
       hasLand = false;
     }
   }
@@ -1872,14 +1872,14 @@ async function updatePromotersStatus() {
     // Always unlock after 5 seconds to prevent permanent blocking
     setTimeout(() => {
       isUpdatingPromoters = false;
-      console.log('🔓 EMERGENCY: Promoter update protection reset after 5 seconds');
+      window.logger && window.logger.log('🔓 EMERGENCY: Promoter update protection reset after 5 seconds');
     }, 5000);
   }
 }
 
 // ⚔️ Battlezone Modal Functions
 function showBattlezoneModal() {
-  console.log('⚔️ Showing Battlezone Modal...');
+  window.logger && window.logger.log('⚔️ Showing Battlezone Modal...');
   const modal = $('#battlezoneModal');
   if (modal) {
     modal.style.display = 'flex';
@@ -1888,7 +1888,7 @@ function showBattlezoneModal() {
 }
 
 function closeBattlezoneModal() {
-  console.log('⚔️ Closing Battlezone Modal...');
+  window.logger && window.logger.log('⚔️ Closing Battlezone Modal...');
   const modal = $('#battlezoneModal');
   if (modal) {
     modal.style.display = 'none';
@@ -1925,7 +1925,7 @@ function joinWaitlistBattlezone() {
 
 // 🎄 V2.0 Christmas Modal Functions
 function showV2Modal() {
-  console.log('🎄 Showing V2.0 Christmas Modal...');
+  window.logger && window.logger.log('🎄 Showing V2.0 Christmas Modal...');
   const modal = $('#v2ComingSoonModal');
   if (modal) {
     modal.style.display = 'flex';
@@ -1934,7 +1934,7 @@ function showV2Modal() {
 }
 
 function closeV2Modal() {
-  console.log('🎄 Closing V2.0 Christmas Modal...');
+  window.logger && window.logger.log('🎄 Closing V2.0 Christmas Modal...');
   const modal = $('#v2ComingSoonModal');
   if (modal) {
     modal.style.display = 'none';
@@ -1943,12 +1943,12 @@ function closeV2Modal() {
 
 function startChristmasCountdown() {
   // Christmas countdown functionality
-  console.log('🎄 Starting Christmas countdown...');
+  window.logger && window.logger.log('🎄 Starting Christmas countdown...');
 }
 
 // 🎁 Referral Modal Functions  
 function showReferralModal() {
-  console.log('🎁 Showing Referral Modal...');
+  window.logger && window.logger.log('🎁 Showing Referral Modal...');
   const modal = $('#referralModal');
   if (modal) {
     modal.style.display = 'flex';
@@ -1957,7 +1957,7 @@ function showReferralModal() {
 }
 
 function closeReferralModal() {
-  console.log('🎁 Closing Referral Modal...');
+  window.logger && window.logger.log('🎁 Closing Referral Modal...');
   const modal = $('#referralModal');
   if (modal) {
     modal.style.display = 'none';
@@ -1970,15 +1970,15 @@ async function updateReferralStatus() {
   
   // 🚩 CACHE-ONLY CHECK - NO API CALLS
   if (walletConnected) {
-    console.log('🎁 REFERRAL UPDATE: Using memory cache only (no API)...');
+    window.logger && window.logger.log('🎁 REFERRAL UPDATE: Using memory cache only (no API)...');
     
     // Check ONLY memory cache - never trigger API calls
     const cachedData = LAND_STATUS_CACHE.memoryCache.get(state.address);
     if (cachedData) {
       hasLand = cachedData.hasLand;
-      console.log('📦 REFERRAL: Cache shows hasLand =', hasLand);
+      window.logger && window.logger.log('📦 REFERRAL: Cache shows hasLand =', hasLand);
     } else {
-      console.log('📦 REFERRAL: No cache found, assuming false');
+      window.logger && window.logger.log('📦 REFERRAL: No cache found, assuming false');
       hasLand = false;
     }
   }
@@ -2013,7 +2013,7 @@ function showNetheriteChallengePopup() {
   // If you want the original behavior, change this to: if (netheritePopupShown) return;
   netheritePopupShown = true;
 
-  console.log('🔥 Showing Netherite Challenge popup!');
+  window.logger && window.logger.log('🔥 Showing Netherite Challenge popup!');
 
   if (!state.address) {
     alert('Please connect your wallet first to access the Netherite Challenge!');
@@ -2361,7 +2361,7 @@ window.shareOnDiscord = function() {
 
 // Accept Netherite Challenge
 window.acceptNetheriteChallenge = async function() {
-  console.log('🔥 User accepted Netherite Challenge!');
+  window.logger && window.logger.log('🔥 User accepted Netherite Challenge!');
 
   const modal = document.getElementById('netheriteChallengeModal');
   const btn = event.target;
@@ -2379,7 +2379,7 @@ window.acceptNetheriteChallenge = async function() {
     const result = await response.json();
 
     if (result.success) {
-      console.log('✅ Netherite Challenge started!', result);
+      window.logger && window.logger.log('✅ Netherite Challenge started!', result);
 
       alert('🔥 Challenge Started! Share your link now!\n\n⏰ Timer: 1 hour\n🔗 Your referral link is ready to share!');
 
@@ -2388,7 +2388,7 @@ window.acceptNetheriteChallenge = async function() {
         setTimeout(() => modal.remove(), 300);
       }
 
-      console.log('⏰ Challenge expires at:', result.challenge.expires_at);
+      window.logger && window.logger.log('⏰ Challenge expires at:', result.challenge.expires_at);
     } else {
       alert('❌ ' + result.error);
       btn.disabled = false;
@@ -2404,7 +2404,7 @@ window.acceptNetheriteChallenge = async function() {
 
 // Decline Netherite Challenge
 window.declineNetheriteChallenge = function() {
-  console.log('❌ User declined Netherite Challenge');
+  window.logger && window.logger.log('❌ User declined Netherite Challenge');
 
   const modal = document.getElementById('netheriteChallengeModal');
   if (modal) {
@@ -2441,7 +2441,7 @@ window.openReferralModalFromNetherite = function() {
 
 // 💰 Free Gold Modal Functions
 function showFreeGoldModal() {
-  console.log('💰 Showing Free Gold Modal...');
+  window.logger && window.logger.log('💰 Showing Free Gold Modal...');
   const modal = $('#freeGoldModal');
   if (modal) {
     modal.style.display = 'flex';
@@ -2450,7 +2450,7 @@ function showFreeGoldModal() {
 }
 
 function closeFreeGoldModal() {
-  console.log('💰 Closing Free Gold Modal...');
+  window.logger && window.logger.log('💰 Closing Free Gold Modal...');
   const modal = $('#freeGoldModal');
   if (modal) {
     modal.style.display = 'none';
@@ -2463,14 +2463,14 @@ async function updateFreeGoldStatus() {
   
   // Use cache-only check like referral system
   if (walletConnected) {
-    console.log('💰 FREE GOLD UPDATE: Using memory cache only (no API)...');
+    window.logger && window.logger.log('💰 FREE GOLD UPDATE: Using memory cache only (no API)...');
     
     const cachedData = LAND_STATUS_CACHE.memoryCache.get(state.address);
     if (cachedData) {
       hasLand = cachedData.hasLand;
-      console.log('📦 FREE GOLD: Cache shows hasLand =', hasLand);
+      window.logger && window.logger.log('📦 FREE GOLD: Cache shows hasLand =', hasLand);
     } else {
-      console.log('📦 FREE GOLD: No cache found, assuming false');
+      window.logger && window.logger.log('📦 FREE GOLD: No cache found, assuming false');
       hasLand = false;
     }
   }
@@ -2508,7 +2508,7 @@ function copyFreeGoldLink() {
         btn.style.background = '';
       }, 2000);
       
-      console.log('✅ Free Gold link copied to clipboard');
+      window.logger && window.logger.log('✅ Free Gold link copied to clipboard');
     }).catch(err => {
       console.error('❌ Failed to copy:', err);
       alert('Failed to copy link. Please copy manually.');
@@ -2525,7 +2525,7 @@ ${link}
 #GoldMining #Solana #Web3Gaming #PlayToEarn`;
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(twitterUrl, '_blank');
-  console.log('𝕏 Opening X to post...');
+  window.logger && window.logger.log('𝕏 Opening X to post...');
 }
 
 // 🏞️ Land Purchase Functions (EXACT COPY FROM WORKING VERSION)
@@ -2579,12 +2579,12 @@ async function purchaseLand() {
     const confirmData = await confirmResponse.json();
     if (confirmData.error) throw new Error(confirmData.error);
     
-    console.log('✅ Land purchase confirmed successfully!');
-    console.log('📊 Confirm data:', confirmData);
+    window.logger && window.logger.log('✅ Land purchase confirmed successfully!');
+    window.logger && window.logger.log('📊 Confirm data:', confirmData);
     
     // 🎁 Update gold if referral bonus was awarded
     if (confirmData.gold !== undefined) {
-      console.log(`💰 Updating gold from land purchase: ${confirmData.gold}`);
+      window.logger && window.logger.log(`💰 Updating gold from land purchase: ${confirmData.gold}`);
       state.status.gold = confirmData.gold;
       
       if (confirmData.checkpoint) {
@@ -2593,7 +2593,7 @@ async function purchaseLand() {
           checkpoint_timestamp: confirmData.checkpoint.checkpoint_timestamp,
           total_mining_power: confirmData.checkpoint.total_mining_power
         };
-        console.log('✅ Updated checkpoint with referral bonus:', state.checkpoint);
+        window.logger && window.logger.log('✅ Updated checkpoint with referral bonus:', state.checkpoint);
       }
       
       // Update display immediately
@@ -2615,7 +2615,7 @@ async function purchaseLand() {
     
     // 🚩 CRITICAL FIX: Update cache and database status
     LAND_STATUS_CACHE.setLandStatus(state.address, true);
-    console.log('🚩 Cache updated: User now has land after purchase');
+    window.logger && window.logger.log('🚩 Cache updated: User now has land after purchase');
     
     // Hide the mandatory modal
     hideMandatoryLandModal();
@@ -2633,10 +2633,10 @@ async function purchaseLand() {
     await refreshStatus(true);
     
     // 🎁 CRITICAL: Check if referral can be completed now
-    console.log('🎁 Land purchased - checking referral completion...');
+    window.logger && window.logger.log('🎁 Land purchased - checking referral completion...');
     await autoCheckReferralCompletion();
     
-    console.log('🎉 Land purchase complete - user now has access!');
+    window.logger && window.logger.log('🎉 Land purchase complete - user now has access!');
     
   } catch (error) {
     console.error('❌ Land purchase failed:', error);
@@ -2737,15 +2737,15 @@ function downloadBanner(type) {
 function waitForSolanaWeb3() {
   return new Promise((resolve) => {
     if (typeof solanaWeb3 !== 'undefined') {
-      console.log('✅ Solana Web3 library already loaded');
+      window.logger && window.logger.log('✅ Solana Web3 library already loaded');
       resolve();
       return;
     }
     
-    console.log('⏳ Waiting for Solana Web3 library to load...');
+    window.logger && window.logger.log('⏳ Waiting for Solana Web3 library to load...');
     const checkInterval = setInterval(() => {
       if (typeof solanaWeb3 !== 'undefined') {
-        console.log('✅ Solana Web3 library loaded successfully');
+        window.logger && window.logger.log('✅ Solana Web3 library loaded successfully');
         clearInterval(checkInterval);
         resolve();
       }
@@ -2767,14 +2767,14 @@ async function checkAndTrackReferral() {
     const referrerAddress = urlParams.get('ref');
     
     if (referrerAddress && referrerAddress.length > 20) {
-      console.log('🎁 Referral detected from:', referrerAddress.slice(0, 8) + '...');
+      window.logger && window.logger.log('🎁 Referral detected from:', referrerAddress.slice(0, 8) + '...');
       
       // Track the referral session using tracking pixel (GET request)
       const trackingPixel = new Image();
       trackingPixel.src = `/api/track-referral?ref=${encodeURIComponent(referrerAddress)}&t=${Date.now()}`;
       
       trackingPixel.onload = () => {
-        console.log('✅ Referral session tracked successfully');
+        window.logger && window.logger.log('✅ Referral session tracked successfully');
         
         // Store referrer in localStorage for later use
         localStorage.setItem('gm_referrer', referrerAddress);
@@ -2784,11 +2784,11 @@ async function checkAndTrackReferral() {
       };
       
       trackingPixel.onerror = () => {
-        console.log('⚠️ Failed to track referral');
+        window.logger && window.logger.log('⚠️ Failed to track referral');
       };
       
     } else {
-      console.log('ℹ️ No referral parameter found');
+      window.logger && window.logger.log('ℹ️ No referral parameter found');
     }
   } catch (error) {
     console.error('❌ Error checking referral:', error);
@@ -2837,7 +2837,7 @@ function showReferralTrackedNotification(referrerAddress) {
 // 💾 Save checkpoint when page is closing
 window.addEventListener('beforeunload', function(e) {
   if (state.address && state.checkpoint && state.checkpoint.total_mining_power > 0) {
-    console.log('💾 Page closing - saving final checkpoint...');
+    window.logger && window.logger.log('💾 Page closing - saving final checkpoint...');
     
     // Calculate final gold amount
     const finalGold = calculateGoldFromCheckpoint(state.checkpoint);
@@ -2856,15 +2856,15 @@ window.addEventListener('beforeunload', function(e) {
     const beaconSent = navigator.sendBeacon('/api/save-checkpoint', blob);
     
     if (beaconSent) {
-      console.log('✅ Final checkpoint sent via sendBeacon:', finalGold.toFixed(2), 'gold');
+      window.logger && window.logger.log('✅ Final checkpoint sent via sendBeacon:', finalGold.toFixed(2), 'gold');
     } else {
-      console.log('⚠️ sendBeacon failed, checkpoint may not be saved');
+      window.logger && window.logger.log('⚠️ sendBeacon failed, checkpoint may not be saved');
     }
   }
 });
 
 window.addEventListener('DOMContentLoaded', async function() {
-  console.log('🚀 Initializing Complete Optimized Gold Mining Game...');
+  window.logger && window.logger.log('🚀 Initializing Complete Optimized Gold Mining Game...');
   
   // 🎁 CRITICAL: Check for referral tracking FIRST!
   await checkAndTrackReferral();
@@ -2879,7 +2879,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   const connectBtn = $('#connectBtn');
   if (connectBtn) {
     connectBtn.addEventListener('click', connectWallet);
-    console.log('✅ Connect button event listener added');
+    window.logger && window.logger.log('✅ Connect button event listener added');
   }
   
   // 🎯 Setup click-outside-to-close for ALL modals
@@ -2889,7 +2889,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   const sellBtn = $('#sellBtn');
   if (sellBtn) {
     sellBtn.addEventListener('click', sellGold);
-    console.log('✅ Sell button event listener added');
+    window.logger && window.logger.log('✅ Sell button event listener added');
   }
   
   // Setup modal button event listeners
@@ -2951,7 +2951,7 @@ window.addEventListener('DOMContentLoaded', async function() {
     });
   }
   
-  console.log('🎉 Game initialization complete with ALL modal and button functions!');
+  window.logger && window.logger.log('🎉 Game initialization complete with ALL modal and button functions!');
 });
 
 // 🎯 Setup click-outside-to-close functionality for all modals
@@ -2973,11 +2973,11 @@ function setupModalClickOutside() {
       modalElement.addEventListener('click', function(event) {
         // Close modal if clicking on the overlay (not the modal content)
         if (event.target === modalElement) {
-          console.log(`🎯 Clicked outside ${modal.id}, closing modal...`);
+          window.logger && window.logger.log(`🎯 Clicked outside ${modal.id}, closing modal...`);
           modal.closeFunction();
         }
       });
-      console.log(`✅ Click-outside-to-close setup for ${modal.id}`);
+      window.logger && window.logger.log(`✅ Click-outside-to-close setup for ${modal.id}`);
     }
   });
   
@@ -2987,7 +2987,7 @@ function setupModalClickOutside() {
     goldStoreModal.removeEventListener('click', closeGoldStoreModal); // Remove existing listener
     goldStoreModal.addEventListener('click', function(event) {
       if (event.target === goldStoreModal) {
-        console.log('🎯 Clicked outside Gold Store Modal, closing...');
+        window.logger && window.logger.log('🎯 Clicked outside Gold Store Modal, closing...');
         closeGoldStoreModal();
       }
     });
