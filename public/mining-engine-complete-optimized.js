@@ -1,7 +1,7 @@
 // 🚀 COMPLETE OPTIMIZED Mining Engine - Client-Side Gold Calculation
 // This version eliminates 99% of API calls by calculating mining locally
 
-console.log('⚡ Loading Complete Optimized Mining Engine...');
+window.logger && window.logger.log('⚡ Loading Complete Optimized Mining Engine...');
 
 // Client-side mining state
 window.miningState = {
@@ -23,7 +23,7 @@ const MINING_RATES = {
 
 // Initialize mining engine with user data
 function initializeMiningEngine(userData) {
-  console.log('🔧 Initializing optimized mining engine with data:', userData);
+  window.logger && window.logger.log('🔧 Initializing optimized mining engine with data:', userData);
   
   window.miningState.baseGold = userData.last_checkpoint_gold || 0;
   window.miningState.pickaxes = {
@@ -45,7 +45,7 @@ function initializeMiningEngine(userData) {
   window.miningState.startTime = checkpointTime;
   window.miningState.lastSyncTime = checkpointTime;
   
-  console.log('✅ Mining engine initialized:', {
+  window.logger && window.logger.log('✅ Mining engine initialized:', {
     baseGold: window.miningState.baseGold,
     totalRate: window.miningState.totalRate,
     pickaxes: window.miningState.pickaxes
@@ -74,18 +74,18 @@ function calculateCurrentGold() {
 // Start optimized mining loop
 function startOptimizedMining() {
   if (window.miningState.isActive) {
-    console.log('⚠️ Mining already active');
+    window.logger && window.logger.log('⚠️ Mining already active');
     return;
   }
   
-  console.log('⚡ Starting optimized mining...');
+  window.logger && window.logger.log('⚡ Starting optimized mining...');
   window.miningState.isActive = true;
   
   // Update display immediately
   updateMiningDisplay();
   
   // 🚨 EMERGENCY FIX: Replace setInterval with requestAnimationFrame to prevent infinite loops
-  console.log('🛑 EMERGENCY: Mining engine setInterval DISABLED - using optimized system');
+  window.logger && window.logger.log('🛑 EMERGENCY: Mining engine setInterval DISABLED - using optimized system');
   
   // Clear any existing intervals
   if (window.miningDisplayInterval) {
@@ -120,7 +120,7 @@ function startOptimizedMining() {
   // Start the optimized loop (NO setInterval!)
   optimizedMiningLoop();
   
-  console.log('✅ Optimized mining started with rate:', window.miningState.totalRate, 'gold/min');
+  window.logger && window.logger.log('✅ Optimized mining started with rate:', window.miningState.totalRate, 'gold/min');
 }
 
 // Update mining display (client-side only)
@@ -144,7 +144,7 @@ function updateMiningDisplay() {
   
   // Update mining tick log (less frequent)
   if (Math.floor(Date.now() / 1000) % 5 === 0) { // Every 5 seconds
-    console.log(`⛏️ Mining: ${currentGold.toFixed(2)} gold (Rate: ${window.miningState.totalRate}/min)`);
+    window.logger && window.logger.log(`⛏️ Mining: ${currentGold.toFixed(2)} gold (Rate: ${window.miningState.totalRate}/min)`);
   }
 }
 
@@ -155,7 +155,7 @@ async function createCheckpoint() {
   try {
     const currentGold = calculateCurrentGold();
     
-    console.log('💾 Creating checkpoint...', currentGold.toFixed(2), 'gold');
+    window.logger && window.logger.log('💾 Creating checkpoint...', currentGold.toFixed(2), 'gold');
     
     const response = await fetch('/api/save-checkpoint', {
       method: 'POST', 
@@ -184,19 +184,19 @@ async function createCheckpoint() {
         }));
       }
       
-      console.log('✅ Checkpoint created:', currentGold.toFixed(2), 'gold');
+      window.logger && window.logger.log('✅ Checkpoint created:', currentGold.toFixed(2), 'gold');
       return true;
     }
     
   } catch (error) {
-    console.log('⚠️ Checkpoint creation failed:', error.message);
+    window.logger && window.logger.log('⚠️ Checkpoint creation failed:', error.message);
     return false;
   }
 }
 
 // Stop mining
 function stopOptimizedMining() {
-  console.log('🛑 Stopping optimized mining...');
+  window.logger && window.logger.log('🛑 Stopping optimized mining...');
   
   window.miningState.isActive = false;
   
@@ -210,12 +210,12 @@ function stopOptimizedMining() {
     window.miningSyncInterval = null;
   }
   
-  console.log('✅ Optimized mining stopped');
+  window.logger && window.logger.log('✅ Optimized mining stopped');
 }
 
 // Add pickaxe (when purchased)
 function addPickaxeToMining(type, quantity = 1) {
-  console.log(`🔨 Adding ${quantity}x ${type} pickaxe to mining engine`);
+  window.logger && window.logger.log(`🔨 Adding ${quantity}x ${type} pickaxe to mining engine`);
   
   // Sync current gold before adding pickaxe
   const currentGold = calculateCurrentGold();
@@ -232,7 +232,7 @@ function addPickaxeToMining(type, quantity = 1) {
     window.miningState.pickaxes.diamond * MINING_RATES.diamond +
     window.miningState.pickaxes.netherite * MINING_RATES.netherite;
   
-  console.log('✅ New mining rate:', window.miningState.totalRate, 'gold/min');
+  window.logger && window.logger.log('✅ New mining rate:', window.miningState.totalRate, 'gold/min');
   
   // Start mining if not already active
   if (window.miningState.totalRate > 0 && !window.miningState.isActive) {
@@ -245,7 +245,7 @@ function addPickaxeToMining(type, quantity = 1) {
 
 // Subtract gold (when sold)
 function subtractGoldFromMining(amount) {
-  console.log(`💰 Subtracting ${amount} gold from mining engine`);
+  window.logger && window.logger.log(`💰 Subtracting ${amount} gold from mining engine`);
   
   // Calculate current gold
   const currentGold = calculateCurrentGold();
@@ -257,7 +257,7 @@ function subtractGoldFromMining(amount) {
   window.miningState.baseGold = newBaseGold;
   window.miningState.startTime = Date.now();
   
-  console.log('✅ Gold subtracted. New base:', newBaseGold);
+  window.logger && window.logger.log('✅ Gold subtracted. New base:', newBaseGold);
   
   // Update display immediately
   updateMiningDisplay();
@@ -288,7 +288,7 @@ function saveCheckpointOnClose() {
   // Use sendBeacon for reliable delivery even when page is closing
   if (navigator.sendBeacon) {
     navigator.sendBeacon('/api/save-checkpoint', data);
-    console.log('💾 Final checkpoint sent via beacon:', currentGold.toFixed(2), 'gold');
+    window.logger && window.logger.log('💾 Final checkpoint sent via beacon:', currentGold.toFixed(2), 'gold');
   } else {
     // Fallback for older browsers (synchronous XHR)
     try {
@@ -296,7 +296,7 @@ function saveCheckpointOnClose() {
       xhr.open('POST', '/api/save-checkpoint', false); // Synchronous
       xhr.setRequestHeader('Content-Type', 'application/json');
       xhr.send(data);
-      console.log('💾 Final checkpoint sent via XHR:', currentGold.toFixed(2), 'gold');
+      window.logger && window.logger.log('💾 Final checkpoint sent via XHR:', currentGold.toFixed(2), 'gold');
     } catch (e) {
       console.error('❌ Failed to save final checkpoint:', e);
     }
@@ -311,11 +311,11 @@ window.addEventListener('pagehide', saveCheckpointOnClose); // Better mobile sup
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     // User switched away - create checkpoint
-    console.log('👋 User switched tabs - creating checkpoint');
+    window.logger && window.logger.log('👋 User switched tabs - creating checkpoint');
     createCheckpoint();
   } else {
     // User came back - could reload fresh data if needed
-    console.log('👀 User returned to tab');
+    window.logger && window.logger.log('👀 User returned to tab');
   }
 });
 
@@ -326,7 +326,7 @@ window.addEventListener('storage', (e) => {
       const checkpoint = JSON.parse(e.newValue);
       
       // Update from another tab
-      console.log('📡 Checkpoint updated from another tab:', checkpoint.gold);
+      window.logger && window.logger.log('📡 Checkpoint updated from another tab:', checkpoint.gold);
       
       window.miningState.baseGold = checkpoint.gold;
       window.miningState.startTime = checkpoint.timestamp;
@@ -350,4 +350,4 @@ window.getMiningState = getMiningState;
 window.calculateCurrentGold = calculateCurrentGold;
 window.createCheckpoint = createCheckpoint; // Export for use in buy/sell actions
 
-console.log('✅ Complete Optimized Mining Engine with Checkpoint System loaded!');
+window.logger && window.logger.log('✅ Complete Optimized Mining Engine with Checkpoint System loaded!');

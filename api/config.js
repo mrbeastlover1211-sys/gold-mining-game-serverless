@@ -17,5 +17,6 @@ export default function handler(req, res) {
     minSellGold: parseInt(process.env.MIN_SELL_GOLD || '10000', 10),
     clusterUrl: process.env.SOLANA_CLUSTER_URL || 'https://api.devnet.solana.com',
     treasury: process.env.TREASURY_PUBLIC_KEY || '',
+    debugMode: process.env.DEBUG_MODE === 'true',
   });
 }

@@ -45,11 +45,11 @@ function getBackgroundWithLock() {
       // If less than 10 minutes, use cached background
       if (elapsed < BACKGROUND_LOCK_DURATION) {
         const remainingMins = Math.ceil((BACKGROUND_LOCK_DURATION - elapsed) / 60000);
-        console.log(`🔒 Using cached background (${remainingMins} min until change)`);
+        if (window.logger) window.logger.log(`🔒 Using cached background (${remainingMins} min until change)`);
         return backgrounds[index];
       }
     } catch (e) {
-      console.warn('⚠️ Invalid background cache, picking new one');
+      if (window.logger) window.logger.warn('⚠️ Invalid background cache, picking new one');
     }
   }
   
@@ -62,7 +62,7 @@ function getBackgroundWithLock() {
     timestamp: Date.now()
   }));
   
-  console.log(`🎲 New background selected (locked for 10 minutes)`);
+  if (window.logger) window.logger.log(`🎲 New background selected (locked for 10 minutes)`);
   return backgrounds[randomIndex];
 }
 
@@ -73,7 +73,7 @@ function setRandomBackground() {
   // Build full URL from Cloudflare R2
   const fullUrl = `${R2_BASE_URL}/${selected.filename}`;
   
-  console.log(`🎨 Loading background from R2: ${fullUrl}`);
+  if (window.logger) window.logger.log(`🎨 Loading background from R2: ${fullUrl}`);
   
   // Remove any existing background video or overlay
   const existingVideo = document.getElementById('background-video');
