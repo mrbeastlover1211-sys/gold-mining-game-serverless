@@ -5,10 +5,10 @@ export default function handler(req, res) {
   }
 
   const PICKAXES = {
-    silver: { name: 'Silver', costSol: 0.0001, ratePerSec: 1/60 },
-    gold: { name: 'Gold', costSol: 0.0001, ratePerSec: 10/60 },
-    diamond: { name: 'Diamond', costSol: 0.0001, ratePerSec: 100/60 },
-    netherite: { name: 'Netherite', costSol: 0.0001, ratePerSec: 1000/60 },
+    silver: { name: 'Silver', costSol: 0.01, ratePerSec: 1/60 },
+    gold: { name: 'Gold', costSol: 0.01, ratePerSec: 10/60 },
+    diamond: { name: 'Diamond', costSol: 0.01, ratePerSec: 100/60 },
+    netherite: { name: 'Netherite', costSol: 0.01, ratePerSec: 1000/60 },
   };
 
   res.json({
