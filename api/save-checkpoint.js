@@ -55,8 +55,8 @@ export default async function handler(req, res) {
     // 🔒 FIX #1: STRICTER VALIDATION - Reduced buffer from 10% to 5%
     const NETWORK_BUFFER = 1.05; // 5% buffer instead of 10%
     
-    const miningPower = user.total_mining_power || 0;
-    const lastCheckpointGold = user.last_checkpoint_gold || 0;
+    const miningPower = parseFloat(user.total_mining_power) || 0;
+    const lastCheckpointGold = parseFloat(user.last_checkpoint_gold) || 0;
     
     // Calculate maximum possible gold
     let maxPossibleGold = lastCheckpointGold;
