@@ -1,12 +1,12 @@
-// 🎨 Random Background System - Cloudflare R2 + 10-Minute Lock
+// 🎨 Random Background System - Cloudflare R2 + 30-Minute Lock
 // Supports: Images (jpg, webp), Videos (mp4)
-// Features: Loads from Cloudflare R2 CDN, caches background for 10 minutes
+// Features: Loads from Cloudflare R2 CDN, caches background for 30 minutes
 
 // ⚡ Cloudflare R2 Base URL
 const R2_BASE_URL = 'https://pub-3d73d3cda1a544bf8d88469606cc1865.r2.dev/backgrounds';
 
-// ⏰ Background lock duration (10 minutes in milliseconds)
-const BACKGROUND_LOCK_DURATION = 10 * 60 * 1000; // 10 minutes
+// ⏰ Background lock duration (30 minutes in milliseconds)
+const BACKGROUND_LOCK_DURATION = 30 * 60 * 1000; // 30 minutes
 
 // 🎬 Available backgrounds (loaded from Cloudflare R2)
 const backgrounds = [
@@ -32,7 +32,7 @@ const backgrounds = [
   { type: 'image', filename: 'wp15225216-cave-minecraft-wallpapers.webp' },
 ];
 
-// 🔒 Get cached background or pick new one (10-minute lock)
+// 🔒 Get cached background or pick new one (30-minute lock)
 function getBackgroundWithLock() {
   const CACHE_KEY = 'goldmining_background';
   const cached = localStorage.getItem(CACHE_KEY);
@@ -42,7 +42,7 @@ function getBackgroundWithLock() {
       const { index, timestamp } = JSON.parse(cached);
       const elapsed = Date.now() - timestamp;
       
-      // If less than 10 minutes, use cached background
+      // If less than 30 minutes, use cached background
       if (elapsed < BACKGROUND_LOCK_DURATION) {
         const remainingMins = Math.ceil((BACKGROUND_LOCK_DURATION - elapsed) / 60000);
         if (window.logger) window.logger.log(`🔒 Using cached background (${remainingMins} min until change)`);
@@ -62,7 +62,7 @@ function getBackgroundWithLock() {
     timestamp: Date.now()
   }));
   
-  if (window.logger) window.logger.log(`🎲 New background selected (locked for 10 minutes)`);
+  if (window.logger) window.logger.log(`🎲 New background selected (locked for 30 minutes)`);
   return backgrounds[randomIndex];
 }
 
