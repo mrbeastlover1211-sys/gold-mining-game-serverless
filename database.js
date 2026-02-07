@@ -5,20 +5,34 @@ import { neon } from '@neondatabase/serverless';
 // Initialize Neon SQL client (HTTP-based, no pooling needed)
 const sql = neon(process.env.DATABASE_URL);
 
-// Simple in-memory cache for hot data (90% hit rate)
+// Simple in-memory cache for hot data (per-instance)
 const cache = new Map();
 const CACHE_TTL = 300000; // 5 minutes
 
+// Optional shared Redis cache (cross-instance)
+import { redisGetJson, redisSetJson, redisDel, isRedisEnabled } from './utils/redis.js';
+const REDIS_TTL_SECONDS = 300; // 5 minutes
+
 // 🔥 OPTIMIZED: Single query gets ALL user data including referrals
 export async function getUserOptimized(address, useCache = true) {
-  // Check cache first (90% hit rate)
+  // 1) Check in-memory cache first (fastest)
+  const cacheKey = `user_${address}`;
   if (useCache) {
-    const cacheKey = `user_${address}`;
     const cached = cache.get(cacheKey);
-    
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      console.log(`⚡ Cache hit for ${address.slice(0, 8)}... (5ms response)`);
+      console.log(`⚡ Memory cache hit for ${address.slice(0, 8)}...`);
       return cached.data;
+    }
+
+    // 2) Check Redis cache (shared across instances)
+    if (isRedisEnabled()) {
+      const redisUser = await redisGetJson(cacheKey);
+      if (redisUser) {
+        console.log(`⚡ Redis cache hit for ${address.slice(0, 8)}...`);
+        // Populate memory cache for ultra-fast repeated reads
+        cache.set(cacheKey, { data: redisUser, timestamp: Date.now() });
+        return redisUser;
+      }
     }
   }
 
@@ -40,12 +54,12 @@ export async function getUserOptimized(address, useCache = true) {
 
     const user = result[0] || null;
 
-    // Cache the result
+    // Cache the result (write-through)
     if (useCache && user) {
-      cache.set(`user_${address}`, {
-        data: user,
-        timestamp: Date.now()
-      });
+      cache.set(cacheKey, { data: user, timestamp: Date.now() });
+      if (isRedisEnabled()) {
+        await redisSetJson(cacheKey, user, REDIS_TTL_SECONDS);
+      }
     }
 
     return user;
@@ -101,12 +115,13 @@ export async function saveUserOptimized(address, userData) {
 
     console.timeEnd(`💾 Save user ${address.slice(0, 8)}...`);
     
-    // Update cache with new data (maintains high cache hit rate)
+    // Update caches with new data (maintains high cache hit rate)
     if (result && result.length > 0) {
-      cache.set(`user_${address}`, {
-        data: result[0],
-        timestamp: Date.now()
-      });
+      const cacheKey = `user_${address}`;
+      cache.set(cacheKey, { data: result[0], timestamp: Date.now() });
+      if (isRedisEnabled()) {
+        await redisSetJson(cacheKey, result[0], REDIS_TTL_SECONDS);
+      }
     }
     
     return result[0];

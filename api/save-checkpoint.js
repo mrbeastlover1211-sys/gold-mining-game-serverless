@@ -1,8 +1,9 @@
 // 🔒 SECURE CHECKPOINT SAVING
 // Prevents gold inflation exploits with strict validation and rate limiting
 
-import { getUserOptimized, saveUserOptimized } from '../database.js';
+import { getUserOptimized, saveUserOptimized, cache } from '../database.js';
 import { sql } from '../database.js';
+import { redisDel, isRedisEnabled } from '../utils/redis.js';
 
 function nowSec() { 
   return Math.floor(Date.now() / 1000); 
@@ -124,10 +125,13 @@ export default async function handler(req, res) {
       throw new Error('Failed to save checkpoint');
     }
     
-    // 🔥 CRITICAL: Clear cache to force fresh data on next status check
-    const { cache } = await import('../database.js');
-    cache.delete(`user_${address}`);
-    console.log(`🗑️ Cleared cache for ${address.slice(0, 8)}... to force fresh data`);
+    // 🔥 CRITICAL: Clear caches to force fresh data on next status check
+    const cacheKey = `user_${address}`;
+    cache.delete(cacheKey);
+    if (isRedisEnabled()) {
+      await redisDel(cacheKey);
+    }
+    console.log(`🗑️ Cleared caches for ${address.slice(0, 8)}... to force fresh data`);
 
     console.log(`✅ SECURE checkpoint saved: ${parseFloat(gold).toFixed(2)} gold`);
 
