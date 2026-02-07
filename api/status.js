@@ -1,5 +1,5 @@
 // OPTIMIZED Player status endpoint - Can handle 5,000+ concurrent users
-import { getUserOptimized, saveUserOptimized } from '../database.js';
+import { getUserOptimized } from '../database.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -99,13 +99,9 @@ export default async function handler(req, res) {
       checkpointTime: user.checkpoint_timestamp
     });
     
-    // Update checkpoint to current time and gold to prevent double-accumulation
-    user.checkpoint_timestamp = currentTime;
-    user.last_checkpoint_gold = currentGold;
-    user.last_activity = currentTime;
-    
-    console.log(`🔄 Updating checkpoint: timestamp=${currentTime}, gold=${currentGold.toFixed(2)}`);
-    await saveUserOptimized(address, user);
+    // READ-ONLY: Do not write checkpoint/gold back to DB here.
+    // Saving is handled by /api/save-checkpoint (page close/manual/periodic).
+    // This prevents high write volume at scale and avoids any cache overwrite issues.
     
     const totalRate = inventory.silver * 1 + 
                      inventory.gold * 10 + 
@@ -123,7 +119,8 @@ export default async function handler(req, res) {
       hasLand: user.has_land || false,
       checkpoint: {
         total_mining_power: user.total_mining_power || 0,
-        checkpoint_timestamp: user.checkpoint_timestamp,
+        // Return stored checkpoint (source of truth). UI can still display computed gold.
+        checkpoint_timestamp: user.checkpoint_timestamp || currentTime,
         last_checkpoint_gold: user.last_checkpoint_gold || 0
       },
       referralStats: {
