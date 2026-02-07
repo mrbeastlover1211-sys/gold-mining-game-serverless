@@ -4,3 +4,10 @@ node_modules
 .env.local
 *.log
 .DS_Store
+
+# Database migration files (run manually)
+database-migrations/
+
+# Documentation and temporary files
+*.md
+tmp_*
