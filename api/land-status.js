@@ -13,8 +13,9 @@ export default async function handler(req, res) {
       
       console.log(`🔍 Checking land status for ${address.slice(0, 8)}...`);
       
-      // Get user data using optimized database system
-      const userData = await getUserOptimized(address);
+      // IMPORTANT: Fetch fresh from DB (no cache) to avoid stale memory/Redis showing ghost land
+      // especially after manual DB cleanup operations.
+      const userData = await getUserOptimized(address, false);
       
       if (!userData) {
         console.log(`📊 No user found for ${address.slice(0, 8)}...`);
