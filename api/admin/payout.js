@@ -6,6 +6,11 @@ import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } f
 // Session validation using JWT-like tokens
 import crypto from 'crypto';
 
+// 🛡️ RATE LIMIT: Prevent spam admin payouts (CRITICAL - involves real SOL!)
+const MIN_PAYOUT_INTERVAL = 10; // seconds between payouts
+const MAX_PAYOUTS_PER_HOUR = 50; // maximum payouts per hour
+let lastPayoutAttempts = new Map(); // IP-based tracking for admin actions
+
 function validateSessionToken(token) {
   try {
     const [payloadBase64, signature] = token.split('.');
@@ -55,6 +60,44 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  // 🛡️ RATE LIMIT CHECK: Prevent admin payout spam
+  const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
+  const now = Date.now();
+  
+  // Check last payout time for this IP
+  const lastAttempt = lastPayoutAttempts.get(clientIP);
+  if (lastAttempt) {
+    const secondsSinceLastPayout = Math.floor((now - lastAttempt.timestamp) / 1000);
+    
+    if (secondsSinceLastPayout < MIN_PAYOUT_INTERVAL) {
+      const waitTime = MIN_PAYOUT_INTERVAL - secondsSinceLastPayout;
+      console.log(`⚠️ Admin payout rate limit: ${clientIP} tried again after ${secondsSinceLastPayout}s`);
+      return res.status(429).json({ 
+        error: 'Rate limit exceeded',
+        message: `Please wait ${waitTime} seconds before processing another payout`,
+        waitTime: waitTime,
+        rateLimitType: 'admin_cooldown'
+      });
+    }
+
+    // Check hourly rate limit
+    const oneHourAgo = now - (60 * 60 * 1000);
+    if (lastAttempt.hourlyCount && lastAttempt.hourlyReset > oneHourAgo) {
+      if (lastAttempt.hourlyCount >= MAX_PAYOUTS_PER_HOUR) {
+        console.log(`⚠️ Admin hourly rate limit: ${clientIP} has ${lastAttempt.hourlyCount} payouts in last hour`);
+        return res.status(429).json({ 
+          error: 'Hourly payout limit reached',
+          message: `Maximum ${MAX_PAYOUTS_PER_HOUR} payouts per hour. Please try again later.`,
+          currentCount: lastAttempt.hourlyCount,
+          maxAllowed: MAX_PAYOUTS_PER_HOUR,
+          rateLimitType: 'admin_hourly'
+        });
+      }
+    }
+  }
+
+  console.log(`✅ Admin payout rate limit check passed for ${clientIP}`);
 
   // Verify authentication
   const authHeader = req.headers.authorization;
@@ -185,6 +228,21 @@ export default async function handler(req, res) {
       `, [result.rows[0].gold_amount, result.rows[0].user_address]);
 
       console.log(`⚠️ Payout ${payoutId} rejected by ${sessionCheck.username}`);
+
+      // 🛡️ UPDATE RATE LIMIT TRACKING: Record rejection (also counts toward rate limit)
+      const oneHourAgo = now - (60 * 60 * 1000);
+      const existingData = lastPayoutAttempts.get(clientIP);
+      const hourlyCount = (existingData && existingData.hourlyReset > oneHourAgo) 
+        ? (existingData.hourlyCount + 1) 
+        : 1;
+
+      lastPayoutAttempts.set(clientIP, {
+        timestamp: now,
+        hourlyCount: hourlyCount,
+        hourlyReset: existingData && existingData.hourlyReset > oneHourAgo 
+          ? existingData.hourlyReset 
+          : now + (60 * 60 * 1000) // Reset in 1 hour
+      });
 
       return res.status(200).json({
         success: true,

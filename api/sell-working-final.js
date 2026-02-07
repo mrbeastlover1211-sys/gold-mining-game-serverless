@@ -4,6 +4,10 @@ import { sql, getUserOptimized, saveUserOptimized } from '../database.js';
 const MIN_SELL_GOLD = 10000;
 const GOLD_PRICE_SOL = parseFloat(process.env.GOLD_PRICE_SOL || '0.000001');
 
+// 🛡️ RATE LIMIT: Prevent spam selling
+const MIN_SELL_INTERVAL = 15; // seconds between sells
+const MAX_SELLS_PER_HOUR = 100; // maximum sells per hour per user
+
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -39,6 +43,52 @@ export default async function handler(req, res) {
     }
 
     console.log(`💰 Processing sell: ${amountGold} gold from ${address.slice(0, 8)}...`);
+
+    // 🛡️ RATE LIMIT CHECK: Prevent spam selling
+    // Check recent sells from this address
+    const recentSells = await sql`
+      SELECT created_at 
+      FROM gold_sales 
+      WHERE user_address = ${address}
+      AND created_at > NOW() - INTERVAL '15 seconds'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+
+    if (recentSells.length > 0) {
+      const lastSellTime = new Date(recentSells[0].created_at);
+      const secondsSinceLastSell = Math.floor((Date.now() - lastSellTime.getTime()) / 1000);
+      const waitTime = MIN_SELL_INTERVAL - secondsSinceLastSell;
+      
+      console.log(`⚠️ Rate limit: User sold ${secondsSinceLastSell} seconds ago`);
+      return res.status(429).json({ 
+        error: 'Please wait before selling again',
+        message: `You can sell again in ${waitTime} seconds`,
+        waitTime: waitTime,
+        rateLimitType: 'cooldown'
+      });
+    }
+
+    // Check hourly rate limit
+    const sellsLastHour = await sql`
+      SELECT COUNT(*) as count 
+      FROM gold_sales 
+      WHERE user_address = ${address}
+      AND created_at > NOW() - INTERVAL '1 hour'
+    `;
+
+    if (sellsLastHour[0].count >= MAX_SELLS_PER_HOUR) {
+      console.log(`⚠️ Hourly rate limit: User has ${sellsLastHour[0].count} sells in last hour`);
+      return res.status(429).json({ 
+        error: 'Hourly sell limit reached',
+        message: `You can only sell ${MAX_SELLS_PER_HOUR} times per hour. Please try again later.`,
+        currentCount: parseInt(sellsLastHour[0].count),
+        maxAllowed: MAX_SELLS_PER_HOUR,
+        rateLimitType: 'hourly'
+      });
+    }
+
+    console.log(`✅ Rate limit check passed`);
 
     // Get current user data using optimized function
     const user = await getUserOptimized(address, false); // Don't use cache for transactions
