@@ -190,7 +190,80 @@ const result = await sql`SELECT * FROM users WHERE address = ${address}`;
 
 ---
 
-### 📊 **CURRENT SYSTEM STATUS (January 18, 2026 - LATEST UPDATE)**
+### 📊 **CURRENT SYSTEM STATUS (January 18, 2026)**
+
+---
+
+### 📊 **CURRENT SYSTEM STATUS (February 7, 2026 - LATEST UPDATE)**
+
+#### ✅ Deployments & Performance
+- ✅ Cloudflare R2 random backgrounds: **30-minute lock** (`public/random-background.js`)
+- ✅ Vercel Cache Headers enabled (static assets cached 1 year; HTML revalidated)
+- ✅ Minification enabled via Vercel (`NODE_ENV=production` in `vercel.json`)
+
+#### ✅ Redis Cache (Upstash) - ENABLED
+- ✅ Added shared Redis caching for user reads in `database.js`
+- ✅ Cache chain: **Memory → Redis → Neon DB**
+- ✅ Redis TTL: **300 seconds (5 minutes)**
+- ✅ Redis is optional: if env vars missing, system falls back to DB safely
+
+**Vercel Env Vars required:**
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+
+**Redis key format:**
+- `user_<WALLET_ADDRESS>`
+
+#### ✅ Critical Hotfix: Purchases Reverting After Refresh - FIXED
+Cause:
+- Stale cached user (Redis/memory) could overwrite fresh inventory during `/api/status` write-back.
+
+Fixes applied:
+- `/api/status` now fetches **fresh from DB** and is now **READ-ONLY** (no DB writes).
+- Purchase endpoints clear **both** memory and Redis cache:
+  - `/api/buy-with-gold`
+  - `/api/purchase-confirm`
+
+#### ✅ `/api/status` is now READ-ONLY (Scale Optimization)
+- `/api/status` no longer writes `checkpoint_timestamp`, `last_checkpoint_gold`, or `last_activity` to DB.
+- Checkpoints are saved only via `/api/save-checkpoint` and purchase/sell flows.
+- This reduces DB write load significantly for 100k+ user readiness.
+
+**Important behavior change:**
+- If a user mines and refreshes **without a save**, gold may appear to revert to last saved checkpoint.
+- Saving occurs when:
+  - buying with gold
+  - selling gold
+  - page close (`sendBeacon`)
+
+#### ✅ Land Status Consistency Fix
+- `/api/land-status` now bypasses cache (`getUserOptimized(address, false)`) to avoid stale “ghost land” after DB cleanup.
+
+#### ✅ Critical Rate Limits Added
+- `/api/sell-working-final`
+  - Cooldown: **15 seconds**
+  - Max: **100/hour per wallet**
+- `/api/admin/payout`
+  - Cooldown: **10 seconds**
+  - Max: **50/hour per IP**
+
+#### ✅ Admin IP Allowlist Notes
+Admin panel access is controlled by Vercel env var:
+- `ADMIN_ALLOWED_IPS` (comma-separated)
+
+Use this endpoint to see what IP Vercel detects:
+- `/api/my-ip`
+
+Example value:
+- `ADMIN_ALLOWED_IPS=183.83.146.26,127.0.0.1,::1`
+
+#### 🧹 Debugging / Cache Clearing
+If you manually delete users in Neon DB, cached user records may persist for up to 5 minutes.
+Ways to clear:
+- Wait for TTL (5 minutes)
+- Delete key in Upstash Data Browser: `user_<address>`
+- (Optional future): Add secure admin endpoint to clear Redis per wallet
+
 
 **Infrastructure:**
 - Database: Neon with Serverless Driver ✅ (UNLIMITED connections)
