@@ -159,6 +159,23 @@ export default async function handler(req, res) {
 
       console.log(`✅ Payout ${payoutId} approved by ${sessionCheck.username}`);
 
+      // 🛡️ UPDATE RATE LIMIT TRACKING: Record approval (counts toward rate limit)
+      {
+        const oneHourAgo = now - (60 * 60 * 1000);
+        const existingData = lastPayoutAttempts.get(clientIP);
+        const hourlyCount = (existingData && existingData.hourlyReset > oneHourAgo)
+          ? (existingData.hourlyCount + 1)
+          : 1;
+
+        lastPayoutAttempts.set(clientIP, {
+          timestamp: now,
+          hourlyCount,
+          hourlyReset: existingData && existingData.hourlyReset > oneHourAgo
+            ? existingData.hourlyReset
+            : now + (60 * 60 * 1000)
+        });
+      }
+
       return res.status(200).json({
         success: true,
         message: 'Payout approved',
