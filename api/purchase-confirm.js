@@ -1,7 +1,8 @@
 // 🔒 SECURE PICKAXE PURCHASE CONFIRMATION
 // Verifies real Solana transactions - prevents fake purchases
 
-import { getUserOptimized, saveUserOptimized } from '../database.js';
+import { getUserOptimized, saveUserOptimized, cache, sql } from '../database.js';
+import { redisDel, isRedisEnabled } from '../utils/redis.js';
 import { verifyTransaction } from './verify-transaction.js';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
@@ -116,10 +117,13 @@ export default async function handler(req, res) {
       throw new Error('Failed to save user data');
     }
     
-    // 🔥 CRITICAL: Clear cache to force fresh data on next status check
-    const { cache } = await import('../database.js');
-    cache.delete(`user_${address}`);
-    console.log(`🗑️ Cleared cache for ${address.slice(0, 8)}... to force fresh data`);
+    // 🔥 CRITICAL: Clear caches to force fresh data on next status check
+    const cacheKey = `user_${address}`;
+    cache.delete(cacheKey);
+    if (isRedisEnabled()) {
+      await redisDel(cacheKey);
+    }
+    console.log(`🗑️ Cleared caches for ${address.slice(0, 8)}... to force fresh data`);
     
     console.log(`✅ SECURE purchase completed successfully!`);
     
@@ -129,7 +133,7 @@ export default async function handler(req, res) {
       console.log('🔥 Netherite purchase - checking for challenge bonus...');
       
       try {
-        const { sql } = await import('../database.js');
+        // sql already imported from database.js
         const cookies = req.headers.cookie || '';
         const sessionMatch = cookies.match(/referral_session=([^;]+)/);
         const sessionId = sessionMatch ? sessionMatch[1] : null;

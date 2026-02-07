@@ -20,7 +20,10 @@ export default async function handler(req, res) {
     console.log(`📊 Getting fresh user data from database for ${address.slice(0, 8)}...`);
     let user;
     try {
-      user = await getUserOptimized(address); // Get user data from optimized database
+      // IMPORTANT: Always fetch fresh from DB here.
+      // This endpoint writes back updated checkpoint fields; using cached (stale) data
+      // could overwrite recent purchases.
+      user = await getUserOptimized(address, false);
       console.log(`🔍 Status API getUserOptimized result:`, {
         found: !!user,
         has_land: user?.has_land,

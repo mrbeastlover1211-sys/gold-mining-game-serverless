@@ -1,8 +1,9 @@
 // 🔒 SECURE GOLD-BASED PICKAXE PURCHASES
 // Prevents exploitation with rate limiting and purchase tracking
 
-import { getUserOptimized, saveUserOptimized } from '../database.js';
+import { getUserOptimized, saveUserOptimized, cache } from '../database.js';
 import { sql } from '../database.js';
+import { redisDel, isRedisEnabled } from '../utils/redis.js';
 
 const PICKAXES = {
   silver: { name: 'Silver', costGold: 5000, ratePerSec: 1/60 },
@@ -191,10 +192,13 @@ export default async function handler(req, res) {
     // Update user object with saved data
     user = savedUser;
     
-    // 🔥 CRITICAL: Clear cache to force fresh data on next status check
-    const { cache } = await import('../database.js');
-    cache.delete(`user_${address}`);
-    console.log(`🗑️ Cleared cache for ${address.slice(0, 8)}... to force fresh data`);
+    // 🔥 CRITICAL: Clear caches to force fresh data on next status check
+    const cacheKey = `user_${address}`;
+    cache.delete(cacheKey);
+    if (isRedisEnabled()) {
+      await redisDel(cacheKey);
+    }
+    console.log(`🗑️ Cleared caches for ${address.slice(0, 8)}... to force fresh data`);
 
     // 🔒 Log the purchase for rate limiting and audit trail
     try {
