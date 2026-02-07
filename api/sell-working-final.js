@@ -76,7 +76,7 @@ export default async function handler(req, res) {
     console.log(`✅ Sale approved - Deducting ${amountGold} gold, remaining: ${newGoldAmount.toFixed(2)}`);
 
     // Neon Serverless transactions using BEGIN/COMMIT
-    // Note: Neon Serverless supports transactions via multiple queries
+    // Note: gold_sales table must exist (created by schema migration)
     try {
       // BEGIN transaction
       await sql`BEGIN`;
@@ -89,28 +89,6 @@ export default async function handler(req, res) {
           checkpoint_timestamp = ${currentTime},
           last_activity = ${currentTime}
         WHERE address = ${address}
-      `;
-
-      // Create gold_sales table if it doesn't exist
-      await sql`
-        CREATE TABLE IF NOT EXISTS gold_sales (
-          id SERIAL PRIMARY KEY,
-          user_address TEXT NOT NULL REFERENCES users(address),
-          gold_amount INTEGER NOT NULL,
-          payout_sol NUMERIC NOT NULL,
-          status TEXT DEFAULT 'pending',
-          created_at TIMESTAMP DEFAULT NOW(),
-          processed_at TIMESTAMP NULL,
-          transaction_signature TEXT NULL,
-          admin_notes TEXT NULL,
-          admin_approved_by VARCHAR(255),
-          admin_approved_at TIMESTAMP,
-          completed_by VARCHAR(255),
-          rejected_by VARCHAR(255),
-          rejected_at TIMESTAMP,
-          reject_reason TEXT,
-          tx_signature TEXT
-        )
       `;
 
       // Record the sale for admin processing

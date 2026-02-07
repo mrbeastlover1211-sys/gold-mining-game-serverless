@@ -60,9 +60,6 @@ export async function saveUserOptimized(address, userData) {
   try {
     console.time(`💾 Save user ${address.slice(0, 8)}...`);
 
-    // Invalidate cache
-    cache.delete(`user_${address}`);
-
     const now = new Date();
     
     // Upsert with all fields (using correct database column names)
@@ -103,6 +100,14 @@ export async function saveUserOptimized(address, userData) {
     `;
 
     console.timeEnd(`💾 Save user ${address.slice(0, 8)}...`);
+    
+    // Update cache with new data (maintains high cache hit rate)
+    if (result && result.length > 0) {
+      cache.set(`user_${address}`, {
+        data: result[0],
+        timestamp: Date.now()
+      });
+    }
     
     return result[0];
   } catch (error) {
