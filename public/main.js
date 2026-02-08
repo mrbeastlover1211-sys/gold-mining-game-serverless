@@ -2322,6 +2322,15 @@ async function purchaseLand() {
     
     // Hide the mandatory modal
     hideMandatoryLandModal();
+
+    // 💾 Save checkpoint after land purchase so DB/UI stay in sync (since /api/status is read-only)
+    try {
+      const goldToSave = state.checkpoint ? calculateGoldFromCheckpoint(state.checkpoint) : (state.status?.gold || confirmData?.gold || 0);
+      window.logger && window.logger.log('💾 Saving checkpoint after land purchase...', { gold: goldToSave });
+      await saveCheckpoint(goldToSave);
+    } catch (e) {
+      console.warn('⚠️ Failed to save checkpoint after land purchase:', e?.message || e);
+    }
     
     // Update UI to reflect land ownership (show share links)
     setTimeout(() => {
