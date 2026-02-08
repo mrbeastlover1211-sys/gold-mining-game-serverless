@@ -533,8 +533,14 @@ async function buyPickaxe(pickaxeType) {
       }
     }
     
-    // 💾 NEW: Save checkpoint after purchase (server already saved, this is client confirmation)
-    window.logger && window.logger.log('💾 Pickaxe purchase complete - checkpoint already saved by server');
+    // 💾 Save checkpoint after SOL purchase so DB/UI stay in sync (especially after /api/status became read-only)
+    try {
+      const goldToSave = calculateGoldFromCheckpoint(state.checkpoint);
+      window.logger && window.logger.log('💾 Saving checkpoint after SOL purchase...', { gold: goldToSave });
+      await saveCheckpoint(goldToSave);
+    } catch (e) {
+      console.warn('⚠️ Failed to save checkpoint after SOL purchase:', e?.message || e);
+    }
     
     // Update wallet balance
     await updateWalletBalance();
