@@ -1901,11 +1901,51 @@ function closeBattlezoneModal() {
   }
 }
 
+let battlezoneCountdownInterval = null;
+
 function startBattlezoneCountdown() {
   // Battlezone launch: March 1, 2026 (00:00 UTC)
-  const targetDate = new Date('March 1, 2026 00:00:00 UTC').getTime();
-  
-  const countdown = setInterval(() => {
+  // Use ISO format to avoid browser date parsing issues.
+  const targetDate = Date.parse('2026-03-01T00:00:00Z');
+
+  // Clear any previous countdown interval
+  if (battlezoneCountdownInterval) {
+    clearInterval(battlezoneCountdownInterval);
+    battlezoneCountdownInterval = null;
+  }
+
+  const updateCountdown = () => {
+    const now = Date.now();
+    const distance = targetDate - now;
+
+    // If countdown finished or invalid date
+    if (!Number.isFinite(distance) || distance < 0) {
+      $('#days').textContent = '000';
+      $('#hours').textContent = '00';
+      $('#minutes').textContent = '00';
+      $('#seconds').textContent = '00';
+      if (battlezoneCountdownInterval) {
+        clearInterval(battlezoneCountdownInterval);
+        battlezoneCountdownInterval = null;
+      }
+      return;
+    }
+
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    $('#days').textContent = days.toString().padStart(3, '0');
+    $('#hours').textContent = hours.toString().padStart(2, '0');
+    $('#minutes').textContent = minutes.toString().padStart(2, '0');
+    $('#seconds').textContent = seconds.toString().padStart(2, '0');
+  };
+
+  // Update immediately so it doesn't sit at 0000 for 1 second
+  updateCountdown();
+
+  battlezoneCountdownInterval = setInterval(updateCountdown, 1000);
     const now = new Date().getTime();
     const distance = targetDate - now;
     
