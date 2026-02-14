@@ -1902,7 +1902,8 @@ function closeBattlezoneModal() {
 }
 
 function startBattlezoneCountdown() {
-  const targetDate = new Date('January 31, 2026 00:00:00 UTC').getTime();
+  // Battlezone launch: March 1, 2026 (00:00 UTC)
+  const targetDate = new Date('March 1, 2026 00:00:00 UTC').getTime();
   
   const countdown = setInterval(() => {
     const now = new Date().getTime();
