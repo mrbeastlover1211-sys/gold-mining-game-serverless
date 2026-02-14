@@ -1946,24 +1946,6 @@ function startBattlezoneCountdown() {
   updateCountdown();
 
   battlezoneCountdownInterval = setInterval(updateCountdown, 1000);
-    const now = new Date().getTime();
-    const distance = targetDate - now;
-    
-    if (distance < 0) {
-      clearInterval(countdown);
-      return;
-    }
-    
-    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-    
-    $('#days').textContent = days.toString().padStart(3, '0');
-    $('#hours').textContent = hours.toString().padStart(2, '0');
-    $('#minutes').textContent = minutes.toString().padStart(2, '0');
-    $('#seconds').textContent = seconds.toString().padStart(2, '0');
-  }, 1000);
 }
 
 function joinWaitlistBattlezone() {
