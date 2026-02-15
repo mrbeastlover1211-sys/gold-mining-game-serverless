@@ -1,5 +1,6 @@
 // Complete sell API using Neon Serverless (HTTP-based, no TCP connections)
-import { sql, getUserOptimized, saveUserOptimized } from '../database.js';
+import { sql, getUserOptimized, saveUserOptimized, cache } from '../database.js';
+import { redisDel, isRedisEnabled } from '../utils/redis.js';
 
 const MIN_SELL_GOLD = 10000;
 const GOLD_PRICE_SOL = parseFloat(process.env.GOLD_PRICE_SOL || '0.000001');
@@ -151,6 +152,15 @@ export default async function handler(req, res) {
       await sql`COMMIT`;
 
       console.log(`✅ Gold sale completed successfully - ${address.slice(0, 8)}... sold ${amountGold} gold`);
+
+      // 🔥 Clear caches (this endpoint updates users via raw SQL UPDATE)
+      {
+        const cacheKey = `user_${address}`;
+        cache.delete(cacheKey);
+        if (isRedisEnabled()) {
+          await redisDel(cacheKey);
+        }
+      }
 
       return res.status(200).json({
         success: true,

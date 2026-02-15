@@ -246,6 +246,19 @@ export default async function handler(req, res) {
 
       console.log(`⚠️ Payout ${payoutId} rejected by ${sessionCheck.username}`);
 
+      // 🔥 Clear caches for user since gold was refunded via raw SQL (pg Pool)
+      try {
+        const { cache } = await import('../../database.js');
+        const { redisDel, isRedisEnabled } = await import('../../utils/redis.js');
+        const cacheKey = `user_${result.rows[0].user_address}`;
+        cache.delete(cacheKey);
+        if (isRedisEnabled()) {
+          await redisDel(cacheKey);
+        }
+      } catch (e) {
+        console.warn('⚠️ Failed to clear caches after payout rejection:', e?.message || e);
+      }
+
       // 🛡️ UPDATE RATE LIMIT TRACKING: Record rejection (also counts toward rate limit)
       const oneHourAgo = now - (60 * 60 * 1000);
       const existingData = lastPayoutAttempts.get(clientIP);
