@@ -1915,15 +1915,25 @@ function startBattlezoneCountdown() {
   }
 
   const updateCountdown = () => {
+    const daysEl = $('#days');
+    const hoursEl = $('#hours');
+    const minutesEl = $('#minutes');
+    const secondsEl = $('#seconds');
+
+    // If elements are not present yet, skip safely
+    if (!daysEl || !hoursEl || !minutesEl || !secondsEl) {
+      return;
+    }
+
     const now = Date.now();
     const distance = targetDate - now;
 
     // If countdown finished or invalid date
     if (!Number.isFinite(distance) || distance < 0) {
-      $('#days').textContent = '000';
-      $('#hours').textContent = '00';
-      $('#minutes').textContent = '00';
-      $('#seconds').textContent = '00';
+      daysEl.textContent = '000';
+      hoursEl.textContent = '00';
+      minutesEl.textContent = '00';
+      secondsEl.textContent = '00';
       if (battlezoneCountdownInterval) {
         clearInterval(battlezoneCountdownInterval);
         battlezoneCountdownInterval = null;
@@ -1936,10 +1946,10 @@ function startBattlezoneCountdown() {
     const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-    $('#days').textContent = days.toString().padStart(3, '0');
-    $('#hours').textContent = hours.toString().padStart(2, '0');
-    $('#minutes').textContent = minutes.toString().padStart(2, '0');
-    $('#seconds').textContent = seconds.toString().padStart(2, '0');
+    daysEl.textContent = days.toString().padStart(3, '0');
+    hoursEl.textContent = hours.toString().padStart(2, '0');
+    minutesEl.textContent = minutes.toString().padStart(2, '0');
+    secondsEl.textContent = seconds.toString().padStart(2, '0');
   };
 
   // Update immediately so it doesn't sit at 0000 for 1 second
@@ -2599,6 +2609,14 @@ window.addEventListener('beforeunload', function(e) {
 });
 
 window.addEventListener('DOMContentLoaded', async function() {
+  // Start Battlezone countdown immediately on page load (modal can open later)
+  try {
+    startBattlezoneCountdown();
+  } catch (e) {
+    console.warn('⚠️ Battlezone countdown failed to start on load:', e?.message || e);
+  }
+
+
   window.logger && window.logger.log('🚀 Initializing Complete Optimized Gold Mining Game...');
   
   // 🎁 CRITICAL: Check for referral tracking FIRST!
