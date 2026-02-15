@@ -1899,29 +1899,62 @@ function closeBattlezoneModal() {
   }
 }
 
+let battlezoneCountdownInterval = null;
+
 function startBattlezoneCountdown() {
-  const targetDate = new Date('January 31, 2026 00:00:00 UTC').getTime();
-  
-  const countdown = setInterval(() => {
-    const now = new Date().getTime();
-    const distance = targetDate - now;
-    
-    if (distance < 0) {
-      clearInterval(countdown);
+  // Battlezone launch: March 1, 2026 (00:00 UTC)
+  // Use ISO format to avoid browser date parsing issues.
+  const targetDate = Date.parse('2026-03-01T00:00:00Z');
+
+  // Clear any previous countdown interval
+  if (battlezoneCountdownInterval) {
+    clearInterval(battlezoneCountdownInterval);
+    battlezoneCountdownInterval = null;
+  }
+
+  const updateCountdown = () => {
+    const daysEl = $('#days');
+    const hoursEl = $('#hours');
+    const minutesEl = $('#minutes');
+    const secondsEl = $('#seconds');
+
+    // If elements are not present yet, skip safely
+    if (!daysEl || !hoursEl || !minutesEl || !secondsEl) {
       return;
     }
-    
+
+    const now = Date.now();
+    const distance = targetDate - now;
+
+    if (!Number.isFinite(distance) || distance < 0) {
+      daysEl.textContent = '000';
+      hoursEl.textContent = '00';
+      minutesEl.textContent = '00';
+      secondsEl.textContent = '00';
+      if (battlezoneCountdownInterval) {
+        clearInterval(battlezoneCountdownInterval);
+        battlezoneCountdownInterval = null;
+      }
+      return;
+    }
+
     const days = Math.floor(distance / (1000 * 60 * 60 * 24));
     const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-    
-    $('#days').textContent = days.toString().padStart(3, '0');
-    $('#hours').textContent = hours.toString().padStart(2, '0');
-    $('#minutes').textContent = minutes.toString().padStart(2, '0');
-    $('#seconds').textContent = seconds.toString().padStart(2, '0');
-  }, 1000);
+
+    daysEl.textContent = days.toString().padStart(3, '0');
+    hoursEl.textContent = hours.toString().padStart(2, '0');
+    minutesEl.textContent = minutes.toString().padStart(2, '0');
+    secondsEl.textContent = seconds.toString().padStart(2, '0');
+  };
+
+  // Update immediately
+  updateCountdown();
+
+  battlezoneCountdownInterval = setInterval(updateCountdown, 1000);
 }
+
 
 function joinWaitlistBattlezone() {
   alert('Thanks for your interest in Battlezone! You will be notified when it launches.');
