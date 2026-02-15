@@ -138,31 +138,17 @@
       referralLinkCache: new Map(),
       REFERRAL_LINK_EXPIRY: 5 * 60 * 1000, // 5 minutes
       
-      // Get cached referral link or generate new one
+      // Get cached referral link or generate new one (deterministic, no API call)
       async getReferralLink(address) {
         const cached = this.referralLinkCache.get(address);
         if (cached && Date.now() - cached.timestamp < this.REFERRAL_LINK_EXPIRY) {
           window.logger && window.logger.log('📎 Using cached referral link for', address.slice(0,8) + '...');
           return cached.link;
         }
-        
-        try {
-          const res = await fetch('/api/generate-dynamic-referral', { 
-            method: 'POST', 
-            headers: { 'Content-Type':'application/json' }, 
-            body: JSON.stringify({ referrerAddress: address }) 
-          });
-          const data = await res.json();
-          const link = data?.success && data?.referralLink ? data.referralLink : `https://www.thegoldmining.com/?ref=${address}`;
-          
-          // Cache the result
-          this.referralLinkCache.set(address, { link, timestamp: Date.now() });
-          window.logger && window.logger.log('📎 Generated and cached referral link for', address.slice(0,8) + '...');
-          return link;
-        } catch (e) {
-          window.logger && window.logger.log('📎 Referral link generation failed, using fallback');
-          return `https://www.thegoldmining.com/?ref=${address}`;
-        }
+
+        const link = `https://www.thegoldmining.com/?ref=${address}`;
+        this.referralLinkCache.set(address, { link, timestamp: Date.now() });
+        return link;
       },
       
       // Generate cache key for localStorage

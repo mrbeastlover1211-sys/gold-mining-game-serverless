@@ -627,16 +627,17 @@ async function loadInitialUserData() {
   try {
     window.logger && window.logger.log('📡 Loading user data from database (one-time load)...');
     
-    const response = await fetch(`/api/status?address=${encodeURIComponent(state.address)}`);
+    const response = await fetch(`/api/bootstrap?address=${encodeURIComponent(state.address)}`);
     
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     
-    const userData = await response.json();
-    if (userData.error) throw new Error(userData.error);
+    const bootstrap = await response.json();
+    if (bootstrap.error) throw new Error(bootstrap.error);
     
-    window.logger && window.logger.log('✅ User data loaded from database:', userData);
+    const userData = bootstrap.status;
+    window.logger && window.logger.log('✅ Bootstrap data loaded:', bootstrap);
     
     const checkpointData = {
       last_checkpoint_gold: userData.gold || 0,
@@ -755,7 +756,7 @@ async function refreshStatus(afterPurchase = false) {
     
     const headers = afterPurchase ? { 'x-last-purchase': Date.now().toString() } : {};
     
-    const r = await fetch(`/api/status?address=${encodeURIComponent(state.address)}`, {
+    const r = await fetch(`/api/bootstrap?address=${encodeURIComponent(state.address)}`, {
       headers: headers
     });
     
@@ -763,9 +764,11 @@ async function refreshStatus(afterPurchase = false) {
       throw new Error(`HTTP ${r.status}: ${r.statusText}`);
     }
     
-    const json = await r.json();
-    if (json.error) throw new Error(json.error);
-    
+    const bootstrap = await r.json();
+    if (bootstrap.error) throw new Error(bootstrap.error);
+
+    const json = bootstrap.status;
+
     state.status = {
       gold: json.gold || 0,
       inventory: json.inventory || { silver: 0, gold: 0, diamond: 0, netherite: 0 }
