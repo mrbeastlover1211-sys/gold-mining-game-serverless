@@ -258,6 +258,34 @@ Expected result:
 - ✅ Lower DB load at scale
 - ✅ Fewer Vercel edge requests
 
+#### ✅ Database Hardening (Idempotency + Retention) - DEPLOYED + MIGRATION RAN
+**Goal:** safe retries/double-click behavior and control DB growth at 100k+.
+
+✅ Code deployed:
+- Idempotency guards added to:
+  - `/api/purchase-confirm` (pickaxe purchase confirm)
+  - `/api/confirm-land-purchase` (land purchase confirm)
+- Admin utility added:
+  - `cleanup_retention` (deletes expired referral_visits + old logs/transactions)
+
+✅ Database migration file:
+- `database-migrations/idempotency-and-retention.sql`
+
+✅ Migration status:
+- **RAN SUCCESSFULLY in Neon** (confirmed)
+
+What it creates/enforces:
+- `processed_signatures` table (signature PRIMARY KEY)
+- UNIQUE index on `transactions.signature` (where signature is not null)
+- UNIQUE index on `gold_sales.tx_signature` (where tx_signature is not null)
+- UNIQUE index on referrals pair `(referrer_address, referred_address)`
+
+Retention policy (current):
+- `referral_visits`: delete expired rows (`expires_at < NOW()`)
+- `admin_logs`: delete older than 90 days
+- `transactions`: delete older than 180 days
+- `gold_sales`: delete completed older than 180 days
+
 #### ✅ Critical Rate Limits Added
 - `/api/sell-working-final`
   - Cooldown: **15 seconds**
