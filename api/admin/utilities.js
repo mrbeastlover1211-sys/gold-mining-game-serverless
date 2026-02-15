@@ -1,8 +1,9 @@
 // Admin Utilities API - Secured Admin-Only Tools
 // Dangerous operations that require authentication
 
-import { sql } from '../../database.js';
+import { sql, cache } from '../../database.js';
 import crypto from 'crypto';
+import { redisDel, isRedisEnabled } from '../../utils/redis.js';
 
 // Token validation (same as give-rewards)
 function validateSessionToken(token) {
@@ -173,7 +174,37 @@ export default async function handler(req, res) {
         break;
       }
 
-      // 5. Force Clear Land Ownership
+      // 5. Clear Redis cache for a specific wallet
+      case 'clear_redis_cache': {
+        const { targetAddress } = req.body;
+        if (!targetAddress) {
+          return res.status(400).json({ error: 'targetAddress required' });
+        }
+
+        const cacheKey = `user_${targetAddress}`;
+
+        // Clear memory cache
+        cache.delete(cacheKey);
+
+        // Clear Redis cache if enabled
+        let redisCleared = false;
+        if (isRedisEnabled()) {
+          redisCleared = await redisDel(cacheKey);
+        }
+
+        result = {
+          action: 'Clear Redis Cache',
+          target: targetAddress,
+          cacheKey,
+          memoryCleared: true,
+          redisEnabled: isRedisEnabled(),
+          redisCleared,
+          message: `Cleared cache key ${cacheKey}`
+        };
+        break;
+      }
+
+      // 6. Force Clear Land Ownership
       case 'force_clear_land': {
         await sql`
           UPDATE users 
@@ -194,7 +225,7 @@ export default async function handler(req, res) {
       default:
         return res.status(400).json({ 
           error: 'Invalid action',
-          validActions: ['clear_all_users', 'clear_database', 'nuclear_clear', 'force_clear', 'force_clear_land']
+          validActions: ['clear_all_users', 'clear_database', 'nuclear_clear', 'force_clear', 'force_clear_land', 'clear_redis_cache']
         });
     }
 

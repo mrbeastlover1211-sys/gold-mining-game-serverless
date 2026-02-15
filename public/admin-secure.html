@@ -811,6 +811,18 @@
                     </div>
 
                     <div class="utility-card">
+                        <h3>🧹 Clear Redis Cache (Wallet)</h3>
+                        <p>Clear cached user data in Redis + memory for a wallet</p>
+                        <input
+                            type="text"
+                            id="redisCacheAddress"
+                            placeholder="Enter Solana wallet address"
+                            style="width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); color: white;"
+                        />
+                        <button onclick="clearRedisCacheForWallet()" class="btn-danger">Clear Cache</button>
+                    </div>
+
+                    <div class="utility-card">
                         <h3>🏠 Clear Land Ownership</h3>
                         <p>Reset all land ownership (keeps gold/pickaxes)</p>
                         <button onclick="executeUtility('force_clear_land')" class="btn-danger">Clear Land</button>
@@ -1494,12 +1506,69 @@
         // ADMIN UTILITIES SYSTEM
         // ========================================
 
+        async function clearRedisCacheForWallet() {
+            const address = document.getElementById('redisCacheAddress')?.value?.trim();
+            if (!address) {
+                alert('Please enter a wallet address');
+                return;
+            }
+
+            const action = 'clear_redis_cache';
+            const actionName = 'Clear Redis Cache (Wallet)';
+
+            if (!confirm(`⚠️ Clear Redis cache for this wallet?\n\n${address}\n\nThis does NOT delete the user from DB. It only clears cached data.`)) {
+                return;
+            }
+
+            const today = new Date().toISOString().slice(0, 10);
+            const confirmationCode = `${action.toUpperCase()}_${today}`;
+
+            const resultDiv = document.getElementById('utilityResult');
+            resultDiv.innerHTML = '⏳ Clearing cache...';
+            resultDiv.className = 'utility-result';
+            resultDiv.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/admin/utilities', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        action,
+                        confirmationCode,
+                        targetAddress: address
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.className = 'utility-result success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ ${actionName} Completed</h3>
+                        <pre>${JSON.stringify(data.result, null, 2)}</pre>
+                        <p><small>Performed by: ${data.performedBy} at ${data.timestamp}</small></p>
+                    `;
+                } else {
+                    resultDiv.className = 'utility-result error';
+                    resultDiv.innerHTML = `<strong>❌ Error:</strong> ${data.error || 'Unknown error'}<br><small>Status: ${response.status}</small>`;
+                }
+            } catch (error) {
+                console.error('Redis clear error:', error);
+                resultDiv.className = 'utility-result error';
+                resultDiv.innerHTML = `<strong>❌ Network Error:</strong> ${error.message}`;
+            }
+        }
+
         async function executeUtility(action) {
             const actionNames = {
                 'clear_all_users': 'Clear All Users',
                 'clear_database': 'Clear Database',
                 'nuclear_clear': 'Nuclear Clear',
-                'force_clear_land': 'Clear Land Ownership'
+                'force_clear_land': 'Clear Land Ownership',
+                'clear_redis_cache': 'Clear Redis Cache (Wallet)'
             };
 
             const actionName = actionNames[action] || action;
