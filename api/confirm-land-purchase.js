@@ -1,7 +1,7 @@
 // 🔒 SECURE LAND PURCHASE CONFIRMATION
 // Verifies real Solana transactions - prevents fake land purchases
 
-import { getUserOptimized, saveUserOptimized } from '../database.js';
+import { getUserOptimized, saveUserOptimized, sql } from '../database.js';
 import { verifyTransaction } from './verify-transaction.js';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
@@ -49,6 +49,34 @@ export default async function handler(req, res) {
       return res.status(400).json({ 
         error: verification.error,
         details: 'Transaction could not be verified on the blockchain'
+      });
+    }
+
+    // Idempotency guard: ensure this signature is only processed once
+    // Create table if missing (safe no-op if already exists)
+    await sql`
+      CREATE TABLE IF NOT EXISTS processed_signatures (
+        signature TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        user_address TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+
+    const sigInsert = await sql`
+      INSERT INTO processed_signatures (signature, type, user_address)
+      VALUES (${signature}, 'land_purchase', ${address})
+      ON CONFLICT (signature) DO NOTHING
+      RETURNING signature
+    `;
+
+    if (sigInsert.length === 0) {
+      console.log(`⚠️ Duplicate land purchase confirm ignored for signature: ${signature}`);
+      return res.status(200).json({
+        success: true,
+        message: 'Land purchase already processed',
+        alreadyProcessed: true,
+        signature
       });
     }
 

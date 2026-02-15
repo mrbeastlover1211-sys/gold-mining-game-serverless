@@ -246,7 +246,63 @@ export default async function handler(req, res) {
         break;
       }
 
-      // 7. Force Clear Land Ownership
+      // 7. Retention cleanup (expired referral visits + old logs/transactions)
+      case 'cleanup_retention': {
+        const referralVisits = await sql`
+          SELECT COUNT(*)::int as count FROM referral_visits
+          WHERE expires_at IS NOT NULL AND expires_at < NOW()
+        `.catch(() => [{ count: 0 }]);
+
+        const adminLogs = await sql`
+          SELECT COUNT(*)::int as count FROM admin_logs
+          WHERE created_at < NOW() - INTERVAL '90 days'
+        `.catch(() => [{ count: 0 }]);
+
+        const transactions = await sql`
+          SELECT COUNT(*)::int as count FROM transactions
+          WHERE created_at < NOW() - INTERVAL '180 days'
+        `.catch(() => [{ count: 0 }]);
+
+        const goldSales = await sql`
+          SELECT COUNT(*)::int as count FROM gold_sales
+          WHERE status = 'completed'
+            AND created_at < NOW() - INTERVAL '180 days'
+        `.catch(() => [{ count: 0 }]);
+
+        // Perform deletes (best-effort)
+        const deletedReferralVisits = await sql`
+          DELETE FROM referral_visits
+          WHERE expires_at IS NOT NULL AND expires_at < NOW()
+        `.catch(() => null);
+
+        const deletedAdminLogs = await sql`
+          DELETE FROM admin_logs
+          WHERE created_at < NOW() - INTERVAL '90 days'
+        `.catch(() => null);
+
+        const deletedTransactions = await sql`
+          DELETE FROM transactions
+          WHERE created_at < NOW() - INTERVAL '180 days'
+        `.catch(() => null);
+
+        const deletedGoldSales = await sql`
+          DELETE FROM gold_sales
+          WHERE status = 'completed'
+            AND created_at < NOW() - INTERVAL '180 days'
+        `.catch(() => null);
+
+        result = {
+          action: 'Retention Cleanup',
+          referralVisitsExpired: referralVisits[0].count,
+          adminLogsOld: adminLogs[0].count,
+          transactionsOld: transactions[0].count,
+          goldSalesOldCompleted: goldSales[0].count,
+          message: 'Retention cleanup executed (best effort)'
+        };
+        break;
+      }
+
+      // 8. Force Clear Land Ownership
       case 'force_clear_land': {
         await sql`
           UPDATE users 
@@ -267,7 +323,7 @@ export default async function handler(req, res) {
       default:
         return res.status(400).json({ 
           error: 'Invalid action',
-          validActions: ['clear_all_users', 'clear_database', 'nuclear_clear', 'force_clear', 'force_clear_land', 'clear_redis_cache', 'clear_redis_all_cache']
+          validActions: ['clear_all_users', 'clear_database', 'nuclear_clear', 'force_clear', 'force_clear_land', 'clear_redis_cache', 'clear_redis_all_cache', 'cleanup_retention']
         });
     }
 

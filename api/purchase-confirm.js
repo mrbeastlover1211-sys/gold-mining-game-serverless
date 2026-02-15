@@ -75,6 +75,34 @@ export default async function handler(req, res) {
       });
     }
 
+    // Idempotency guard: ensure this signature is only processed once
+    // Create table if missing (safe no-op if already exists)
+    await sql`
+      CREATE TABLE IF NOT EXISTS processed_signatures (
+        signature TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        user_address TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+
+    const sigInsert = await sql`
+      INSERT INTO processed_signatures (signature, type, user_address)
+      VALUES (${signature}, 'pickaxe_purchase', ${address})
+      ON CONFLICT (signature) DO NOTHING
+      RETURNING signature
+    `;
+
+    if (sigInsert.length === 0) {
+      console.log(`⚠️ Duplicate pickaxe purchase confirm ignored for signature: ${signature}`);
+      return res.status(200).json({
+        success: true,
+        message: 'Purchase already processed',
+        alreadyProcessed: true,
+        signature
+      });
+    }
+
     console.log('✅ Transaction verified on blockchain!');
 
     // Get or create user

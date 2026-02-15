@@ -829,6 +829,12 @@
                     </div>
 
                     <div class="utility-card">
+                        <h3>🧽 Retention Cleanup</h3>
+                        <p>Deletes expired referral visits and very old logs/transactions</p>
+                        <button onclick="executeUtility('cleanup_retention')" class="btn-danger">Run Cleanup</button>
+                    </div>
+
+                    <div class="utility-card">
                         <h3>🏠 Clear Land Ownership</h3>
                         <p>Reset all land ownership (keeps gold/pickaxes)</p>
                         <button onclick="executeUtility('force_clear_land')" class="btn-danger">Clear Land</button>
@@ -1575,7 +1581,8 @@
                 'nuclear_clear': 'Nuclear Clear',
                 'force_clear_land': 'Clear Land Ownership',
                 'clear_redis_cache': 'Clear Redis Cache (Wallet)',
-                'clear_redis_all_cache': 'Clear ALL Redis Cache'
+                'clear_redis_all_cache': 'Clear ALL Redis Cache',
+                'cleanup_retention': 'Retention Cleanup'
             };
 
             const actionName = actionNames[action] || action;
