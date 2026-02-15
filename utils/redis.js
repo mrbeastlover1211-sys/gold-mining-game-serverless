@@ -66,3 +66,35 @@ export async function redisDel(key) {
     return false;
   }
 }
+
+export async function redisScan(pattern = '*', cursor = 0, count = 500) {
+  const client = getRedisClient();
+  if (!client) return { cursor: 0, keys: [] };
+
+  try {
+    // Upstash supports SCAN
+    const result = await client.scan(cursor, { match: pattern, count });
+    // result format: [nextCursor, keys]
+    const nextCursor = Array.isArray(result) ? parseInt(result[0], 10) : 0;
+    const keys = Array.isArray(result) ? (result[1] || []) : [];
+    return { cursor: nextCursor, keys };
+  } catch (err) {
+    console.warn('⚠️ Redis SCAN failed:', err?.message || err);
+    return { cursor: 0, keys: [] };
+  }
+}
+
+export async function redisDelMany(keys = []) {
+  const client = getRedisClient();
+  if (!client) return 0;
+  if (!Array.isArray(keys) || keys.length === 0) return 0;
+
+  try {
+    // DEL supports multiple keys
+    const result = await client.del(...keys);
+    return typeof result === 'number' ? result : keys.length;
+  } catch (err) {
+    console.warn('⚠️ Redis DEL MANY failed:', err?.message || err);
+    return 0;
+  }
+}

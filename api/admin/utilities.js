@@ -3,7 +3,7 @@
 
 import { sql, cache } from '../../database.js';
 import crypto from 'crypto';
-import { redisDel, isRedisEnabled } from '../../utils/redis.js';
+import { redisDel, redisScan, redisDelMany, isRedisEnabled } from '../../utils/redis.js';
 
 // Token validation (same as give-rewards)
 function validateSessionToken(token) {
@@ -204,7 +204,49 @@ export default async function handler(req, res) {
         break;
       }
 
-      // 6. Force Clear Land Ownership
+      // 6. Clear ALL Redis cache keys (user_*)
+      case 'clear_redis_all_cache': {
+        // Clear memory cache entirely
+        cache.clear();
+
+        let redisEnabled = isRedisEnabled();
+        let totalKeysFound = 0;
+        let totalKeysDeleted = 0;
+
+        if (redisEnabled) {
+          let cursor = 0;
+          const MAX_KEYS = 10000; // safety cap
+
+          do {
+            const scanRes = await redisScan('user_*', cursor, 500);
+            cursor = scanRes.cursor;
+            const keys = scanRes.keys || [];
+
+            totalKeysFound += keys.length;
+            if (keys.length > 0) {
+              totalKeysDeleted += await redisDelMany(keys);
+            }
+
+            if (totalKeysFound >= MAX_KEYS) {
+              break;
+            }
+          } while (cursor !== 0);
+        }
+
+        result = {
+          action: 'Clear ALL Redis Cache (user_*)',
+          memoryCleared: true,
+          redisEnabled,
+          totalKeysFound,
+          totalKeysDeleted,
+          message: redisEnabled
+            ? `Cleared ${totalKeysDeleted} Redis keys (pattern user_*) and memory cache`
+            : 'Redis not enabled; cleared memory cache only'
+        };
+        break;
+      }
+
+      // 7. Force Clear Land Ownership
       case 'force_clear_land': {
         await sql`
           UPDATE users 
@@ -225,7 +267,7 @@ export default async function handler(req, res) {
       default:
         return res.status(400).json({ 
           error: 'Invalid action',
-          validActions: ['clear_all_users', 'clear_database', 'nuclear_clear', 'force_clear', 'force_clear_land', 'clear_redis_cache']
+          validActions: ['clear_all_users', 'clear_database', 'nuclear_clear', 'force_clear', 'force_clear_land', 'clear_redis_cache', 'clear_redis_all_cache']
         });
     }
 

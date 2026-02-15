@@ -823,6 +823,12 @@
                     </div>
 
                     <div class="utility-card">
+                        <h3>🧨 Clear ALL Redis Cache</h3>
+                        <p>Clears all cached user_* keys in Redis + clears memory cache</p>
+                        <button onclick="executeUtility('clear_redis_all_cache')" class="btn-danger">Clear All Cache</button>
+                    </div>
+
+                    <div class="utility-card">
                         <h3>🏠 Clear Land Ownership</h3>
                         <p>Reset all land ownership (keeps gold/pickaxes)</p>
                         <button onclick="executeUtility('force_clear_land')" class="btn-danger">Clear Land</button>
@@ -1568,7 +1574,8 @@
                 'clear_database': 'Clear Database',
                 'nuclear_clear': 'Nuclear Clear',
                 'force_clear_land': 'Clear Land Ownership',
-                'clear_redis_cache': 'Clear Redis Cache (Wallet)'
+                'clear_redis_cache': 'Clear Redis Cache (Wallet)',
+                'clear_redis_all_cache': 'Clear ALL Redis Cache'
             };
 
             const actionName = actionNames[action] || action;
