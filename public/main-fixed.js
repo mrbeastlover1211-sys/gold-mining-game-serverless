@@ -112,18 +112,11 @@ const LAND_STATUS_CACHE = {
     this.apiCallInProgress = true;
     
     try {
-      const response = await fetch(`/api/land-status?address=${encodeURIComponent(address)}`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-      window.logger && window.logger.log(`🚩 LAYER 3 (API): Fresh data for ${shortAddr}:`, result);
-      
-      // Update all cache layers with fresh data
-      this.updateAllLayers(address, result.hasLand);
-      
-      return result.hasLand;
+      // ✅ BOOTSTRAP OPTIMIZATION: We no longer call /api/land-status here.
+      // Land status is provided by /api/bootstrap during wallet connect/reconnect.
+      // If caches miss and bootstrap hasn't populated yet, return null.
+      window.logger && window.logger.log(`🚩 LAYER 3 (API): Disabled - use /api/bootstrap to populate land status for ${shortAddr}`);
+      return null;
       
     } catch (error) {
       console.error(`🚩 LAYER 3 (API): Failed for ${shortAddr}:`, error);
@@ -336,7 +329,10 @@ async function connectWallet() {
     // 📊 LOAD USER DATA FROM DATABASE
     window.logger && window.logger.log('📊 Loading user data from database...');
     const userData = await loadInitialUserData();
-    
+
+    // ✅ Land status is already populated into cache by bootstrap inside loadInitialUserData()
+    const hasLand = LAND_STATUS_CACHE.memoryCache.get(address)?.hasLand;
+
     if (userData) {
       // Update display with loaded data
       updateDisplay({
@@ -361,9 +357,8 @@ async function connectWallet() {
       updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
     }
     
-    // 🏞️ STEP 1: CHECK LAND STATUS FROM API (ONLY ON WALLET CONNECT)
-    window.logger && window.logger.log('🔍 Step 1: Checking land status from API...');
-    const hasLand = await LAND_STATUS_CACHE.checkLandStatus(address);
+    // 🏞️ STEP 1: CHECK LAND STATUS FROM BOOTSTRAP CACHE (no API call)
+    window.logger && window.logger.log('🔍 Step 1: Checking land status from bootstrap cache...');
     
     if (hasLand === true) {
       // ✅ USER HAS LAND
@@ -638,6 +633,11 @@ async function loadInitialUserData() {
     
     const userData = bootstrap.status;
     window.logger && window.logger.log('✅ Bootstrap data loaded:', bootstrap);
+
+    // ✅ Populate land status cache from bootstrap (removes need for /api/land-status)
+    if (bootstrap.landStatus && typeof bootstrap.landStatus.hasLand === 'boolean') {
+      LAND_STATUS_CACHE.setLandStatus(state.address, bootstrap.landStatus.hasLand);
+    }
     
     const checkpointData = {
       last_checkpoint_gold: userData.gold || 0,
@@ -1037,8 +1037,8 @@ async function autoReconnectWallet() {
           updateDisplay({ gold: 0, inventory: { silver: 0, gold: 0, diamond: 0, netherite: 0 } });
         }
         
-        // 🏞️ CHECK LAND STATUS AFTER AUTO-RECONNECT (CACHE ONLY)
-        window.logger && window.logger.log('🔍 Checking land status after auto-reconnect (cache only)...');
+        // 🏞️ CHECK LAND STATUS AFTER AUTO-RECONNECT (bootstrap already populated cache)
+        window.logger && window.logger.log('🔍 Checking land status after auto-reconnect (bootstrap cache)...');
         const cachedData = LAND_STATUS_CACHE.memoryCache.get(savedAddress);
         let hasLand = cachedData ? cachedData.hasLand : null;
         
