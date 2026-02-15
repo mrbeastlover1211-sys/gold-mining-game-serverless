@@ -239,6 +239,25 @@ Fixes applied:
 #### ✅ Land Status Consistency Fix
 - `/api/land-status` now bypasses cache (`getUserOptimized(address, false)`) to avoid stale “ghost land” after DB cleanup.
 
+#### ✅ Phase A API Call Optimization (100k+ readiness)
+**Goal:** reduce wallet connect to *one* backend call.
+
+Changes deployed:
+- ✅ New endpoint: `GET /api/bootstrap?address=<wallet>`
+  - Combines: status + land status + referral stats + deterministic referral link
+  - Always fetches user fresh from DB (truth-critical)
+- ✅ Removed `/api/generate-dynamic-referral` usage from frontend
+  - Referral link is deterministic: `https://www.thegoldmining.com/?ref=<wallet>`
+- ✅ `main-fixed.js` wallet connect flow updated:
+  - Uses `/api/bootstrap` for initial user load
+  - Populates LAND status cache from bootstrap
+  - No longer calls `/api/land-status` during wallet connect
+
+Expected result:
+- ✅ Fewer serverless invocations
+- ✅ Lower DB load at scale
+- ✅ Fewer Vercel edge requests
+
 #### ✅ Critical Rate Limits Added
 - `/api/sell-working-final`
   - Cooldown: **15 seconds**
